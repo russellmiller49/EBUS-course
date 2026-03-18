@@ -14,8 +14,9 @@
     "preset": "jest-expo"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "1.23.1",
     "@expo/vector-icons": "~14.0.4",
+    "@react-native-async-storage/async-storage": "1.23.1",
+    "@react-native-community/slider": "4.5.5",
     "@react-navigation/native": "^7.0.14",
     "expo": "~52.0.49",
     "expo-font": "~13.0.4",

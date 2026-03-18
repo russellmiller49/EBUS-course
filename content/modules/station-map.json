@@ -1,0 +1,66 @@
+{
+  "introSections": [
+    {
+      "id": "stack-patterns",
+      "title": "Read the map as vertical stacks",
+      "summary": "The right and left paratracheal stations are easiest to memorize as superior-to-inferior stacks: 2R over 4R and 2L over 4L.",
+      "takeaway": "Start with laterality, then move top to bottom before you branch outward."
+    },
+    {
+      "id": "carina-anchor",
+      "title": "Use the carina as the center anchor",
+      "summary": "Station 7 sits below the carina and helps you orient the handoff from paratracheal stations to hilar stations.",
+      "takeaway": "If you lose orientation, find the midline subcarinal landmark first."
+    },
+    {
+      "id": "hilar-handoff",
+      "title": "Treat hilar stations as the branch-level handoff",
+      "summary": "10R and 10L mark the hilar checkpoint, while 11R and 11L extend farther into the interlobar pathway.",
+      "takeaway": "Think main bronchus first, then branch-level interlobar landmarks."
+    }
+  ],
+  "mapTips": [
+    "Tap any station to open the detail sheet.",
+    "Use the zoom buttons if labels feel crowded on a smaller phone.",
+    "Selection uses border weight, iconography, and helper text so the state is not color-only."
+  ],
+  "flashcardPrompt": "Use the cards to rehearse name, grouping, and memory cues before moving into the quiz.",
+  "quizRounds": [
+    {
+      "id": "q-2r",
+      "stationId": "2R",
+      "prompt": "Pin the upper right paratracheal station above the 4R stack.",
+      "hint": "Stay high on the right side of the tracheal column."
+    },
+    {
+      "id": "q-4l",
+      "stationId": "4L",
+      "prompt": "Tap the lower left paratracheal station below 2L.",
+      "hint": "Look left of the trachea before you move into the hilar branch."
+    },
+    {
+      "id": "q-7",
+      "stationId": "7",
+      "prompt": "Select the subcarinal station centered below the carina.",
+      "hint": "Find the midline anchor between the right and left hilar pathways."
+    },
+    {
+      "id": "q-10r",
+      "stationId": "10R",
+      "prompt": "Pin the right hilar checkpoint near the right main bronchus entry zone.",
+      "hint": "It sits distal to 4R and proximal to 11R."
+    },
+    {
+      "id": "q-11L",
+      "stationId": "11L",
+      "prompt": "Tap the left interlobar station beyond the left hilar gate.",
+      "hint": "Think branch-level left hilar pathway, not paratracheal."
+    }
+  ],
+  "reviewChecklist": [
+    "Can you separate the right and left paratracheal stacks without relying on color?",
+    "Can you use station 7 as the centerline reset point?",
+    "Can you distinguish hilar stations 10R and 10L from the more distal interlobar stations 11R and 11L?"
+  ],
+  "extensionNote": "Add more stations by extending the shared station content file and this layout file with new coordinates. The UI reads station definitions and drawing data separately, so the module does not need component rewrites when the station set grows."
+}

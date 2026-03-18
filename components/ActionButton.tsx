@@ -10,6 +10,7 @@ interface ActionButtonProps {
   variant?: ActionButtonVariant;
   icon?: React.ReactNode;
   accessibilityLabel?: string;
+  disabled?: boolean;
 }
 
 const toneStyles = {
@@ -36,13 +37,16 @@ export function ActionButton({
   variant = 'primary',
   icon,
   accessibilityLabel,
+  disabled = false,
 }: ActionButtonProps) {
   const tone = toneStyles[variant];
 
   return (
     <Pressable
+      accessibilityState={{ disabled }}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
@@ -50,7 +54,7 @@ export function ActionButton({
         {
           backgroundColor: tone.backgroundColor,
           borderColor: tone.borderColor,
-          opacity: pressed ? 0.88 : 1,
+          opacity: disabled ? 0.48 : pressed ? 0.88 : 1,
         },
       ]}>
       <View style={styles.content}>

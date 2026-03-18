@@ -8,7 +8,9 @@ import { Screen } from '@/components/Screen';
 import { SectionCard } from '@/components/SectionCard';
 import { StatusPill } from '@/components/StatusPill';
 import { colors } from '@/constants/theme';
+import { KnobologyModule } from '@/features/knobology/KnobologyModule';
 import { moduleScaffolds } from '@/features/module-registry';
+import { StationMapModule } from '@/features/stations/StationMapModule';
 import { getModuleBySlug, getQuizQuestions, getStationById } from '@/lib/content';
 import type { ModuleId } from '@/lib/types';
 import { isBookmarked, useLearnerProgress } from '@/store/learner-progress';
@@ -20,7 +22,7 @@ export default function ModuleDetailScreen() {
     useLearnerProgress();
 
   useEffect(() => {
-    if (module) {
+    if (module && module.id !== 'knobology' && module.id !== 'station-map') {
       markModuleVisited(module.id, 'overview');
     }
   }, [module?.id]);
@@ -32,6 +34,24 @@ export default function ModuleDetailScreen() {
           <Text style={styles.bodyText}>No module matched the provided slug.</Text>
         </SectionCard>
       </Screen>
+    );
+  }
+
+  if (module.id === 'knobology') {
+    return (
+      <>
+        <Stack.Screen options={{ title: module.shortTitle }} />
+        <KnobologyModule module={module} />
+      </>
+    );
+  }
+
+  if (module.id === 'station-map') {
+    return (
+      <>
+        <Stack.Screen options={{ title: module.shortTitle }} />
+        <StationMapModule module={module} />
+      </>
     );
   }
 

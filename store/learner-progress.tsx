@@ -9,6 +9,7 @@ const STORAGE_KEY = 'socal-ebus-prep.v1.learner-progress';
 type Action =
   | { type: 'hydrate'; payload: LearnerProgressState }
   | { type: 'markVisited'; moduleId: ModuleId; lastScreen: string }
+  | { type: 'setModuleProgress'; moduleId: ModuleId; lastScreen: string; percentComplete: number; completed?: boolean }
   | { type: 'toggleModuleCompletion'; moduleId: ModuleId; lastScreen: string }
   | { type: 'toggleBookmark'; item: BookmarkedItem }
   | { type: 'setLastViewedStation'; stationId: string }
@@ -19,6 +20,7 @@ interface LearnerProgressContextValue {
   state: LearnerProgressState;
   hydrated: boolean;
   markModuleVisited: (moduleId: ModuleId, lastScreen: string) => void;
+  setModuleProgress: (moduleId: ModuleId, update: { lastScreen: string; percentComplete: number; completed?: boolean }) => void;
   toggleModuleCompletion: (moduleId: ModuleId, lastScreen: string) => void;
   toggleBookmark: (item: BookmarkedItem) => void;
   setLastViewedStation: (stationId: string) => void;
@@ -115,6 +117,27 @@ export function learnerProgressReducer(
             ...current,
             startedAt: current.startedAt ?? new Date().toISOString(),
             percentComplete: Math.max(current.percentComplete, 20),
+            lastScreen: action.lastScreen,
+          },
+        },
+      };
+    }
+    case 'setModuleProgress': {
+      const current = state.moduleProgress[action.moduleId];
+      const clampedPercent = Math.max(0, Math.min(100, action.percentComplete));
+
+      return {
+        ...state,
+        moduleProgress: {
+          ...state.moduleProgress,
+          [action.moduleId]: {
+            ...current,
+            startedAt: current.startedAt ?? new Date().toISOString(),
+            completedAt:
+              action.completed || clampedPercent >= 100
+                ? current.completedAt ?? new Date().toISOString()
+                : current.completedAt,
+            percentComplete: Math.max(current.percentComplete, clampedPercent),
             lastScreen: action.lastScreen,
           },
         },
@@ -229,6 +252,8 @@ export function LearnerProgressProvider({ children }: { children: React.ReactNod
       hydrated,
       markModuleVisited: (moduleId, lastScreen) =>
         dispatch({ type: 'markVisited', moduleId, lastScreen }),
+      setModuleProgress: (moduleId, update) =>
+        dispatch({ type: 'setModuleProgress', moduleId, ...update }),
       toggleModuleCompletion: (moduleId, lastScreen) =>
         dispatch({ type: 'toggleModuleCompletion', moduleId, lastScreen }),
       toggleBookmark: (item) => dispatch({ type: 'toggleBookmark', item }),

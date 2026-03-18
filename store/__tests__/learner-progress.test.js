@@ -23,6 +23,22 @@ describe('learnerProgressReducer', () => {
     expect(nextState.moduleProgress['station-map'].lastScreen).toBe('overview');
   });
 
+  it('stores resumable module progress without forcing completion', () => {
+    const initialState = createInitialLearnerProgress();
+
+    const nextState = learnerProgressReducer(initialState, {
+      type: 'setModuleProgress',
+      moduleId: 'knobology',
+      lastScreen: 'control-lab',
+      percentComplete: 38,
+    });
+
+    expect(nextState.moduleProgress.knobology.startedAt).toEqual(expect.any(String));
+    expect(nextState.moduleProgress.knobology.lastScreen).toBe('control-lab');
+    expect(nextState.moduleProgress.knobology.percentComplete).toBe(38);
+    expect(nextState.moduleProgress.knobology.completedAt).toBeNull();
+  });
+
   it('toggles bookmarks on and off for the same item', () => {
     const initialState = createInitialLearnerProgress();
 
