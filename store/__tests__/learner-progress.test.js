@@ -64,6 +64,29 @@ describe('learnerProgressReducer', () => {
     expect(unbookmarked.bookmarks).toHaveLength(0);
   });
 
+  it('stores recognition accuracy by station inside module progress', () => {
+    const initialState = createInitialLearnerProgress();
+
+    const missedState = learnerProgressReducer(initialState, {
+      type: 'recordRecognitionAttempt',
+      moduleId: 'station-explorer',
+      stationId: '4R',
+      wasCorrect: false,
+    });
+
+    const correctedState = learnerProgressReducer(missedState, {
+      type: 'recordRecognitionAttempt',
+      moduleId: 'station-explorer',
+      stationId: '4R',
+      wasCorrect: true,
+    });
+
+    expect(correctedState.moduleProgress['station-explorer'].recognitionStats['4R']).toEqual({
+      attempts: 2,
+      correct: 1,
+    });
+  });
+
   it('restores missing modules to the default progress shape', () => {
     const restored = normalizeProgressState({
       version: 1,
@@ -74,6 +97,12 @@ describe('learnerProgressReducer', () => {
           completedAt: null,
           lastScreen: 'quiz',
           quizScore: 4,
+          recognitionStats: {
+            '10R': {
+              attempts: 3,
+              correct: 2,
+            },
+          },
         },
       },
       bookmarks: [],
@@ -81,6 +110,10 @@ describe('learnerProgressReducer', () => {
     });
 
     expect(restored.moduleProgress.knobology.percentComplete).toBe(70);
+    expect(restored.moduleProgress.knobology.recognitionStats['10R']).toEqual({
+      attempts: 3,
+      correct: 2,
+    });
     expect(restored.moduleProgress['station-map'].percentComplete).toBe(0);
     expect(restored.moduleProgress['station-explorer'].percentComplete).toBe(0);
     expect(restored.lastViewedStationId).toBe('4R');

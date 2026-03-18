@@ -60,12 +60,18 @@ export interface QuizQuestionContent {
   explanation: string;
 }
 
+export interface RecognitionStat {
+  attempts: number;
+  correct: number;
+}
+
 export interface ModuleProgress {
   startedAt: string | null;
   completedAt: string | null;
   percentComplete: number;
   lastScreen: string | null;
   quizScore: number | null;
+  recognitionStats: Record<string, RecognitionStat>;
 }
 
 export interface BookmarkedItem {

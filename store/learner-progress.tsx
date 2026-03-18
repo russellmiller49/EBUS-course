@@ -14,6 +14,7 @@ type Action =
   | { type: 'toggleBookmark'; item: BookmarkedItem }
   | { type: 'setLastViewedStation'; stationId: string }
   | { type: 'setQuizScore'; moduleId: ModuleId; quizScore: number }
+  | { type: 'recordRecognitionAttempt'; moduleId: ModuleId; stationId: string; wasCorrect: boolean }
   | { type: 'reset' };
 
 interface LearnerProgressContextValue {
@@ -25,6 +26,7 @@ interface LearnerProgressContextValue {
   toggleBookmark: (item: BookmarkedItem) => void;
   setLastViewedStation: (stationId: string) => void;
   setQuizScore: (moduleId: ModuleId, quizScore: number) => void;
+  recordRecognitionAttempt: (moduleId: ModuleId, stationId: string, wasCorrect: boolean) => void;
   resetProgress: () => void;
 }
 
@@ -37,6 +39,7 @@ function createEmptyModuleProgress(): ModuleProgress {
     percentComplete: 0,
     lastScreen: null,
     quizScore: null,
+    recognitionStats: {},
   };
 }
 
@@ -79,6 +82,21 @@ export function normalizeProgressState(candidate: unknown): LearnerProgressState
           : 0,
       lastScreen: typeof maybeModule.lastScreen === 'string' ? maybeModule.lastScreen : null,
       quizScore: typeof maybeModule.quizScore === 'number' ? maybeModule.quizScore : null,
+      recognitionStats:
+        maybeModule.recognitionStats && typeof maybeModule.recognitionStats === 'object'
+          ? Object.fromEntries(
+              Object.entries(maybeModule.recognitionStats).flatMap(([stationId, stat]) => {
+                if (!stat || typeof stat !== 'object') {
+                  return [];
+                }
+
+                const attempts = typeof stat.attempts === 'number' ? Math.max(0, stat.attempts) : 0;
+                const correct = typeof stat.correct === 'number' ? Math.max(0, stat.correct) : 0;
+
+                return [[stationId, { attempts, correct: Math.min(correct, attempts) }]];
+              }),
+            )
+          : {},
     };
   }
 
@@ -196,6 +214,31 @@ export function learnerProgressReducer(
         },
       };
     }
+    case 'recordRecognitionAttempt': {
+      const current = state.moduleProgress[action.moduleId];
+      const currentStat = current.recognitionStats[action.stationId] ?? {
+        attempts: 0,
+        correct: 0,
+      };
+
+      return {
+        ...state,
+        moduleProgress: {
+          ...state.moduleProgress,
+          [action.moduleId]: {
+            ...current,
+            startedAt: current.startedAt ?? new Date().toISOString(),
+            recognitionStats: {
+              ...current.recognitionStats,
+              [action.stationId]: {
+                attempts: currentStat.attempts + 1,
+                correct: currentStat.correct + (action.wasCorrect ? 1 : 0),
+              },
+            },
+          },
+        },
+      };
+    }
     case 'reset':
       return createInitialLearnerProgress();
     default:
@@ -259,6 +302,8 @@ export function LearnerProgressProvider({ children }: { children: React.ReactNod
       toggleBookmark: (item) => dispatch({ type: 'toggleBookmark', item }),
       setLastViewedStation: (stationId) => dispatch({ type: 'setLastViewedStation', stationId }),
       setQuizScore: (moduleId, quizScore) => dispatch({ type: 'setQuizScore', moduleId, quizScore }),
+      recordRecognitionAttempt: (moduleId, stationId, wasCorrect) =>
+        dispatch({ type: 'recordRecognitionAttempt', moduleId, stationId, wasCorrect }),
       resetProgress: () => dispatch({ type: 'reset' }),
     }),
     [hydrated, state],
