@@ -1,0 +1,68 @@
+[
+  {
+    "id": "knobology-depth-01",
+    "moduleId": "knobology",
+    "prompt": "A target structure appears too shallow on the screen. Which control should the learner adjust first?",
+    "type": "single-best-answer",
+    "options": [
+      {
+        "id": "a",
+        "label": "Depth"
+      },
+      {
+        "id": "b",
+        "label": "Freeze"
+      },
+      {
+        "id": "c",
+        "label": "Save"
+      }
+    ],
+    "correctOptionId": "a",
+    "explanation": "Depth is the first control to adjust when the target anatomy is not framed correctly."
+  },
+  {
+    "id": "station-map-7-01",
+    "moduleId": "station-map",
+    "prompt": "Which station is commonly centered below the carina and is a core staging station?",
+    "type": "image-interpretation",
+    "options": [
+      {
+        "id": "a",
+        "label": "4R"
+      },
+      {
+        "id": "b",
+        "label": "7"
+      },
+      {
+        "id": "c",
+        "label": "11L"
+      }
+    ],
+    "correctOptionId": "b",
+    "explanation": "Station 7 is the subcarinal station and remains a high-yield core landmark."
+  },
+  {
+    "id": "explorer-confusion-01",
+    "moduleId": "station-explorer",
+    "prompt": "A learner confuses 10R with 11R while reviewing airway landmarks. What should the explorer emphasize next?",
+    "type": "scenario",
+    "options": [
+      {
+        "id": "a",
+        "label": "Highlight the confusion pair and adjacent airway landmark"
+      },
+      {
+        "id": "b",
+        "label": "Hide the landmark checklist"
+      },
+      {
+        "id": "c",
+        "label": "Skip directly to the summary screen"
+      }
+    ],
+    "correctOptionId": "a",
+    "explanation": "The explorer contract keeps confusion pairs and landmark cues local so the recognition challenge can reinforce them."
+  }
+]

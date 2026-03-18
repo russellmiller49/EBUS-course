@@ -1,0 +1,237 @@
+[
+  {
+    "id": "2R",
+    "displayName": "Station 2R",
+    "shortLabel": "Upper Paratracheal",
+    "zone": "Upper mediastinal",
+    "laterality": "Right",
+    "description": "Upper right paratracheal station above the azygos arch region in the IASLC map.",
+    "accessNotes": "Usually reviewed with a superior right paratracheal sweep and careful vessel orientation.",
+    "memoryCues": [
+      "Think high right paratracheal corridor.",
+      "Pair it mentally with 4R as a vertical stack."
+    ],
+    "confusionPairs": [
+      "4R"
+    ],
+    "relatedStationIds": [
+      "4R"
+    ],
+    "assetKeys": {
+      "map": "station-map-2r",
+      "ct": "ct-2r-placeholder",
+      "bronchoscopy": "bronchoscopy-2r-placeholder",
+      "ultrasound": "ultrasound-2r-placeholder"
+    }
+  },
+  {
+    "id": "2L",
+    "displayName": "Station 2L",
+    "shortLabel": "Upper Paratracheal",
+    "zone": "Upper mediastinal",
+    "laterality": "Left",
+    "description": "Upper left paratracheal station near the superior mediastinal contour.",
+    "accessNotes": "Use left-sided vascular relationships and laterality cues to separate it from 4L.",
+    "memoryCues": [
+      "High left paratracheal, above the 4L stack.",
+      "Use laterality first, then border detail."
+    ],
+    "confusionPairs": [
+      "4L"
+    ],
+    "relatedStationIds": [
+      "4L"
+    ],
+    "assetKeys": {
+      "map": "station-map-2l",
+      "ct": "ct-2l-placeholder",
+      "bronchoscopy": "bronchoscopy-2l-placeholder",
+      "ultrasound": "ultrasound-2l-placeholder"
+    }
+  },
+  {
+    "id": "4R",
+    "displayName": "Station 4R",
+    "shortLabel": "Lower Paratracheal",
+    "zone": "Upper mediastinal",
+    "laterality": "Right",
+    "description": "Lower right paratracheal station extending toward the right main bronchus.",
+    "accessNotes": "A core EBUS staging target that should remain easy to spot in map and explorer modules.",
+    "memoryCues": [
+      "Right lower paratracheal workhorse station.",
+      "Remember it as the anchor beneath 2R."
+    ],
+    "confusionPairs": [
+      "2R",
+      "10R"
+    ],
+    "relatedStationIds": [
+      "2R",
+      "10R"
+    ],
+    "assetKeys": {
+      "map": "station-map-4r",
+      "ct": "ct-4r-placeholder",
+      "bronchoscopy": "bronchoscopy-4r-placeholder",
+      "ultrasound": "ultrasound-4r-placeholder"
+    }
+  },
+  {
+    "id": "4L",
+    "displayName": "Station 4L",
+    "shortLabel": "Lower Paratracheal",
+    "zone": "Upper mediastinal",
+    "laterality": "Left",
+    "description": "Lower left paratracheal station that pairs with 2L in the superior-to-inferior stack.",
+    "accessNotes": "Learners benefit from a clear contrast between 4L and adjacent left hilar stations.",
+    "memoryCues": [
+      "Left lower paratracheal, below 2L.",
+      "Anchor it with the aortic-side mental map."
+    ],
+    "confusionPairs": [
+      "2L",
+      "10L"
+    ],
+    "relatedStationIds": [
+      "2L",
+      "10L"
+    ],
+    "assetKeys": {
+      "map": "station-map-4l",
+      "ct": "ct-4l-placeholder",
+      "bronchoscopy": "bronchoscopy-4l-placeholder",
+      "ultrasound": "ultrasound-4l-placeholder"
+    }
+  },
+  {
+    "id": "7",
+    "displayName": "Station 7",
+    "shortLabel": "Subcarinal",
+    "zone": "Subcarinal",
+    "laterality": "Midline",
+    "description": "Subcarinal station beneath the carina and one of the most frequently reviewed core staging stations.",
+    "accessNotes": "Use it as a central landmark when orienting the map and explorer modules.",
+    "memoryCues": [
+      "Centerline below the carina.",
+      "Treat it as the bridge between right and left hilar pathways."
+    ],
+    "confusionPairs": [
+      "10R",
+      "10L"
+    ],
+    "relatedStationIds": [
+      "10R",
+      "10L"
+    ],
+    "assetKeys": {
+      "map": "station-map-7",
+      "ct": "ct-7-placeholder",
+      "bronchoscopy": "bronchoscopy-7-placeholder",
+      "ultrasound": "ultrasound-7-placeholder"
+    }
+  },
+  {
+    "id": "10R",
+    "displayName": "Station 10R",
+    "shortLabel": "Hilar",
+    "zone": "Hilar",
+    "laterality": "Right",
+    "description": "Right hilar station adjacent to the right main bronchus entry zone.",
+    "accessNotes": "Best taught relative to 4R and 11R so learners can recognize the handoff from mediastinal to hilar landmarks.",
+    "memoryCues": [
+      "Right hilar handoff zone.",
+      "Think main bronchus before lobar branching."
+    ],
+    "confusionPairs": [
+      "4R",
+      "11R"
+    ],
+    "relatedStationIds": [
+      "4R",
+      "11R"
+    ],
+    "assetKeys": {
+      "map": "station-map-10r",
+      "ct": "ct-10r-placeholder",
+      "bronchoscopy": "bronchoscopy-10r-placeholder",
+      "ultrasound": "ultrasound-10r-placeholder"
+    }
+  },
+  {
+    "id": "10L",
+    "displayName": "Station 10L",
+    "shortLabel": "Hilar",
+    "zone": "Hilar",
+    "laterality": "Left",
+    "description": "Left hilar station paired with 4L and 11L in the left-sided pathway.",
+    "accessNotes": "Learners often need repeated reinforcement of the distinction between 4L and 10L.",
+    "memoryCues": [
+      "Left hilar checkpoint.",
+      "Use it as the bridge from paratracheal to lobar landmarks."
+    ],
+    "confusionPairs": [
+      "4L",
+      "11L"
+    ],
+    "relatedStationIds": [
+      "4L",
+      "11L"
+    ],
+    "assetKeys": {
+      "map": "station-map-10l",
+      "ct": "ct-10l-placeholder",
+      "bronchoscopy": "bronchoscopy-10l-placeholder",
+      "ultrasound": "ultrasound-10l-placeholder"
+    }
+  },
+  {
+    "id": "11R",
+    "displayName": "Station 11R",
+    "shortLabel": "Interlobar",
+    "zone": "Hilar",
+    "laterality": "Right",
+    "description": "Right interlobar station extending beyond the right hilar entry landmark.",
+    "accessNotes": "Teach it as a downstream branch from 10R to reduce confusion.",
+    "memoryCues": [
+      "Right interlobar after the hilar gate.",
+      "Use branching as the mental clue."
+    ],
+    "confusionPairs": [
+      "10R"
+    ],
+    "relatedStationIds": [
+      "10R"
+    ],
+    "assetKeys": {
+      "map": "station-map-11r",
+      "ct": "ct-11r-placeholder",
+      "bronchoscopy": "bronchoscopy-11r-placeholder",
+      "ultrasound": "ultrasound-11r-placeholder"
+    }
+  },
+  {
+    "id": "11L",
+    "displayName": "Station 11L",
+    "shortLabel": "Interlobar",
+    "zone": "Hilar",
+    "laterality": "Left",
+    "description": "Left interlobar station paired with 10L in the left hilar pathway.",
+    "accessNotes": "Use the explorer checklist to reinforce its branching relationship from the left hilar station.",
+    "memoryCues": [
+      "Left interlobar after the hilar checkpoint.",
+      "Think branch-level cue, not carinal cue."
+    ],
+    "confusionPairs": [
+      "10L"
+    ],
+    "relatedStationIds": [
+      "10L"
+    ],
+    "assetKeys": {
+      "map": "station-map-11l",
+      "ct": "ct-11l-placeholder",
+      "bronchoscopy": "bronchoscopy-11l-placeholder",
+      "ultrasound": "ultrasound-11l-placeholder"
+    }
+  }
+]
