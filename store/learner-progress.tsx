@@ -1,6 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useMemo, useReducer, useState } from 'react';
 
+import {
+  CASE3D_TOGGLE_SET_IDS,
+  DEFAULT_CASE3D_PLANE,
+  DEFAULT_CASE3D_VISIBLE_TOGGLE_SET_IDS,
+  type Case3DExplorerProgress,
+  type CasePlane,
+  type ToggleSetId,
+} from '@/features/case3d/types';
 import { MODULE_IDS } from '@/lib/constants';
 import type { BookmarkedItem, LearnerProgressState, ModuleId, ModuleProgress } from '@/lib/types';
 
@@ -15,6 +23,9 @@ type Action =
   | { type: 'setLastViewedStation'; stationId: string }
   | { type: 'setQuizScore'; moduleId: ModuleId; quizScore: number }
   | { type: 'recordRecognitionAttempt'; moduleId: ModuleId; stationId: string; wasCorrect: boolean }
+  | { type: 'updateCase3DExplorer'; update: Partial<Case3DExplorerProgress> }
+  | { type: 'markCase3DTargetVisited'; targetId: string }
+  | { type: 'setCase3DReviewScore'; reviewScore: number }
   | { type: 'reset' };
 
 interface LearnerProgressContextValue {
@@ -27,6 +38,9 @@ interface LearnerProgressContextValue {
   setLastViewedStation: (stationId: string) => void;
   setQuizScore: (moduleId: ModuleId, quizScore: number) => void;
   recordRecognitionAttempt: (moduleId: ModuleId, stationId: string, wasCorrect: boolean) => void;
+  updateCase3DExplorer: (update: Partial<Case3DExplorerProgress>) => void;
+  markCase3DTargetVisited: (targetId: string) => void;
+  setCase3DReviewScore: (reviewScore: number) => void;
   resetProgress: () => void;
 }
 
@@ -43,16 +57,74 @@ function createEmptyModuleProgress(): ModuleProgress {
   };
 }
 
+function createInitialCase3DExplorerProgress(): Case3DExplorerProgress {
+  return {
+    selectedStationId: null,
+    selectedTargetId: null,
+    selectedPlane: DEFAULT_CASE3D_PLANE,
+    visibleToggleSetIds: [...DEFAULT_CASE3D_VISIBLE_TOGGLE_SET_IDS],
+    visitedTargetIds: [],
+    reviewScore: null,
+  };
+}
+
+function normalizeVisibleToggleSetIds(value: unknown): ToggleSetId[] {
+  if (!Array.isArray(value)) {
+    return [...DEFAULT_CASE3D_VISIBLE_TOGGLE_SET_IDS];
+  }
+
+  const visibleSet = new Set(
+    value.filter(
+      (toggleId): toggleId is ToggleSetId =>
+        typeof toggleId === 'string' && CASE3D_TOGGLE_SET_IDS.includes(toggleId as ToggleSetId),
+    ),
+  );
+  const normalized = CASE3D_TOGGLE_SET_IDS.filter((toggleId) => visibleSet.has(toggleId));
+
+  if (normalized.length === 0 && value.length > 0) {
+    return [...DEFAULT_CASE3D_VISIBLE_TOGGLE_SET_IDS];
+  }
+
+  return normalized;
+}
+
+function normalizeSelectedPlane(value: unknown): CasePlane {
+  return value === 'axial' || value === 'coronal' || value === 'sagittal' ? value : DEFAULT_CASE3D_PLANE;
+}
+
+function normalizeCase3DExplorerProgress(candidate: unknown): Case3DExplorerProgress {
+  const initialState = createInitialCase3DExplorerProgress();
+
+  if (!candidate || typeof candidate !== 'object') {
+    return initialState;
+  }
+
+  const raw = candidate as Partial<Case3DExplorerProgress>;
+
+  return {
+    selectedStationId: typeof raw.selectedStationId === 'string' ? raw.selectedStationId : null,
+    selectedTargetId: typeof raw.selectedTargetId === 'string' ? raw.selectedTargetId : null,
+    selectedPlane: normalizeSelectedPlane(raw.selectedPlane),
+    visibleToggleSetIds: normalizeVisibleToggleSetIds(raw.visibleToggleSetIds),
+    visitedTargetIds: Array.isArray(raw.visitedTargetIds)
+      ? [...new Set(raw.visitedTargetIds.filter((targetId): targetId is string => typeof targetId === 'string'))]
+      : [],
+    reviewScore: typeof raw.reviewScore === 'number' ? raw.reviewScore : null,
+  };
+}
+
 export function createInitialLearnerProgress(): LearnerProgressState {
   return {
-    version: 1,
+    version: 2,
     moduleProgress: {
       knobology: createEmptyModuleProgress(),
       'station-map': createEmptyModuleProgress(),
       'station-explorer': createEmptyModuleProgress(),
+      'case-3d-explorer': createEmptyModuleProgress(),
     },
     bookmarks: [],
     lastViewedStationId: null,
+    case3dExplorer: createInitialCase3DExplorerProgress(),
   };
 }
 
@@ -101,7 +173,7 @@ export function normalizeProgressState(candidate: unknown): LearnerProgressState
   }
 
   return {
-    version: 1,
+    version: 2,
     moduleProgress,
     bookmarks: Array.isArray(raw.bookmarks)
       ? raw.bookmarks.filter((bookmark): bookmark is BookmarkedItem => {
@@ -114,6 +186,7 @@ export function normalizeProgressState(candidate: unknown): LearnerProgressState
         })
       : [],
     lastViewedStationId: typeof raw.lastViewedStationId === 'string' ? raw.lastViewedStationId : null,
+    case3dExplorer: normalizeCase3DExplorerProgress(raw.case3dExplorer),
   };
 }
 
@@ -239,6 +312,39 @@ export function learnerProgressReducer(
         },
       };
     }
+    case 'updateCase3DExplorer':
+      return {
+        ...state,
+        case3dExplorer: {
+          ...state.case3dExplorer,
+          ...action.update,
+          selectedPlane: normalizeSelectedPlane(action.update.selectedPlane ?? state.case3dExplorer.selectedPlane),
+          visibleToggleSetIds: normalizeVisibleToggleSetIds(
+            action.update.visibleToggleSetIds ?? state.case3dExplorer.visibleToggleSetIds,
+          ),
+          visitedTargetIds: Array.isArray(action.update.visitedTargetIds)
+            ? [...new Set(action.update.visitedTargetIds.filter((targetId): targetId is string => typeof targetId === 'string'))]
+            : state.case3dExplorer.visitedTargetIds,
+        },
+      };
+    case 'markCase3DTargetVisited':
+      return {
+        ...state,
+        case3dExplorer: {
+          ...state.case3dExplorer,
+          visitedTargetIds: state.case3dExplorer.visitedTargetIds.includes(action.targetId)
+            ? state.case3dExplorer.visitedTargetIds
+            : [...state.case3dExplorer.visitedTargetIds, action.targetId],
+        },
+      };
+    case 'setCase3DReviewScore':
+      return {
+        ...state,
+        case3dExplorer: {
+          ...state.case3dExplorer,
+          reviewScore: action.reviewScore,
+        },
+      };
     case 'reset':
       return createInitialLearnerProgress();
     default:
@@ -304,6 +410,9 @@ export function LearnerProgressProvider({ children }: { children: React.ReactNod
       setQuizScore: (moduleId, quizScore) => dispatch({ type: 'setQuizScore', moduleId, quizScore }),
       recordRecognitionAttempt: (moduleId, stationId, wasCorrect) =>
         dispatch({ type: 'recordRecognitionAttempt', moduleId, stationId, wasCorrect }),
+      updateCase3DExplorer: (update) => dispatch({ type: 'updateCase3DExplorer', update }),
+      markCase3DTargetVisited: (targetId) => dispatch({ type: 'markCase3DTargetVisited', targetId }),
+      setCase3DReviewScore: (reviewScore) => dispatch({ type: 'setCase3DReviewScore', reviewScore }),
       resetProgress: () => dispatch({ type: 'reset' }),
     }),
     [hydrated, state],

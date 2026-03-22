@@ -134,5 +134,63 @@
       "11R",
       "11L"
     ]
+  },
+  {
+    "id": "case-3d-explorer",
+    "slug": "case-3d-explorer",
+    "shortTitle": "3D Explorer",
+    "title": "3D Anatomy + Slice Explorer",
+    "summary": "Explore one curated EBUS case with linked station selection, derived CT slice jumps, and structure filters.",
+    "overview": "This module enriches a local case manifest at build time from markup control points, CT geometry, GLB mesh names, and exported slice stacks so the learner can move between stations and landmarks without hardcoded frame indices.",
+    "estimatedMinutes": 16,
+    "category": "anatomy",
+    "status": "available",
+    "featureFolder": "features/case3d",
+    "route": "/modules/case-3d-explorer",
+    "goals": [
+      "Link station and target selection to derived axial, coronal, and sagittal slice indices.",
+      "Let the learner filter the case by lymph nodes, airway, vessels, cardiac, and GI structures.",
+      "Persist resume state, visited targets, and lightweight review scoring locally."
+    ],
+    "plannedExperiences": [
+      "Intro panel",
+      "Station and target selector",
+      "Derived 3D target navigator",
+      "Single-plane slice viewer",
+      "Teaching card",
+      "Five-prompt review",
+      "Summary"
+    ],
+    "assetPlaceholders": [
+      {
+        "key": "case-001-glb",
+        "label": "Case 001 segmented GLB",
+        "folder": "model",
+        "note": "Bundled locally and verified against expected mesh names at build time."
+      },
+      {
+        "key": "case-001-slices",
+        "label": "Case 001 CT slice series",
+        "folder": "model/sliceSeries",
+        "note": "Frame indices are derived from the CT volume geometry and markup control points."
+      }
+    ],
+    "relatedStationIds": [
+      "1R",
+      "1L",
+      "2R",
+      "2L",
+      "3A",
+      "4R",
+      "4L",
+      "5",
+      "6",
+      "7",
+      "10R",
+      "10L",
+      "11L",
+      "11Ri",
+      "11Rs"
+    ]
   }
 ]

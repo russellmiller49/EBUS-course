@@ -1,4 +1,6 @@
-export type ModuleId = 'knobology' | 'station-map' | 'station-explorer';
+import type { Case3DExplorerProgress } from '@/features/case3d/types';
+
+export type ModuleId = 'knobology' | 'station-map' | 'station-explorer' | 'case-3d-explorer';
 export type BookmarkKind = 'module' | 'station' | 'card';
 
 export interface AssetPlaceholder {
@@ -16,6 +18,8 @@ export interface ModuleContent {
   summary: string;
   overview: string;
   estimatedMinutes: number;
+  category?: string;
+  status?: string;
   featureFolder: string;
   route: string;
   goals: string[];
@@ -82,10 +86,11 @@ export interface BookmarkedItem {
 }
 
 export interface LearnerProgressState {
-  version: 1;
+  version: 2;
   moduleProgress: Record<ModuleId, ModuleProgress>;
   bookmarks: BookmarkedItem[];
   lastViewedStationId: string | null;
+  case3dExplorer: Case3DExplorerProgress;
 }
 
 export interface FeatureMilestone {

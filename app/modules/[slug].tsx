@@ -4,6 +4,7 @@ import { Text } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { SectionCard } from '@/components/SectionCard';
+import { Case3DExplorerModule } from '@/features/case3d/Case3DExplorerModule';
 import { ExplorerModule } from '@/features/explorer/ExplorerModule';
 import { KnobologyModule } from '@/features/knobology/KnobologyModule';
 import { StationMapModule } from '@/features/stations/StationMapModule';
@@ -58,6 +59,15 @@ export default function ModuleDetailScreen() {
       <>
         <Stack.Screen options={screenOptions} />
         <ExplorerModule module={module} />
+      </>
+    );
+  }
+
+  if (module.id === 'case-3d-explorer') {
+    return (
+      <>
+        <Stack.Screen options={screenOptions} />
+        <Case3DExplorerModule module={module} />
       </>
     );
   }

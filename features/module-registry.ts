@@ -1,3 +1,4 @@
+import { case3DScaffold } from '@/features/case3d/scaffold';
 import { knobologyScaffold } from '@/features/knobology/scaffold';
 import { stationExplorerScaffold } from '@/features/explorer/scaffold';
 import { stationMapScaffold } from '@/features/stations/scaffold';
@@ -7,4 +8,5 @@ export const moduleScaffolds: Record<ModuleId, FeatureScaffold> = {
   knobology: knobologyScaffold,
   'station-map': stationMapScaffold,
   'station-explorer': stationExplorerScaffold,
+  'case-3d-explorer': case3DScaffold,
 };
