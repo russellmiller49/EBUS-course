@@ -2,15 +2,17 @@ import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
+import { CourseInfoSection } from '@/components/CourseInfoSection';
 import { MetricTile } from '@/components/MetricTile';
 import { ModuleCard } from '@/components/ModuleCard';
 import { Screen } from '@/components/Screen';
 import { SectionCard } from '@/components/SectionCard';
 import { StatusPill } from '@/components/StatusPill';
 import { colors } from '@/constants/theme';
-import { getModuleById, getModules, getQuizQuestions, getStationById, getStations } from '@/lib/content';
+import { getCourseInfo, getModuleById, getModules, getQuizQuestions, getStationById, getStations } from '@/lib/content';
 import { getCompletedModuleCount, useLearnerProgress } from '@/store/learner-progress';
 
+const courseInfo = getCourseInfo();
 const modules = getModules();
 const stations = getStations();
 
@@ -23,16 +25,18 @@ export default function HomeScreen() {
 
   return (
     <Screen
-      eyebrow="Offline-first scaffold"
+      eyebrow="2026 course companion"
       title="SoCal EBUS Prep"
-      subtitle="A clean mobile shell for the first three EBUS learning modules, with local content and persisted learner progress already wired in.">
+      subtitle="Pre-course review, live-day logistics, and offline study support for the 10th Annual Southwest Regional Pulmonary/PCCM Fellow EBUS Course.">
+      <CourseInfoSection courseInfo={courseInfo} />
+
       <SectionCard
-        title="Course runway"
-        subtitle="Expo Router navigation, local JSON content, and AsyncStorage-backed progress are active."
+        title="Prep library"
+        subtitle="The core modules and station content stay available locally so fellows can review before the live session."
         tone="navy">
         <View style={styles.heroTopRow}>
-          <StatusPill label="Expo SDK 52" tone="gold" />
-          <StatusPill label={hydrated ? 'Progress restored' : 'Hydrating progress'} tone="teal" />
+          <StatusPill label={hydrated ? 'Progress restored' : 'Restoring progress'} tone="teal" />
+          <StatusPill label={`${getQuizQuestions().length} practice prompts loaded`} tone="gold" />
         </View>
         <View style={styles.metricRow}>
           <MetricTile label="Modules scaffolded" tone="accent" value={`${modules.length}`} />
@@ -44,8 +48,8 @@ export default function HomeScreen() {
 
       {nextModule ? (
         <SectionCard
-          title="Continue building"
-          subtitle="Each module route already owns a stable content contract and a progress entry.">
+          title="Continue learning"
+          subtitle="Resume the next module in your local study sequence before the live simulation day.">
           <ModuleCard
             module={nextModule}
             progress={state.moduleProgress[nextModule.id]}
@@ -55,17 +59,17 @@ export default function HomeScreen() {
       ) : null}
 
       <SectionCard
-        title="Persistent signals"
-        subtitle="The scaffold already stores progress, bookmarks, and the last station the learner touched.">
+        title="Saved on device"
+        subtitle="Progress, bookmarks, and recent station review remain on this device between sessions.">
         <View style={styles.list}>
           <Text style={styles.listItem}>
-            {completedModules} of {modules.length} module placeholders marked complete.
+            {completedModules} of {modules.length} modules marked complete so far.
           </Text>
           <Text style={styles.listItem}>
             Last station viewed: {lastStation ? `${lastStation.displayName} (${lastStation.shortLabel})` : 'Not set yet'}.
           </Text>
           <Text style={styles.listItem}>
-            Question-bank contract: {modules.length} module routes, {getModules().length} local module summaries, and {getQuizQuestions().length} placeholder quiz items ready for expansion.
+            Study bank loaded: {getQuizQuestions().length} prompts across {modules.length} modules, with quick review ready to expand as course content grows.
           </Text>
         </View>
       </SectionCard>

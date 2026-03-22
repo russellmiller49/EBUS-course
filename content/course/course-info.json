@@ -1,0 +1,90 @@
+{
+  "courseTitle": "10th Annual Southwest Regional Pulmonary/PCCM Fellow EBUS Course",
+  "hostLine": "Hosted by Loma Linda University Health",
+  "hostDepartment": "Division of Pulmonary, Critical Care, Hyperbaric and Sleep Medicine",
+  "dateLabel": "Sunday, May 31, 2026",
+  "timeLabel": "7:30 am to 5:00 pm",
+  "venueName": "Loma Linda Centennial Complex",
+  "venueDetail": "Loma Linda University School of Medicine",
+  "audience": "Designed to set early expectations for first-year pulmonary and pulmonary-critical care fellows learning the cognitive and technical foundations of EBUS.",
+  "overview": "The flyer positions this as a regional course that pairs expert-led pre-course didactics with a hands-on simulation day so fellows can build a more standardized approach to mediastinal evaluation, staging, and procedure execution.",
+  "quickFacts": [
+    {
+      "value": "15+ hrs",
+      "label": "faculty-built video prep"
+    },
+    {
+      "value": "~2.5:1",
+      "label": "fellow-to-faculty ratio"
+    },
+    {
+      "value": "24+",
+      "label": "regional faculty"
+    }
+  ],
+  "courseDirectors": [
+    "Ara A. Chrissian, MD",
+    "Lamia Aljundi, MD"
+  ],
+  "facultySummary": "Faculty listed on the flyer span LLU, Stanford, Cedars-Sinai, USC, UCSD, City of Hope, UCLA, UCI, Harbor-UCLA, Scripps, Eisenhower, UNLV, UT Southwestern, Navy, and the University at Buffalo.",
+  "formatHighlights": [
+    "Flipped model with more than 15 hours of high-yield pre-course lectures prepared by faculty.",
+    "Live day is almost entirely simulation-based instead of lecture-heavy.",
+    "Small-group teaching model with a low fellow-to-faculty ratio.",
+    "Dedicated time for technology exposure, networking, and direct faculty interaction.",
+    "App-based pre- and post-testing with feedback is new for the 2026 course."
+  ],
+  "prepWindow": "Preparatory materials are distributed 3 to 4 weeks before the live event and should be completed between May 1 and May 30, 2026.",
+  "prepTopics": [
+    "Introduction to endobronchial ultrasound and the procedure nuts and bolts.",
+    "Mediastinal anatomy plus systematic lung cancer staging using TNM 9.",
+    "Approach to lymphoma and non-malignant thoracic disease.",
+    "Histology, molecular testing, and tissue adequacy.",
+    "Liquid biopsy, advanced EBUS techniques, and the 2026 evidence update.",
+    "Guideline-based planning, case synthesis, and the pre-course test."
+  ],
+  "liveDayAgenda": [
+    {
+      "time": "7:30-7:50",
+      "title": "Registration and breakfast",
+      "detail": "First floor of the Centennial Complex before team rotations begin."
+    },
+    {
+      "time": "8:00-8:20",
+      "title": "Welcome and course overview",
+      "detail": "All fellows meet in Damazo Auditorium."
+    },
+    {
+      "time": "8:35-12:00",
+      "title": "AM tools and techniques rotations",
+      "detail": "Mediastinal anatomy game, scope anatomy and assembly, EBUS exam, standard needles and TBNA technique, plus advanced tools."
+    },
+    {
+      "time": "10:20-10:50",
+      "title": "Technology and networking break",
+      "detail": "Protected time in the main conference area."
+    },
+    {
+      "time": "12:10-12:55",
+      "title": "Lunch and honorary lecture",
+      "detail": "AABIP guidelines session with Dr. Russell Miller."
+    },
+    {
+      "time": "13:10-16:00",
+      "title": "PM synthesis and execution rotations",
+      "detail": "Case-based planning, advanced cases and techniques, then technical execution."
+    },
+    {
+      "time": "16:15-17:00",
+      "title": "Final Jeopardy and farewell",
+      "detail": "All fellows reconvene in Damazo Auditorium to close the day."
+    }
+  ],
+  "addressLines": [
+    "24760 Stewart Street",
+    "Centennial Complex, 4th Floor",
+    "Loma Linda, CA"
+  ],
+  "parkingNote": "Parking is directed to lot X off Campus Street.",
+  "travelNote": "The flyer includes separate driving directions for attendees coming from Los Angeles, Palm Springs, San Diego, and Las Vegas."
+}

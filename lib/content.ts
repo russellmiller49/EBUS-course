@@ -1,11 +1,13 @@
 import modulesData from '@/content/modules/modules.json';
 import quizBankData from '@/content/modules/quiz-bank.json';
 import stationsData from '@/content/stations/core-stations.json';
-import type { ModuleContent, ModuleId, QuizQuestionContent, StationContent } from '@/lib/types';
+import courseInfoData from '@/content/course/course-info.json';
+import type { CourseInfoContent, ModuleContent, ModuleId, QuizQuestionContent, StationContent } from '@/lib/types';
 
 const modules = modulesData as ModuleContent[];
 const stations = stationsData as StationContent[];
 const quizBank = quizBankData as QuizQuestionContent[];
+const courseInfo = courseInfoData as CourseInfoContent;
 
 export function getModules(): ModuleContent[] {
   return modules;
@@ -33,4 +35,8 @@ export function getQuizQuestions(moduleId?: ModuleId): QuizQuestionContent[] {
   }
 
   return quizBank.filter((question) => question.moduleId === moduleId);
+}
+
+export function getCourseInfo(): CourseInfoContent {
+  return courseInfo;
 }

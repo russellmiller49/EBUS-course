@@ -101,3 +101,36 @@ export interface FeatureScaffold {
   milestones: FeatureMilestone[];
   persistenceNotes: string[];
 }
+
+export interface CourseInfoQuickFact {
+  value: string;
+  label: string;
+}
+
+export interface CourseInfoAgendaItem {
+  time: string;
+  title: string;
+  detail: string;
+}
+
+export interface CourseInfoContent {
+  courseTitle: string;
+  hostLine: string;
+  hostDepartment: string;
+  dateLabel: string;
+  timeLabel: string;
+  venueName: string;
+  venueDetail: string;
+  audience: string;
+  overview: string;
+  quickFacts: CourseInfoQuickFact[];
+  courseDirectors: string[];
+  facultySummary: string;
+  formatHighlights: string[];
+  prepWindow: string;
+  prepTopics: string[];
+  liveDayAgenda: CourseInfoAgendaItem[];
+  addressLines: string[];
+  parkingNote: string;
+  travelNote: string;
+}
