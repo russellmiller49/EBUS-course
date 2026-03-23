@@ -77,10 +77,12 @@ export function KnobologyModule({ module }: { module: ModuleContent }) {
   const resumedStep = toKnobologyStepId(moduleProgress.lastScreen);
 
   useEffect(() => {
-    if (resumedStep && resumedStep !== currentStep) {
-      setCurrentStep(resumedStep);
+    if (!resumedStep) {
+      return;
     }
-  }, [currentStep, resumedStep]);
+
+    setCurrentStep((current) => (current === resumedStep ? current : resumedStep));
+  }, [resumedStep]);
 
   useEffect(() => {
     setModuleProgress('knobology', {
@@ -149,10 +151,19 @@ export function KnobologyModule({ module }: { module: ModuleContent }) {
   }
 
   function handleExerciseControlChange(key: KnobologyControlKey, value: number) {
-    setExerciseStates((currentStates) => ({
-      ...currentStates,
-      [selectedExercise.id]: updateControlValue(currentStates[selectedExercise.id], key, value),
-    }));
+    setExerciseStates((currentStates) => {
+      const currentExerciseState = currentStates[selectedExercise.id];
+      const nextExerciseState = updateControlValue(currentExerciseState, key, value);
+
+      if (nextExerciseState === currentExerciseState) {
+        return currentStates;
+      }
+
+      return {
+        ...currentStates,
+        [selectedExercise.id]: nextExerciseState,
+      };
+    });
   }
 
   function handleExerciseToggle(key: 'colorDoppler' | 'calipers' | 'frozen' | 'saved') {

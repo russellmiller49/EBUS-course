@@ -113,6 +113,10 @@ function normalizeCase3DExplorerProgress(candidate: unknown): Case3DExplorerProg
   };
 }
 
+function areStringArraysEqual(left: string[], right: string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
 export function createInitialLearnerProgress(): LearnerProgressState {
   return {
     version: 2,
@@ -216,6 +220,21 @@ export function learnerProgressReducer(
     case 'setModuleProgress': {
       const current = state.moduleProgress[action.moduleId];
       const clampedPercent = Math.max(0, Math.min(100, action.percentComplete));
+      const startedAt = current.startedAt ?? new Date().toISOString();
+      const completedAt =
+        action.completed || clampedPercent >= 100
+          ? current.completedAt ?? new Date().toISOString()
+          : current.completedAt;
+      const percentComplete = Math.max(current.percentComplete, clampedPercent);
+
+      if (
+        current.startedAt === startedAt &&
+        current.completedAt === completedAt &&
+        current.percentComplete === percentComplete &&
+        current.lastScreen === action.lastScreen
+      ) {
+        return state;
+      }
 
       return {
         ...state,
@@ -223,12 +242,9 @@ export function learnerProgressReducer(
           ...state.moduleProgress,
           [action.moduleId]: {
             ...current,
-            startedAt: current.startedAt ?? new Date().toISOString(),
-            completedAt:
-              action.completed || clampedPercent >= 100
-                ? current.completedAt ?? new Date().toISOString()
-                : current.completedAt,
-            percentComplete: Math.max(current.percentComplete, clampedPercent),
+            startedAt,
+            completedAt,
+            percentComplete,
             lastScreen: action.lastScreen,
           },
         },
@@ -267,12 +283,26 @@ export function learnerProgressReducer(
       };
     }
     case 'setLastViewedStation':
+      if (state.lastViewedStationId === action.stationId) {
+        return state;
+      }
+
       return {
         ...state,
         lastViewedStationId: action.stationId,
       };
     case 'setQuizScore': {
       const current = state.moduleProgress[action.moduleId];
+      const startedAt = current.startedAt ?? new Date().toISOString();
+      const percentComplete = Math.max(current.percentComplete, 60);
+
+      if (
+        current.startedAt === startedAt &&
+        current.percentComplete === percentComplete &&
+        current.quizScore === action.quizScore
+      ) {
+        return state;
+      }
 
       return {
         ...state,
@@ -280,8 +310,8 @@ export function learnerProgressReducer(
           ...state.moduleProgress,
           [action.moduleId]: {
             ...current,
-            startedAt: current.startedAt ?? new Date().toISOString(),
-            percentComplete: Math.max(current.percentComplete, 60),
+            startedAt,
+            percentComplete,
             quizScore: action.quizScore,
           },
         },
@@ -312,32 +342,70 @@ export function learnerProgressReducer(
         },
       };
     }
-    case 'updateCase3DExplorer':
+    case 'updateCase3DExplorer': {
+      const nextSelectedPlane = normalizeSelectedPlane(
+        action.update.selectedPlane ?? state.case3dExplorer.selectedPlane,
+      );
+      const nextVisibleToggleSetIds = normalizeVisibleToggleSetIds(
+        action.update.visibleToggleSetIds ?? state.case3dExplorer.visibleToggleSetIds,
+      );
+      const nextVisitedTargetIds = Array.isArray(action.update.visitedTargetIds)
+        ? [...new Set(action.update.visitedTargetIds.filter((targetId): targetId is string => typeof targetId === 'string'))]
+        : state.case3dExplorer.visitedTargetIds;
+      const nextSelectedStationId =
+        typeof action.update.selectedStationId === 'string'
+          ? action.update.selectedStationId
+          : state.case3dExplorer.selectedStationId;
+      const nextSelectedTargetId =
+        typeof action.update.selectedTargetId === 'string'
+          ? action.update.selectedTargetId
+          : state.case3dExplorer.selectedTargetId;
+      const nextReviewScore =
+        typeof action.update.reviewScore === 'number'
+          ? action.update.reviewScore
+          : action.update.reviewScore === null
+            ? null
+            : state.case3dExplorer.reviewScore;
+
+      if (
+        state.case3dExplorer.selectedPlane === nextSelectedPlane &&
+        state.case3dExplorer.selectedStationId === nextSelectedStationId &&
+        state.case3dExplorer.selectedTargetId === nextSelectedTargetId &&
+        state.case3dExplorer.reviewScore === nextReviewScore &&
+        areStringArraysEqual(state.case3dExplorer.visibleToggleSetIds, nextVisibleToggleSetIds) &&
+        areStringArraysEqual(state.case3dExplorer.visitedTargetIds, nextVisitedTargetIds)
+      ) {
+        return state;
+      }
+
       return {
         ...state,
         case3dExplorer: {
           ...state.case3dExplorer,
           ...action.update,
-          selectedPlane: normalizeSelectedPlane(action.update.selectedPlane ?? state.case3dExplorer.selectedPlane),
-          visibleToggleSetIds: normalizeVisibleToggleSetIds(
-            action.update.visibleToggleSetIds ?? state.case3dExplorer.visibleToggleSetIds,
-          ),
-          visitedTargetIds: Array.isArray(action.update.visitedTargetIds)
-            ? [...new Set(action.update.visitedTargetIds.filter((targetId): targetId is string => typeof targetId === 'string'))]
-            : state.case3dExplorer.visitedTargetIds,
+          selectedPlane: nextSelectedPlane,
+          visibleToggleSetIds: nextVisibleToggleSetIds,
+          visitedTargetIds: nextVisitedTargetIds,
         },
       };
+    }
     case 'markCase3DTargetVisited':
+      if (state.case3dExplorer.visitedTargetIds.includes(action.targetId)) {
+        return state;
+      }
+
       return {
         ...state,
         case3dExplorer: {
           ...state.case3dExplorer,
-          visitedTargetIds: state.case3dExplorer.visitedTargetIds.includes(action.targetId)
-            ? state.case3dExplorer.visitedTargetIds
-            : [...state.case3dExplorer.visitedTargetIds, action.targetId],
+          visitedTargetIds: [...state.case3dExplorer.visitedTargetIds, action.targetId],
         },
       };
     case 'setCase3DReviewScore':
+      if (state.case3dExplorer.reviewScore === action.reviewScore) {
+        return state;
+      }
+
       return {
         ...state,
         case3dExplorer: {

@@ -113,10 +113,12 @@ export function ExplorerModule({ module }: { module: ModuleContent }) {
   const stationSaved = isBookmarked(state, currentStation.id, 'station');
 
   useEffect(() => {
-    if (resumedStep && resumedStep !== currentStep) {
-      setCurrentStep(resumedStep);
+    if (!resumedStep) {
+      return;
     }
-  }, [currentStep, resumedStep]);
+
+    setCurrentStep((current) => (current === resumedStep ? current : resumedStep));
+  }, [resumedStep]);
 
   useEffect(() => {
     const persistedStation = getExplorerStationById(state.lastViewedStationId ?? '');

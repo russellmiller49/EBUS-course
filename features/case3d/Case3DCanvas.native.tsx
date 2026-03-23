@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import 'expo-three/lib/polyfill';
+import { Asset } from 'expo-asset';
 import { GLView, type ExpoWebGLRenderingContext } from 'expo-gl';
-import { Renderer, THREE, loadAsync } from 'expo-three';
+import THREE from 'expo-three/lib/Three';
 import {
   PanResponder,
   Pressable,
@@ -9,6 +11,7 @@ import {
   View,
   type LayoutChangeEvent,
 } from 'react-native';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 import { StatusPill } from '@/components/StatusPill';
 import { colors } from '@/constants/theme';
@@ -82,6 +85,10 @@ type ToneConfig = {
   marker: string;
 };
 
+type LoadedGlb = {
+  scene?: InstanceType<typeof THREE.Group>;
+};
+
 const CASE_001_GLB = require('../../model/case_001.glb');
 const MIN_CAMERA_RADIUS = 0.18;
 const TAP_DURATION_MS = 260;
@@ -143,6 +150,67 @@ const STRUCTURE_TONE_OVERRIDES: Record<string, ToneConfig> = {
 
 function asColor(hex: string) {
   return new THREE.Color(hex);
+}
+
+function createRenderer(gl: ExpoWebGLRenderingContext) {
+  const renderer = new THREE.WebGLRenderer({
+    canvas: {
+      addEventListener: () => undefined,
+      clientHeight: gl.drawingBufferHeight,
+      height: gl.drawingBufferHeight,
+      removeEventListener: () => undefined,
+      style: {},
+      width: gl.drawingBufferWidth,
+    },
+    context: gl,
+  });
+
+  renderer.setClearColor('#E6DDD1');
+  renderer.setPixelRatio(1);
+  renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
+
+  return renderer;
+}
+
+function ensureNavigatorUserAgent() {
+  if (typeof navigator === 'undefined' || typeof navigator.userAgent === 'string') {
+    return;
+  }
+
+  try {
+    Object.defineProperty(navigator, 'userAgent', {
+      configurable: true,
+      value: 'ReactNative Expo',
+    });
+  } catch {
+    (navigator as { userAgent?: string }).userAgent = 'ReactNative Expo';
+  }
+}
+
+async function loadBundledGlbAsync(assetModule: number) {
+  const asset = Asset.fromModule(assetModule);
+  await asset.downloadAsync();
+
+  const assetUri = asset.localUri ?? asset.uri;
+
+  if (!assetUri) {
+    throw new Error('Bundled anatomy model could not be resolved.');
+  }
+
+  const response = await fetch(assetUri);
+
+  if (!response.ok) {
+    throw new Error(`Bundled anatomy model could not be read (${response.status}).`);
+  }
+
+  ensureNavigatorUserAgent();
+
+  const loader = new GLTFLoader();
+  const arrayBuffer = await response.arrayBuffer();
+
+  return await new Promise<LoadedGlb>((resolve, reject) => {
+    loader.parse(arrayBuffer, '', (gltf) => resolve(gltf as LoadedGlb), reject);
+  });
 }
 
 function toSceneVector(target: Pick<EnrichedCaseTarget, 'markup'>) {
@@ -689,13 +757,7 @@ export function Case3DCanvas({
       0.01,
       20,
     );
-    const renderer = new Renderer({
-      gl,
-      clearColor: '#E6DDD1',
-      height: gl.drawingBufferHeight,
-      pixelRatio: 1,
-      width: gl.drawingBufferWidth,
-    });
+    const renderer = createRenderer(gl);
 
     const ambientLight = new THREE.AmbientLight('#FFF3E2', 1.2);
     const keyLight = new THREE.DirectionalLight('#FFFFFF', 1.2);
@@ -708,9 +770,7 @@ export function Case3DCanvas({
     scene.add(fillLight);
 
     try {
-      const loaded = (await loadAsync(CASE_001_GLB)) as
-        | { scene?: InstanceType<typeof THREE.Group> }
-        | InstanceType<typeof THREE.Group>;
+      const loaded = await loadBundledGlbAsync(CASE_001_GLB);
 
       if (loadVersionRef.current !== loadVersion) {
         return;

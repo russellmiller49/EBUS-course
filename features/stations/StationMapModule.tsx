@@ -99,10 +99,12 @@ export function StationMapModule({ module }: { module: ModuleContent }) {
   });
 
   useEffect(() => {
-    if (resumedStep && resumedStep !== currentStep) {
-      setCurrentStep(resumedStep);
+    if (!resumedStep) {
+      return;
     }
-  }, [currentStep, resumedStep]);
+
+    setCurrentStep((current) => (current === resumedStep ? current : resumedStep));
+  }, [resumedStep]);
 
   useEffect(() => {
     const persistedStation = getStationMapStationById(state.lastViewedStationId ?? '');
