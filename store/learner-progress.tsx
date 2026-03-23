@@ -4,10 +4,14 @@ import { createContext, useContext, useEffect, useMemo, useReducer, useState } f
 import {
   CASE3D_TOGGLE_SET_IDS,
   DEFAULT_CASE3D_PLANE,
+  DEFAULT_CASE3D_VIEWER_OPACITY,
+  DEFAULT_CASE3D_VIEWER_VISIBILITY,
   DEFAULT_CASE3D_VISIBLE_TOGGLE_SET_IDS,
   type Case3DExplorerProgress,
   type CasePlane,
   type ToggleSetId,
+  type ViewerOpacity,
+  type ViewerVisibility,
 } from '@/features/case3d/types';
 import { MODULE_IDS } from '@/lib/constants';
 import type { BookmarkedItem, LearnerProgressState, ModuleId, ModuleProgress } from '@/lib/types';
@@ -63,6 +67,8 @@ function createInitialCase3DExplorerProgress(): Case3DExplorerProgress {
     selectedTargetId: null,
     selectedPlane: DEFAULT_CASE3D_PLANE,
     visibleToggleSetIds: [...DEFAULT_CASE3D_VISIBLE_TOGGLE_SET_IDS],
+    viewerVisibility: { ...DEFAULT_CASE3D_VIEWER_VISIBILITY },
+    viewerOpacity: { ...DEFAULT_CASE3D_VIEWER_OPACITY },
     visitedTargetIds: [],
     reviewScore: null,
   };
@@ -92,6 +98,38 @@ function normalizeSelectedPlane(value: unknown): CasePlane {
   return value === 'axial' || value === 'coronal' || value === 'sagittal' ? value : DEFAULT_CASE3D_PLANE;
 }
 
+function normalizeViewerVisibility(value: unknown): ViewerVisibility {
+  if (!value || typeof value !== 'object') {
+    return { ...DEFAULT_CASE3D_VIEWER_VISIBILITY };
+  }
+
+  const raw = value as Partial<ViewerVisibility>;
+
+  return {
+    anatomy: typeof raw.anatomy === 'boolean' ? raw.anatomy : DEFAULT_CASE3D_VIEWER_VISIBILITY.anatomy,
+    axial: typeof raw.axial === 'boolean' ? raw.axial : DEFAULT_CASE3D_VIEWER_VISIBILITY.axial,
+    coronal: typeof raw.coronal === 'boolean' ? raw.coronal : DEFAULT_CASE3D_VIEWER_VISIBILITY.coronal,
+    sagittal: typeof raw.sagittal === 'boolean' ? raw.sagittal : DEFAULT_CASE3D_VIEWER_VISIBILITY.sagittal,
+  };
+}
+
+function normalizeViewerOpacity(value: unknown): ViewerOpacity {
+  if (!value || typeof value !== 'object') {
+    return { ...DEFAULT_CASE3D_VIEWER_OPACITY };
+  }
+
+  const raw = value as Partial<ViewerOpacity>;
+  const clamp = (candidate: unknown, fallback: number) =>
+    typeof candidate === 'number' ? Math.max(0, Math.min(1, candidate)) : fallback;
+
+  return {
+    anatomy: clamp(raw.anatomy, DEFAULT_CASE3D_VIEWER_OPACITY.anatomy),
+    axial: clamp(raw.axial, DEFAULT_CASE3D_VIEWER_OPACITY.axial),
+    coronal: clamp(raw.coronal, DEFAULT_CASE3D_VIEWER_OPACITY.coronal),
+    sagittal: clamp(raw.sagittal, DEFAULT_CASE3D_VIEWER_OPACITY.sagittal),
+  };
+}
+
 function normalizeCase3DExplorerProgress(candidate: unknown): Case3DExplorerProgress {
   const initialState = createInitialCase3DExplorerProgress();
 
@@ -106,6 +144,8 @@ function normalizeCase3DExplorerProgress(candidate: unknown): Case3DExplorerProg
     selectedTargetId: typeof raw.selectedTargetId === 'string' ? raw.selectedTargetId : null,
     selectedPlane: normalizeSelectedPlane(raw.selectedPlane),
     visibleToggleSetIds: normalizeVisibleToggleSetIds(raw.visibleToggleSetIds),
+    viewerVisibility: normalizeViewerVisibility(raw.viewerVisibility),
+    viewerOpacity: normalizeViewerOpacity(raw.viewerOpacity),
     visitedTargetIds: Array.isArray(raw.visitedTargetIds)
       ? [...new Set(raw.visitedTargetIds.filter((targetId): targetId is string => typeof targetId === 'string'))]
       : [],
@@ -119,7 +159,7 @@ function areStringArraysEqual(left: string[], right: string[]) {
 
 export function createInitialLearnerProgress(): LearnerProgressState {
   return {
-    version: 2,
+    version: 3,
     moduleProgress: {
       knobology: createEmptyModuleProgress(),
       'station-map': createEmptyModuleProgress(),
@@ -177,7 +217,7 @@ export function normalizeProgressState(candidate: unknown): LearnerProgressState
   }
 
   return {
-    version: 2,
+    version: 3,
     moduleProgress,
     bookmarks: Array.isArray(raw.bookmarks)
       ? raw.bookmarks.filter((bookmark): bookmark is BookmarkedItem => {
@@ -349,6 +389,12 @@ export function learnerProgressReducer(
       const nextVisibleToggleSetIds = normalizeVisibleToggleSetIds(
         action.update.visibleToggleSetIds ?? state.case3dExplorer.visibleToggleSetIds,
       );
+      const nextViewerVisibility = normalizeViewerVisibility(
+        action.update.viewerVisibility ?? state.case3dExplorer.viewerVisibility,
+      );
+      const nextViewerOpacity = normalizeViewerOpacity(
+        action.update.viewerOpacity ?? state.case3dExplorer.viewerOpacity,
+      );
       const nextVisitedTargetIds = Array.isArray(action.update.visitedTargetIds)
         ? [...new Set(action.update.visitedTargetIds.filter((targetId): targetId is string => typeof targetId === 'string'))]
         : state.case3dExplorer.visitedTargetIds;
@@ -372,6 +418,14 @@ export function learnerProgressReducer(
         state.case3dExplorer.selectedStationId === nextSelectedStationId &&
         state.case3dExplorer.selectedTargetId === nextSelectedTargetId &&
         state.case3dExplorer.reviewScore === nextReviewScore &&
+        state.case3dExplorer.viewerVisibility.anatomy === nextViewerVisibility.anatomy &&
+        state.case3dExplorer.viewerVisibility.axial === nextViewerVisibility.axial &&
+        state.case3dExplorer.viewerVisibility.coronal === nextViewerVisibility.coronal &&
+        state.case3dExplorer.viewerVisibility.sagittal === nextViewerVisibility.sagittal &&
+        state.case3dExplorer.viewerOpacity.anatomy === nextViewerOpacity.anatomy &&
+        state.case3dExplorer.viewerOpacity.axial === nextViewerOpacity.axial &&
+        state.case3dExplorer.viewerOpacity.coronal === nextViewerOpacity.coronal &&
+        state.case3dExplorer.viewerOpacity.sagittal === nextViewerOpacity.sagittal &&
         areStringArraysEqual(state.case3dExplorer.visibleToggleSetIds, nextVisibleToggleSetIds) &&
         areStringArraysEqual(state.case3dExplorer.visitedTargetIds, nextVisitedTargetIds)
       ) {
@@ -385,6 +439,8 @@ export function learnerProgressReducer(
           ...action.update,
           selectedPlane: nextSelectedPlane,
           visibleToggleSetIds: nextVisibleToggleSetIds,
+          viewerVisibility: nextViewerVisibility,
+          viewerOpacity: nextViewerOpacity,
           visitedTargetIds: nextVisitedTargetIds,
         },
       };

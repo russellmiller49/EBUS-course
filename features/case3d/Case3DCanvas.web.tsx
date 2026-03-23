@@ -1,1 +1,1 @@
-export { Case3DCanvas } from './Case3DCanvas.native';
+export { Case3DCanvas } from './Case3DCanvasShared';

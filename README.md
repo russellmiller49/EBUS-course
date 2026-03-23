@@ -30,6 +30,12 @@ Codex usage flow:
 - Keep all educational content in JSON/Markdown so it can be updated without restructuring the codebase.
 - Make every simulation clearly educational and not a diagnostic device.
 
+## Case 001 Co-Registration
+
+The case 001 explorer now uses one patient-space scene instead of a separate GLB view plus 2D slice cards. `model/case_001_ct.nrrd` is the geometry truth: the enrichment step reads its `space origin`, `space directions`, and `sizes`, converts each `.mrk.json` control point into LPS world space, derives voxel indices with the inverse IJK-to-world transform, and writes that data into `content/cases/generated/case_001.enriched.json`.
+
+At runtime the viewer builds one explicit `patientToScene` transform and uses it for the shared scene graph. The CT slice planes, target markers, and crosshair are placed in patient coordinates under that transform, while the GLB is wrapped in the inverse so the pre-exported anatomy still lands in the same scene space without any extra auto-centering or rescaling. If a slice stack looks like a cropped viewport export instead of a clean full-extent texture, the enriched manifest now emits a warning and carries normalized crop metadata so the plane texture mapping can be corrected explicitly.
+
 ## Suggested repo layout
 
 ```text

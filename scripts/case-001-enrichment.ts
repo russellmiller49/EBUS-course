@@ -1,6 +1,23 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import {
+  axisNameToIndex as axisNameToIndexShared,
+  buildIjkToWorldMatrix4,
+  buildNormalizedPositions as buildNormalizedPositionsShared,
+  buildPatientToSceneMatrix,
+  buildSceneToPatientMatrix,
+  buildWorldToIjkMatrix4,
+  clampContinuousVoxel as clampContinuousVoxelShared,
+  deriveAxisMap as deriveAxisMapShared,
+  FULL_SLICE_CROP,
+  getPlaneAxes,
+  normalizeSliceCrop,
+  roundVoxel as roundVoxelShared,
+  toSceneCoordinates,
+  vectorLength,
+  worldToContinuousVoxel as worldToContinuousVoxelShared,
+} from '../features/case3d/patient-space';
 import { mapNormalizedToFrameIndex } from '../features/case3d/slice-logic';
 import type {
   AxisMap,
@@ -10,34 +27,28 @@ import type {
   CaseTarget,
   EnrichedCaseManifest,
   EnrichedCaseTarget,
+  Matrix3,
+  SliceCrop,
   SliceIndex,
+  SliceTextureMetadata,
   ToggleSetId,
+  Vector3Tuple,
+  VolumeGeometry,
 } from '../features/case3d/types';
 
-const AXIS_ORDER: AxisName[] = ['i', 'j', 'k'];
 const PLANES: CasePlane[] = ['axial', 'coronal', 'sagittal'];
 const DEFAULT_GENERATED_DIR = path.join('content', 'cases', 'generated');
 const ENRICHED_MANIFEST_PATH = path.join(DEFAULT_GENERATED_DIR, 'case_001.enriched.json');
 const ASSET_INDEX_PATH = path.join(DEFAULT_GENERATED_DIR, 'case_001-asset-index.ts');
 
-type Matrix3 = [
-  [number, number, number],
-  [number, number, number],
-  [number, number, number],
-];
-
-type Vector3 = [number, number, number];
+type Vector3 = Vector3Tuple;
 
 interface ParsedMarkup {
   coordinateSystem: string;
   position: Vector3;
 }
 
-export interface NrrdGeometry {
-  sizes: Vector3;
-  spaceDirections: Matrix3;
-  spaceOrigin: Vector3;
-}
+export type NrrdGeometry = Pick<VolumeGeometry, 'sizes' | 'spaceDirections' | 'spaceOrigin'>;
 
 interface ResolvedCasePaths {
   manifestPath: string;
@@ -177,118 +188,28 @@ export function parseNrrdHeader(input: string | Buffer): NrrdGeometry {
   };
 }
 
-function buildDirectionMatrix(spaceDirections: Matrix3): Matrix3 {
-  return [
-    [spaceDirections[0][0], spaceDirections[1][0], spaceDirections[2][0]],
-    [spaceDirections[0][1], spaceDirections[1][1], spaceDirections[2][1]],
-    [spaceDirections[0][2], spaceDirections[1][2], spaceDirections[2][2]],
-  ];
-}
-
-export function invertMatrix3(matrix: Matrix3): Matrix3 {
-  const [[a, b, c], [d, e, f], [g, h, i]] = matrix;
-  const cofactor00 = e * i - f * h;
-  const cofactor01 = -(d * i - f * g);
-  const cofactor02 = d * h - e * g;
-  const cofactor10 = -(b * i - c * h);
-  const cofactor11 = a * i - c * g;
-  const cofactor12 = -(a * h - b * g);
-  const cofactor20 = b * f - c * e;
-  const cofactor21 = -(a * f - c * d);
-  const cofactor22 = a * e - b * d;
-  const determinant = a * cofactor00 + b * cofactor01 + c * cofactor02;
-
-  if (Math.abs(determinant) < 1e-8) {
-    throw new Error('Unable to invert the CT direction matrix.');
-  }
-
-  return [
-    [cofactor00 / determinant, cofactor10 / determinant, cofactor20 / determinant],
-    [cofactor01 / determinant, cofactor11 / determinant, cofactor21 / determinant],
-    [cofactor02 / determinant, cofactor12 / determinant, cofactor22 / determinant],
-  ];
-}
-
-function multiplyMatrixVector(matrix: Matrix3, vector: Vector3): Vector3 {
-  return [
-    matrix[0][0] * vector[0] + matrix[0][1] * vector[1] + matrix[0][2] * vector[2],
-    matrix[1][0] * vector[0] + matrix[1][1] * vector[1] + matrix[1][2] * vector[2],
-    matrix[2][0] * vector[0] + matrix[2][1] * vector[1] + matrix[2][2] * vector[2],
-  ];
-}
-
 export function worldToContinuousVoxel(pointLps: Vector3, geometry: NrrdGeometry): Vector3 {
-  const lpsToIjk = invertMatrix3(buildDirectionMatrix(geometry.spaceDirections));
-  const relativePoint: Vector3 = [
-    pointLps[0] - geometry.spaceOrigin[0],
-    pointLps[1] - geometry.spaceOrigin[1],
-    pointLps[2] - geometry.spaceOrigin[2],
-  ];
-
-  return multiplyMatrixVector(lpsToIjk, relativePoint);
+  return worldToContinuousVoxelShared(pointLps, geometry);
 }
 
 export function clampContinuousVoxel(voxel: Vector3, sizes: Vector3): Vector3 {
-  return voxel.map((value, index) => {
-    const upper = Math.max(0, sizes[index] - 1);
-    return Math.min(upper, Math.max(0, value));
-  }) as Vector3;
+  return clampContinuousVoxelShared(voxel, sizes);
 }
 
 export function roundVoxel(voxel: Vector3, sizes: Vector3): Vector3 {
-  return clampContinuousVoxel(voxel, sizes).map((value) => Math.round(value)) as Vector3;
+  return roundVoxelShared(voxel, sizes);
 }
 
-const AXIS_PERMUTATIONS: AxisName[][] = [
-  ['i', 'j', 'k'],
-  ['i', 'k', 'j'],
-  ['j', 'i', 'k'],
-  ['j', 'k', 'i'],
-  ['k', 'i', 'j'],
-  ['k', 'j', 'i'],
-];
-
 export function deriveAxisMap(spaceDirections: Matrix3): AxisMap {
-  const scores = spaceDirections.map((vector) => vector.map((value) => Math.abs(value)) as Vector3);
-  const ranked = AXIS_PERMUTATIONS
-    .map((candidate) => {
-      const sagittalIndex = AXIS_ORDER.indexOf(candidate[0]);
-      const coronalIndex = AXIS_ORDER.indexOf(candidate[1]);
-      const axialIndex = AXIS_ORDER.indexOf(candidate[2]);
-      const score = scores[sagittalIndex][0] + scores[coronalIndex][1] + scores[axialIndex][2];
-
-      return {
-        candidate: {
-          sagittal: candidate[0],
-          coronal: candidate[1],
-          axial: candidate[2],
-        } satisfies AxisMap,
-        score,
-      };
-    })
-    .sort((left, right) => right.score - left.score);
-
-  return ranked[0].candidate;
+  return deriveAxisMapShared(spaceDirections);
 }
 
 function axisNameToIndex(axis: AxisName): number {
-  return AXIS_ORDER.indexOf(axis);
-}
-
-function normalizeVoxelIndex(index: number, axisLength: number): number {
-  if (axisLength <= 1) {
-    return 0;
-  }
-
-  return Math.min(1, Math.max(0, index / (axisLength - 1)));
+  return axisNameToIndexShared(axis);
 }
 
 export function buildNormalizedPositions(roundedVoxel: Vector3, sizes: Vector3, axisMap: AxisMap): Record<CasePlane, number> {
-  return {
-    sagittal: normalizeVoxelIndex(roundedVoxel[axisNameToIndex(axisMap.sagittal)], sizes[axisNameToIndex(axisMap.sagittal)]),
-    coronal: normalizeVoxelIndex(roundedVoxel[axisNameToIndex(axisMap.coronal)], sizes[axisNameToIndex(axisMap.coronal)]),
-    axial: normalizeVoxelIndex(roundedVoxel[axisNameToIndex(axisMap.axial)], sizes[axisNameToIndex(axisMap.axial)]),
-  };
+  return buildNormalizedPositionsShared(roundedVoxel, sizes, axisMap);
 }
 
 function usesDefaultCoverageAssumption(coverageAssumption?: [number, number]) {
@@ -411,6 +332,76 @@ export function listSliceSeriesFiles(rootDir: string, folderPath: string): strin
     .readdirSync(absoluteFolder)
     .filter((name) => name.toLowerCase().endsWith('.png'))
     .sort(naturalCompare);
+}
+
+function readPngSize(filePath: string) {
+  const buffer = fs.readFileSync(filePath);
+
+  if (buffer.toString('ascii', 1, 4) !== 'PNG') {
+    throw new Error(`Slice texture is not a PNG: ${filePath}`);
+  }
+
+  return {
+    pixelWidth: buffer.readUInt32BE(16),
+    pixelHeight: buffer.readUInt32BE(20),
+  };
+}
+
+function buildSliceTextureMetadata(
+  rootDir: string,
+  manifest: CaseManifest,
+  geometry: VolumeGeometry,
+  sliceFiles: Record<CasePlane, string[]>,
+  warnings: string[],
+): Record<CasePlane, SliceTextureMetadata> {
+  return PLANES.reduce(
+    (metadata, plane) => {
+      const files = sliceFiles[plane];
+      const entry = manifest.sliceSeries[plane];
+      const absoluteFolder = resolveRepoPath(rootDir, entry.folder);
+      const sizes = files.map((fileName) => readPngSize(path.join(absoluteFolder, fileName)));
+      const firstSize = sizes[0] ?? { pixelWidth: 0, pixelHeight: 0 };
+      const mixedDimensions = sizes.some(
+        (size) => size.pixelWidth !== firstSize.pixelWidth || size.pixelHeight !== firstSize.pixelHeight,
+      );
+      const planeAxes = getPlaneAxes(geometry.axisMap, plane);
+      const widthMm =
+        vectorLength(geometry.spaceDirections[axisNameToIndex(planeAxes.uAxis)]) *
+        Math.max(geometry.sizes[axisNameToIndex(planeAxes.uAxis)] - 1, 1);
+      const heightMm =
+        vectorLength(geometry.spaceDirections[axisNameToIndex(planeAxes.vAxis)]) *
+        Math.max(geometry.sizes[axisNameToIndex(planeAxes.vAxis)] - 1, 1);
+      const physicalAspect = widthMm / Math.max(heightMm, 1);
+      const textureAspect = firstSize.pixelWidth / Math.max(firstSize.pixelHeight, 1);
+      const crop = normalizeSliceCrop(entry.crop);
+      const aspectDelta = Math.abs(textureAspect - physicalAspect) / Math.max(physicalAspect, 1e-6);
+      const sourceLooksCropped =
+        mixedDimensions ||
+        aspectDelta > 0.08 ||
+        crop.x !== FULL_SLICE_CROP.x ||
+        crop.y !== FULL_SLICE_CROP.y ||
+        crop.width !== FULL_SLICE_CROP.width ||
+        crop.height !== FULL_SLICE_CROP.height;
+      const warning = sourceLooksCropped
+        ? `${plane} slice textures look cropped or viewport-exported relative to CT geometry; use crop metadata for clean co-registration.`
+        : null;
+
+      if (warning && !warnings.includes(warning)) {
+        warnings.push(warning);
+      }
+
+      metadata[plane] = {
+        pixelWidth: firstSize.pixelWidth,
+        pixelHeight: firstSize.pixelHeight,
+        crop,
+        sourceLooksCropped,
+        warning,
+      };
+
+      return metadata;
+    },
+    {} as Record<CasePlane, SliceTextureMetadata>,
+  );
 }
 
 function isPointInsideExtentLazily(pointLps: Vector3, geometry: NrrdGeometry): boolean {
@@ -543,8 +534,17 @@ export function generateCaseOutputs(rootDir: string): GeneratedCaseOutputs {
   const manifestPath = path.join(rootDir, 'content', 'cases', 'case_001_manifest.json');
   const manifest = readSeedManifest(manifestPath);
   const resolvedPaths = getResolvedPaths(rootDir, manifest);
-  const geometry = parseNrrdHeader(fs.readFileSync(resolvedPaths.ctVolumePath));
-  const axisMap = deriveAxisMap(geometry.spaceDirections);
+  const nrrdGeometry = parseNrrdHeader(fs.readFileSync(resolvedPaths.ctVolumePath));
+  const axisMap = deriveAxisMap(nrrdGeometry.spaceDirections);
+  const geometry: VolumeGeometry = {
+    coordinateSystem: 'LPS',
+    sizes: nrrdGeometry.sizes,
+    spaceDirections: nrrdGeometry.spaceDirections,
+    spaceOrigin: nrrdGeometry.spaceOrigin,
+    axisMap,
+    ijkToWorldMatrix: buildIjkToWorldMatrix4(nrrdGeometry),
+    worldToIjkMatrix: buildWorldToIjkMatrix4(nrrdGeometry),
+  };
   const meshNames = parseGlbMeshNames(fs.readFileSync(resolvedPaths.glbPath)).sort(naturalCompare);
   const warnings: string[] = [];
   const sliceFiles: Record<CasePlane, string[]> = {
@@ -552,6 +552,7 @@ export function generateCaseOutputs(rootDir: string): GeneratedCaseOutputs {
     coronal: listSliceSeriesFiles(rootDir, manifest.sliceSeries.coronal.folder),
     sagittal: listSliceSeriesFiles(rootDir, manifest.sliceSeries.sagittal.folder),
   };
+  const sliceTextureMetadata = buildSliceTextureMetadata(rootDir, manifest, geometry, sliceFiles, warnings);
 
   if (manifest.assets.segmentationFile && !resolvedPaths.segmentationPath) {
     warnings.push(`Segmentation file is referenced but missing: ${manifest.assets.segmentationFile}`);
@@ -604,11 +605,16 @@ export function generateCaseOutputs(rootDir: string): GeneratedCaseOutputs {
         sourceCoordinateSystem: markup.coordinateSystem,
         position: positionLps,
       },
+      world: {
+        coordinateSystem: 'LPS',
+        position: positionLps,
+      },
       derived: {
         continuousVoxel,
         roundedVoxel,
         normalized,
         axisMap,
+        scenePosition: toSceneCoordinates(positionLps),
       },
       meshExists: Boolean(meshNameResolved),
       meshNameResolved,
@@ -623,12 +629,22 @@ export function generateCaseOutputs(rootDir: string): GeneratedCaseOutputs {
     enrichedManifest: {
       ...manifest,
       generatedAt: new Date().toISOString(),
+      volumeGeometry: geometry,
+      patientToScene: {
+        name: 'patientToScene',
+        from: 'LPS-mm',
+        to: 'three-scene-meters',
+        matrix: buildPatientToSceneMatrix(),
+        inverseMatrix: buildSceneToPatientMatrix(),
+        note: 'This explicit transform maps CT/markup patient-space coordinates into the shared Three scene basis. The GLB is already exported in that scene basis, so it should be wrapped in the inverse transform before joining the patient-space group.',
+      },
       meshNames,
       sliceAssetCounts: {
         axial: sliceFiles.axial.length,
         coronal: sliceFiles.coronal.length,
         sagittal: sliceFiles.sagittal.length,
       },
+      sliceTextureMetadata,
       warnings,
       targets: enrichedTargets,
     },

@@ -1,4 +1,5 @@
-import type { EnrichedCaseTarget, ToggleSetId } from '@/features/case3d/types';
+import { toSceneCoordinates as toSceneCoordinatesShared } from '@/features/case3d/patient-space';
+import type { EnrichedCaseTarget, ToggleSetId, Vector3Tuple } from '@/features/case3d/types';
 
 const MIN_ORBIT_POLAR = 0.35;
 
@@ -45,8 +46,8 @@ export function getTargetStructureLabel(target: Pick<EnrichedCaseTarget, 'displa
   return target.meshNameResolved ?? target.displayLabel;
 }
 
-export function toSceneCoordinates(position: readonly [number, number, number]) {
-  return [position[0] / 1000, position[2] / 1000, -position[1] / 1000] as const;
+export function toSceneCoordinates(position: Vector3Tuple) {
+  return toSceneCoordinatesShared(position);
 }
 
 export function clampOrbitPolar(value: number) {

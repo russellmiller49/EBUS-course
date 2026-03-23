@@ -31,17 +31,20 @@ import {
   normalizeVisibleToggleSetIds,
   resolveCaseSelection,
 } from '@/features/case3d/logic';
-import { getSliceCrosshairPosition } from '@/features/case3d/slice-logic';
-import { SliceViewer } from '@/features/case3d/SliceViewer';
 import { StructureToggles } from '@/features/case3d/StructureToggles';
 import { TargetPicker } from '@/features/case3d/TargetPicker';
 import { TeachingCard } from '@/features/case3d/TeachingCard';
 import {
+  CASE3D_PLANES,
+  DEFAULT_CASE3D_VIEWER_OPACITY,
+  DEFAULT_CASE3D_VIEWER_VISIBILITY,
   DEFAULT_CASE3D_PLANE,
-  DEFAULT_CASE3D_VISIBLE_TOGGLE_SET_IDS,
   type CasePlane,
   type CaseSelectionMode,
   type CaseReviewPrompt,
+  type SceneLayerId,
+  type ViewerOpacity,
+  type ViewerVisibility,
 } from '@/features/case3d/types';
 import type { ModuleContent } from '@/lib/types';
 import { isBookmarked, useLearnerProgress } from '@/store/learner-progress';
@@ -66,6 +69,11 @@ const caseManifest = getCase3DManifest();
 const caseStations = getCase3DStations();
 const caseModuleContent = getCase3DModuleContent();
 const reviewPrompts = getCase3DReviewPrompts();
+const sliceAssetsByPlane = {
+  axial: getCase3DSliceAssets('axial'),
+  coronal: getCase3DSliceAssets('coronal'),
+  sagittal: getCase3DSliceAssets('sagittal'),
+} as const;
 
 function toCase3DStepId(value: string | null | undefined): Case3DStepId | null {
   return STEP_SEQUENCE.some((step) => step.id === value) ? (value as Case3DStepId) : null;
@@ -102,6 +110,12 @@ export function Case3DExplorerModule({ module }: { module: ModuleContent }) {
   const [visibleToggleSetIds, setVisibleToggleSetIds] = useState<string[]>(
     normalizeVisibleToggleSetIds(persistedCaseState.visibleToggleSetIds),
   );
+  const [viewerVisibility, setViewerVisibility] = useState<ViewerVisibility>(
+    persistedCaseState.viewerVisibility ?? DEFAULT_CASE3D_VIEWER_VISIBILITY,
+  );
+  const [viewerOpacity, setViewerOpacity] = useState<ViewerOpacity>(
+    persistedCaseState.viewerOpacity ?? DEFAULT_CASE3D_VIEWER_OPACITY,
+  );
   const [frameOffsets, setFrameOffsets] = useState<Record<CasePlane, number>>({
     axial: 0,
     coronal: 0,
@@ -129,19 +143,37 @@ export function Case3DExplorerModule({ module }: { module: ModuleContent }) {
   const focusedTarget = resolvedSelection.focusTarget;
   const focusedStation = resolvedSelection.resolvedStation;
   const focusedStationTargets = getCaseTargetsForStation(focusedStation.id);
-  const sliceAssets = getCase3DSliceAssets(selectedPlane);
-  const centeredFrameIndex = focusedTarget ? focusedTarget.sliceIndex[selectedPlane] : 0;
-  const currentFrameIndex = focusedTarget
-    ? getCenteredFrameIndex(
-        focusedTarget,
-        selectedPlane,
-        frameOffsets[selectedPlane],
-        sliceAssets.length,
-      )
-    : 0;
-  const crosshairPosition = focusedTarget
-    ? getSliceCrosshairPosition(focusedTarget.derived.normalized, selectedPlane, caseManifest.sliceSeries)
-    : { x: 0.5, y: 0.5 };
+  const planeViews = useMemo(
+    () =>
+      CASE3D_PLANES.reduce(
+        (views, plane) => {
+          const sliceAssets = sliceAssetsByPlane[plane];
+          const centeredFrameIndex = focusedTarget ? focusedTarget.sliceIndex[plane] : 0;
+          const frameIndex = focusedTarget
+            ? getCenteredFrameIndex(focusedTarget, plane, frameOffsets[plane], sliceAssets.length)
+            : 0;
+
+          views[plane] = {
+            centeredFrameIndex,
+            frameCount: sliceAssets.length,
+            frameIndex,
+            source: sliceAssets[frameIndex],
+          };
+
+          return views;
+        },
+        {} as Record<
+          CasePlane,
+          {
+            centeredFrameIndex: number;
+            frameCount: number;
+            frameIndex: number;
+            source: (typeof sliceAssetsByPlane)[CasePlane][number];
+          }
+        >,
+      ),
+    [focusedTarget, frameOffsets],
+  );
   const currentPrompt: CaseReviewPrompt | null = reviewPrompts[reviewIndex] ?? null;
   const reviewSummary = buildCaseReviewSummary({
     reviewScore: state.case3dExplorer.reviewScore,
@@ -159,8 +191,10 @@ export function Case3DExplorerModule({ module }: { module: ModuleContent }) {
       selectedStationId,
       selectedTargetId,
       visibleToggleSetIds: normalizeVisibleToggleSetIds(visibleToggleSetIds),
+      viewerVisibility,
+      viewerOpacity,
     });
-  }, [selectedPlane, selectedStationId, selectedTargetId, visibleToggleSetIds]);
+  }, [selectedPlane, selectedStationId, selectedTargetId, viewerOpacity, viewerVisibility, visibleToggleSetIds]);
 
   useEffect(() => {
     if (focusedTarget) {
@@ -241,19 +275,38 @@ export function Case3DExplorerModule({ module }: { module: ModuleContent }) {
     });
   }
 
-  function handleStepFrame(delta: number) {
+  function handleStepPlane(plane: CasePlane, delta: number) {
+    setSelectedPlane(plane);
+    const centeredFrameIndex = focusedTarget ? focusedTarget.sliceIndex[plane] : 0;
+    const sliceAssets = sliceAssetsByPlane[plane];
+
     setFrameOffsets((currentOffsets) => ({
       ...currentOffsets,
-      [selectedPlane]:
-        clampFrameIndex(centeredFrameIndex + currentOffsets[selectedPlane] + delta, sliceAssets.length) -
+      [plane]:
+        clampFrameIndex(centeredFrameIndex + currentOffsets[plane] + delta, sliceAssets.length) -
         centeredFrameIndex,
     }));
   }
 
-  function resetFrameOffset() {
+  function resetPlaneOffset(plane: CasePlane) {
+    setSelectedPlane(plane);
     setFrameOffsets((currentOffsets) => ({
       ...currentOffsets,
-      [selectedPlane]: 0,
+      [plane]: 0,
+    }));
+  }
+
+  function handleToggleLayer(layerId: SceneLayerId) {
+    setViewerVisibility((currentVisibility) => ({
+      ...currentVisibility,
+      [layerId]: !currentVisibility[layerId],
+    }));
+  }
+
+  function handleSetLayerOpacity(layerId: SceneLayerId, value: number) {
+    setViewerOpacity((currentOpacity) => ({
+      ...currentOpacity,
+      [layerId]: Math.max(0, Math.min(1, value)),
     }));
   }
 
@@ -356,7 +409,7 @@ export function Case3DExplorerModule({ module }: { module: ModuleContent }) {
           ))}
         </SectionCard>
 
-        <SectionCard title="Build-Time Case Linkage" subtitle="The slice centers come from CT geometry plus the markup control points, not from hardcoded frame numbers.">
+        <SectionCard title="Build-Time Case Linkage" subtitle="The runtime manifest now carries CT geometry, patient-to-scene transforms, per-target voxel coordinates, and slice-texture warnings.">
           <View style={styles.metricRow}>
             <MetricTile label="Stations" tone="accent" value={`${caseManifest.stations.length}`} />
             <MetricTile label="Targets" tone="gold" value={`${caseManifest.targets.length}`} />
@@ -395,28 +448,21 @@ export function Case3DExplorerModule({ module }: { module: ModuleContent }) {
           <StructureToggles onToggle={handleToggle} toggleSet={toggleSet} />
         </SectionCard>
 
-        <SectionCard title="3D navigator" subtitle="Native builds render the bundled GLB live, while the current focus still stays aligned with the linked slice viewer.">
+        <SectionCard title="Patient-space viewer" subtitle="The GLB anatomy and the CT slice planes now live in one shared 3D scene derived from the NRRD geometry.">
           <Case3DCanvas
+            focusedTarget={focusedTarget}
             activeTargetIds={resolvedSelection.activeTargets.map((target) => target.id)}
-            focusTargetId={focusedTarget.id}
-            onSelectTarget={handleSelectTarget}
+            manifest={caseManifest}
+            onResetPlane={resetPlaneOffset}
+            onSetLayerOpacity={handleSetLayerOpacity}
+            onSetSelectedPlane={setSelectedPlane}
+            onStepPlane={handleStepPlane}
+            onToggleLayer={handleToggleLayer}
             selectionMode={selectionMode}
+            planeViews={planeViews}
+            viewerOpacity={viewerOpacity}
+            viewerVisibility={viewerVisibility}
             visibleTargets={resolvedSelection.visibleTargets}
-          />
-        </SectionCard>
-
-        <SectionCard title="Slice viewer" subtitle="The selected plane jumps to the derived target frame and lets the learner step around it.">
-          <SliceViewer
-            centerFrameIndex={centeredFrameIndex}
-            crosshairPosition={crosshairPosition}
-            frameCount={sliceAssets.length}
-            frameIndex={currentFrameIndex}
-            onPlaneChange={setSelectedPlane}
-            onReset={resetFrameOffset}
-            onStep={handleStepFrame}
-            plane={selectedPlane}
-            source={sliceAssets[currentFrameIndex]}
-            targetLabel={focusedTarget.displayLabel}
           />
         </SectionCard>
 
@@ -491,7 +537,7 @@ export function Case3DExplorerModule({ module }: { module: ModuleContent }) {
   function renderSummaryStep() {
     return (
       <>
-        <SectionCard title="Summary" subtitle="This module persists the current station, target, plane, toggle set, visited anatomy, and review score.">
+        <SectionCard title="Summary" subtitle="This module persists the current station, target, plane, structure groups, patient-space viewer settings, visited anatomy, and review score.">
           <View style={styles.metricRow}>
             <MetricTile label="Review score" tone="accent" value={`${state.case3dExplorer.reviewScore ?? 0}/${reviewPrompts.length}`} />
             <MetricTile label="Coverage" tone="gold" value={`${reviewSummary.coverage}%`} />
@@ -501,6 +547,10 @@ export function Case3DExplorerModule({ module }: { module: ModuleContent }) {
             <StatusPill label={`Plane: ${selectedPlane}`} tone="neutral" />
             <StatusPill label={`Station: ${focusedStation.label}`} tone="gold" />
             <StatusPill label={`${normalizeVisibleToggleSetIds(visibleToggleSetIds).length} visible groups`} tone="teal" />
+            <StatusPill
+              label={`${Object.values(viewerVisibility).filter(Boolean).length} scene layers visible`}
+              tone="accent"
+            />
           </View>
         </SectionCard>
 

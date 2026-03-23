@@ -1,7 +1,7 @@
 import { getCase3DManifest } from '../content';
 import {
-  getSliceCrosshairPosition,
   mapNormalizedToFrameIndex,
+  projectWorldPointToSliceUv,
   projectNormalizedToSeriesPosition,
 } from '../slice-logic';
 
@@ -21,24 +21,21 @@ describe('mapNormalizedToFrameIndex', () => {
   });
 });
 
-describe('getSliceCrosshairPosition', () => {
-  it('projects the focused target into plane-specific x and y coordinates', () => {
+describe('projectWorldPointToSliceUv', () => {
+  it('projects a world-space target into the active slice plane using CT geometry and crop metadata', () => {
     const target = manifest.targets.find((candidate) => candidate.id === 'node_4L_1');
     expect(target).toBeTruthy();
-    const sliceSeries = {
-      ...manifest.sliceSeries,
-      sagittal: {
-        ...manifest.sliceSeries.sagittal,
-        coverageAssumption: [1, 0],
-      },
-    };
 
-    const axialCrosshair = getSliceCrosshairPosition(target.derived.normalized, 'axial', sliceSeries);
-    const sagittalCrosshair = getSliceCrosshairPosition(target.derived.normalized, 'sagittal', sliceSeries);
+    const uv = projectWorldPointToSliceUv({
+      frameIndex: target.sliceIndex.axial,
+      manifest,
+      plane: 'axial',
+      worldPoint: target.world.position,
+    });
 
-    expect(axialCrosshair.x).toBeCloseTo(1 - target.derived.normalized.sagittal);
-    expect(axialCrosshair.y).toBeCloseTo(target.derived.normalized.coronal);
-    expect(sagittalCrosshair.x).toBeCloseTo(target.derived.normalized.coronal);
-    expect(sagittalCrosshair.y).toBeCloseTo(target.derived.normalized.axial);
+    expect(uv.x).toBeGreaterThanOrEqual(0);
+    expect(uv.x).toBeLessThanOrEqual(1);
+    expect(uv.y).toBeGreaterThanOrEqual(0);
+    expect(uv.y).toBeLessThanOrEqual(1);
   });
 });

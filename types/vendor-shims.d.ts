@@ -1,10 +1,3 @@
-declare module 'expo-three/lib/polyfill';
-
-declare module 'expo-three/lib/Three' {
-  const THREE: typeof import('three');
-  export default THREE;
-}
-
 declare module 'three/examples/jsm/loaders/GLTFLoader.js' {
   import { Group, Loader, LoadingManager } from 'three';
 

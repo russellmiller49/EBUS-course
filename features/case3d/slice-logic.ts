@@ -1,4 +1,10 @@
-import type { CasePlane, SliceSeries } from './types';
+import {
+  frameIndexToContinuousAxisIndex,
+  getPlanePoseAtAxisIndex,
+  normalizeSliceCrop,
+  projectWorldPointToPlaneUv,
+} from './patient-space';
+import type { CasePlane, EnrichedCaseManifest, Vector3Tuple } from './types';
 
 const DEFAULT_COVERAGE_ASSUMPTION: [number, number] = [0, 1];
 
@@ -47,32 +53,34 @@ export function mapNormalizedToFrameIndex(
   return Math.round(projectNormalizedToSeriesPosition(normalizedPosition, coverageAssumption) * (frameCount - 1));
 }
 
-export function getSliceCrosshairPosition(
-  normalized: Record<CasePlane, number>,
-  plane: CasePlane,
-  sliceSeries: SliceSeries,
-) {
-  const planeProgress = {
-    axial: projectNormalizedToSeriesPosition(normalized.axial, sliceSeries.axial.coverageAssumption),
-    coronal: projectNormalizedToSeriesPosition(normalized.coronal, sliceSeries.coronal.coverageAssumption),
-    sagittal: projectNormalizedToSeriesPosition(normalized.sagittal, sliceSeries.sagittal.coverageAssumption),
-  };
+export function projectWorldPointToSliceUv({
+  frameIndex,
+  manifest,
+  plane,
+  worldPoint,
+}: {
+  frameIndex: number;
+  manifest: EnrichedCaseManifest;
+  plane: CasePlane;
+  worldPoint: Vector3Tuple;
+}) {
+  const axisLengthByPlane = {
+    axial: manifest.volumeGeometry.sizes[2],
+    coronal: manifest.volumeGeometry.sizes[1],
+    sagittal: manifest.volumeGeometry.sizes[0],
+  } as const;
+  const continuousAxisIndex = frameIndexToContinuousAxisIndex(
+    frameIndex,
+    manifest.sliceAssetCounts[plane],
+    axisLengthByPlane[plane],
+    manifest.sliceSeries[plane].coverageAssumption,
+  );
+  const planePose = getPlanePoseAtAxisIndex(manifest.volumeGeometry, plane, continuousAxisIndex);
+  const baseUv = projectWorldPointToPlaneUv(worldPoint, planePose);
+  const crop = normalizeSliceCrop(manifest.sliceTextureMetadata[plane].crop);
 
-  switch (plane) {
-    case 'axial':
-      return {
-        x: planeProgress.sagittal,
-        y: planeProgress.coronal,
-      };
-    case 'coronal':
-      return {
-        x: planeProgress.sagittal,
-        y: planeProgress.axial,
-      };
-    case 'sagittal':
-      return {
-        x: planeProgress.coronal,
-        y: planeProgress.axial,
-      };
-  }
+  return {
+    x: crop.x + baseUv.u * crop.width,
+    y: crop.y + baseUv.v * crop.height,
+  };
 }

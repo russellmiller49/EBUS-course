@@ -86,7 +86,7 @@ export interface BookmarkedItem {
 }
 
 export interface LearnerProgressState {
-  version: 2;
+  version: 3;
   moduleProgress: Record<ModuleId, ModuleProgress>;
   bookmarks: BookmarkedItem[];
   lastViewedStationId: string | null;

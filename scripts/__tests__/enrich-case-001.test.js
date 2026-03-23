@@ -69,6 +69,11 @@ describe('generated outputs', () => {
 
     expect(outputs.enrichedManifest.targets).toHaveLength(56);
     expect(outputs.enrichedManifest.targets.every((target) => target.sliceIndex.axial !== null)).toBe(true);
+    expect(outputs.enrichedManifest.volumeGeometry.coordinateSystem).toBe('LPS');
+    expect(outputs.enrichedManifest.patientToScene.name).toBe('patientToScene');
+    expect(outputs.enrichedManifest.targets[0].world.coordinateSystem).toBe('LPS');
+    expect(outputs.enrichedManifest.sliceTextureMetadata.coronal.sourceLooksCropped).toBe(true);
+    expect(outputs.enrichedManifest.warnings.length).toBeGreaterThan(0);
     expect(outputs.assetIndexSource).toContain('export const axialSliceAssets');
   });
 

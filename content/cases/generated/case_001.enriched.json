@@ -252,6 +252,14 @@
           1287.5124715199843
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -9.572087152711095,
+          -197.84134289115147,
+          1287.5124715199843
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           142.85059169523808,
@@ -272,7 +280,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.009572087152711095,
+          1.2875124715199844,
+          0.19784134289115146
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 1R"
@@ -310,6 +323,14 @@
           1276.4128428859017
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -0.16830999103041933,
+          -200.07447710673816,
+          1276.4128428859017
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           131.16434434868347,
@@ -330,7 +351,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.00016830999103041933,
+          1.2764128428859016,
+          0.20007447710673817
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 1L"
@@ -368,6 +394,14 @@
           1282.8934773581566
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -13.647973590408863,
+          -171.57171722444872,
+          1282.8934773581566
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           147.9157709576198,
@@ -388,7 +422,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.013647973590408863,
+          1.2828934773581566,
+          0.17157171722444872
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 2R"
@@ -426,6 +465,14 @@
           1246.3818368829643
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          0.798289522383806,
+          -169.22106966432835,
+          1246.3818368829643
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           129.96313330288714,
@@ -446,7 +493,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.000798289522383806,
+          1.2463818368829644,
+          0.16922106966432834
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 2L"
@@ -484,6 +536,14 @@
           1224.3502342573918
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -28.82176941588532,
+          -210.17294269591582,
+          1224.3502342573918
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           166.77252693491093,
@@ -504,7 +564,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.02882176941588532,
+          1.2243502342573918,
+          0.21017294269591583
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 3A"
@@ -542,6 +607,14 @@
           1246.4004700979663
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -11.545040218685273,
+          -218.57414179777012,
+          1246.4004700979663
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           145.30241686460406,
@@ -562,7 +635,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.011545040218685272,
+          1.2464004700979663,
+          0.21857414179777013
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 3A"
@@ -600,6 +678,14 @@
           1251.3070895938372
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -21.006854443442222,
+          -219.35027690354323,
+          1251.3070895938372
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           157.0607879400302,
@@ -620,7 +706,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.021006854443442222,
+          1.2513070895938372,
+          0.21935027690354322
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 3A"
@@ -658,6 +749,14 @@
           1247.440185546875
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -24.114476296234628,
+          -208.51635525586195,
+          1247.440185546875
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           160.9226869415586,
@@ -678,7 +777,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.02411447629623463,
+          1.247440185546875,
+          0.20851635525586196
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 3A"
@@ -716,6 +820,14 @@
           1243.6670188376431
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -13.458456100911484,
+          -212.8168487548828,
+          1243.6670188376431
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           147.6802540774677,
@@ -736,7 +848,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.013458456100911485,
+          1.243667018837643,
+          0.21281684875488283
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 3A"
@@ -774,6 +891,14 @@
           1231.4450348491332
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          4.400092133199834,
+          -219.6369567415788,
+          1231.4450348491332
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           125.48710675740703,
@@ -794,7 +919,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.004400092133199834,
+          1.2314450348491333,
+          0.21963695674157882
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 3A"
@@ -832,6 +962,14 @@
           1215.8315612501672
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -28.93680763244629,
+          -167.94192650634722,
+          1215.8315612501672
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           166.91548704869544,
@@ -852,7 +990,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.028936807632446288,
+          1.2158315612501671,
+          0.1679419265063472
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 3A"
@@ -890,6 +1033,14 @@
           1220.0412926391382
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -17.060216670665696,
+          -177.95478321979417,
+          1220.0412926391382
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           152.15622837774478,
@@ -910,7 +1061,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.017060216670665696,
+          1.2200412926391382,
+          0.17795478321979416
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 4R"
@@ -948,6 +1104,14 @@
           1244.0412926391382
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -10.990352215325188,
+          -186.9976425104035,
+          1244.0412926391382
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           144.6130958507197,
@@ -968,7 +1132,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.010990352215325188,
+          1.2440412926391382,
+          0.1869976425104035
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 4R"
@@ -1006,6 +1175,14 @@
           1260.0412926391382
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -17.8034653794829,
+          -181.17552762466872,
+          1260.0412926391382
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           153.079877258605,
@@ -1026,7 +1203,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.0178034653794829,
+          1.2600412926391382,
+          0.1811755276246687
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 4R"
@@ -1064,6 +1246,14 @@
           1211.631921563806
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -1.5909734767025014,
+          -173.6342078853047,
+          1211.631921563806
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           132.9323145056352,
@@ -1084,7 +1274,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.0015909734767025016,
+          1.2116319215638058,
+          0.1736342078853047
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 4L"
@@ -1122,6 +1317,14 @@
           1214.204404970215
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          13.68159584204524,
+          -173.55347636539645,
+          1214.204404970215
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           113.9528108862205,
@@ -1142,7 +1345,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.01368159584204524,
+          1.214204404970215,
+          0.17355347636539645
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 4L"
@@ -1180,6 +1388,14 @@
           1214.649008377584
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          13.418924520143378,
+          -156.12623131510122,
+          1214.649008377584
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           114.27923738334127,
@@ -1200,7 +1416,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.013418924520143378,
+          1.214649008377584,
+          0.15612623131510123
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 4L"
@@ -1238,6 +1459,14 @@
           1210.3502342573918
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          22.970476633020297,
+          -179.70470469207044,
+          1210.3502342573918
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           102.40934737898937,
@@ -1258,7 +1487,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.022970476633020296,
+          1.2103502342573917,
+          0.17970470469207045
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 5"
@@ -1296,6 +1530,14 @@
           1230.1392824441064
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          26.10255620214059,
+          -173.84381508805475,
+          1230.1392824441064
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           98.51705432221851,
@@ -1316,7 +1558,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.02610255620214059,
+          1.2301392824441064,
+          0.17384381508805477
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 6"
@@ -1354,6 +1601,14 @@
           1196.0412926391382
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -14.706595759411217,
+          -155.7811967400809,
+          1196.0412926391382
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           149.23134025502077,
@@ -1374,7 +1629,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.014706595759411217,
+          1.1960412926391382,
+          0.1557811967400809
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 7"
@@ -1412,6 +1672,14 @@
           1204.888449697744
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -22.437059121548383,
+          -177.81774049496937,
+          1204.888449697744
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           158.8381296759291,
@@ -1432,7 +1700,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.022437059121548385,
+          1.204888449697744,
+          0.17781774049496937
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 10R"
@@ -1470,6 +1743,14 @@
           1215.6287981625358
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -29.671346554035843,
+          -168.09168225995705,
+          1215.6287981625358
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           167.82831211630187,
@@ -1490,7 +1771,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.029671346554035843,
+          1.2156287981625358,
+          0.16809168225995705
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 10R"
@@ -1528,6 +1814,14 @@
           1189.0246110717826
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          17.835157732022797,
+          -159.7564549815841,
+          1189.0246110717826
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           108.79110290644257,
@@ -1548,7 +1842,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.017835157732022797,
+          1.1890246110717826,
+          0.1597564549815841
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 10L"
@@ -1586,6 +1885,14 @@
           1181.6709307147491
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          34.898386391024445,
+          -148.92565036362996,
+          1181.6709307147491
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           87.58631389331431,
@@ -1606,7 +1913,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.034898386391024445,
+          1.1816709307147493,
+          0.14892565036362995
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 11L"
@@ -1644,6 +1956,14 @@
           1166.3350107574483
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -58.571725422348635,
+          -156.1657563181315,
+          1166.3350107574483
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           203.74334604973913,
@@ -1664,7 +1984,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.05857172542234863,
+          1.1663350107574484,
+          0.1561657563181315
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 11Ri"
@@ -1702,6 +2027,14 @@
           1198.007359511826
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -44.68960240920485,
+          -158.5468347864842,
+          1198.007359511826
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           186.491775703308,
@@ -1722,7 +2055,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.04468960240920485,
+          1.1980073595118261,
+          0.1585468347864842
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 11Rs"
@@ -1760,6 +2098,14 @@
           1193.2762707905492
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -47.8420757222722,
+          -169.23750298841807,
+          1193.2762707905492
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           190.40941244187715,
@@ -1780,7 +2126,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.0478420757222722,
+          1.1932762707905493,
+          0.16923750298841808
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "Station 11Rs"
@@ -1817,6 +2168,14 @@
           1232.8883918389774
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          13.22746691934276,
+          -173.26671697547613,
+          1232.8883918389774
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           114.51716527559834,
@@ -1837,7 +2196,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.01322746691934276,
+          1.2328883918389775,
+          0.17326671697547613
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "aorta"
@@ -1874,6 +2238,14 @@
           1237.1281264072636
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -25.05715251037651,
+          -166.79470398190327,
+          1237.1281264072636
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           162.0941680620456,
@@ -1894,7 +2266,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.02505715251037651,
+          1.2371281264072636,
+          0.16679470398190327
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "azygous vein"
@@ -1931,6 +2308,14 @@
           1263.2654123770576
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -6.394236111576021,
+          -193.66002442896,
+          1263.2654123770576
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           138.90141758586634,
@@ -1951,7 +2336,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.006394236111576021,
+          1.2632654123770577,
+          0.19366002442896002
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "brachiocephalic trunk"
@@ -1988,6 +2378,14 @@
           1262.6529242002327
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -30.44104435111175,
+          -192.49091730698146,
+          1262.6529242002327
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           168.78482976703697,
@@ -2008,7 +2406,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.03044104435111175,
+          1.2626529242002327,
+          0.19249091730698145
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "right brachiocephalic vein"
@@ -2045,6 +2448,14 @@
           1258.5978472776178
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -4.2395104549813425,
+          -210.71826921033454,
+          1258.5978472776178
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           136.22370026504967,
@@ -2065,7 +2476,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.004239510454981343,
+          1.2585978472776178,
+          0.21071826921033454
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "left brachiocephalic vein"
@@ -2102,6 +2518,14 @@
           1235.1281264072636
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -30.64965529626175,
+          -188.2784838371971,
+          1235.1281264072636
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           169.04407443673796,
@@ -2122,7 +2546,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.03064965529626175,
+          1.2351281264072635,
+          0.18827848383719709
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "superior vena cava"
@@ -2159,6 +2588,14 @@
           1106.0101318359375
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -31.995774268410457,
+          -177.40705256683287,
+          1106.0101318359375
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           170.716921314748,
@@ -2179,7 +2616,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.03199577426841046,
+          1.1060101318359374,
+          0.17740705256683287
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "inferior vena cava"
@@ -2216,6 +2658,14 @@
           1295.2818245852272
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -17.13595377416726,
+          -186.2766539982334,
+          1295.2818245852272
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           152.25034827335838,
@@ -2236,7 +2686,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.01713595377416726,
+          1.2952818245852273,
+          0.1862766539982334
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "right common carotid artery"
@@ -2273,6 +2728,14 @@
           1294.2476806640625
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          10.501593089524182,
+          -184.86336507166618,
+          1294.2476806640625
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           117.90465896702338,
@@ -2293,7 +2756,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.010501593089524182,
+          1.2942476806640626,
+          0.18486336507166617
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "left common carotid artery"
@@ -2330,6 +2798,14 @@
           1290.3516845703125
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -25.186295498394234,
+          -177.09542505428277,
+          1290.3516845703125
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           162.25465643550453,
@@ -2350,7 +2826,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.025186295498394233,
+          1.2903516845703125,
+          0.17709542505428277
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "right subclavian artery"
@@ -2387,6 +2868,14 @@
           1272.8781166930617
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          8.687915423994824,
+          -175.5670623779297,
+          1272.8781166930617
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           120.15854965816666,
@@ -2407,7 +2896,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.008687915423994825,
+          1.2728781166930616,
+          0.17556706237792968
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "left subclavian artery"
@@ -2444,6 +2938,14 @@
           1185.6719906360465
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -38.42111602055939,
+          -150.22014935438048,
+          1185.6719906360465
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           178.70181203586512,
@@ -2464,7 +2966,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.03842111602055939,
+          1.1856719906360464,
+          0.1502201493543805
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "airway"
@@ -2501,6 +3008,14 @@
           1210.7629090195594
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -12.767176630104522,
+          -157.77453819821739,
+          1210.7629090195594
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           146.8211883273387,
@@ -2521,7 +3036,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.012767176630104522,
+          1.2107629090195595,
+          0.15777453819821738
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "airway"
@@ -2558,6 +3078,14 @@
           1248.7629090195594
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -9.046358244334094,
+          -170.5155223676737,
+          1248.7629090195594
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           142.19725868288612,
@@ -2578,7 +3106,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.009046358244334094,
+          1.2487629090195593,
+          0.1705155223676737
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "airway"
@@ -2615,6 +3148,14 @@
           1202.518246750665
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -1.6210419837718888,
+          -154.58663418607236,
+          1202.518246750665
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           132.9696811940321,
@@ -2635,7 +3176,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.0016210419837718888,
+          1.202518246750665,
+          0.15458663418607235
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "airway"
@@ -2672,6 +3218,14 @@
           1206.7706997504715
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -25.009533482707944,
+          -156.19600918607236,
+          1206.7706997504715
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           162.03499101795265,
@@ -2692,7 +3246,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.025009533482707944,
+          1.2067706997504715,
+          0.15619600918607238
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "airway"
@@ -2729,6 +3288,14 @@
           1198.7629090195594
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -6.904068870708699,
+          -140.52347113691818,
+          1198.7629090195594
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           139.5349961603225,
@@ -2749,7 +3316,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.006904068870708699,
+          1.1987629090195595,
+          0.14052347113691818
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "esophagus"
@@ -2786,6 +3358,14 @@
           1183.5243634673996
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          8.30116469131218,
+          -209.6028340240154,
+          1183.5243634673996
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           120.6391719279082,
@@ -2806,7 +3386,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.008301164691312181,
+          1.1835243634673995,
+          0.20960283402401542
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "pulmonary artery"
@@ -2843,6 +3428,14 @@
           1200.7629090195594
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          20.062582669992707,
+          -161.98049880130864,
+          1200.7629090195594
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           106.02304084760618,
@@ -2863,7 +3456,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.02006258266999271,
+          1.2007629090195595,
+          0.16198049880130863
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "pulmonary artery"
@@ -2900,6 +3498,14 @@
           1186.041963330251
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -29.084557399152487,
+          -167.93500883405022,
+          1186.041963330251
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           167.09909840926235,
@@ -2920,7 +3526,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.02908455739915249,
+          1.186041963330251,
+          0.16793500883405021
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "pulmonary artery"
@@ -2957,6 +3568,14 @@
           1168.9793701171875
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          16.948248234858113,
+          -146.02948052569982,
+          1168.9793701171875
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           109.89328169903558,
@@ -2977,7 +3596,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.016948248234858115,
+          1.1689793701171876,
+          0.14602948052569983
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "pulmonary venous system"
@@ -3014,6 +3638,14 @@
           1178.9793701171875
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          23.429883653802136,
+          -155.94256998996715,
+          1178.9793701171875
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           101.83843379976534,
@@ -3034,7 +3666,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.023429883653802136,
+          1.1789793701171876,
+          0.15594256998996717
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "pulmonary venous system"
@@ -3071,6 +3708,14 @@
           1156.9793701171875
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -32.23592641477598,
+          -144.31375350303816,
+          1156.9793701171875
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           171.01536281702747,
@@ -3091,7 +3736,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.03223592641477598,
+          1.1569793701171875,
+          0.14431375350303816
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "pulmonary venous system"
@@ -3128,6 +3778,14 @@
           1164.9793701171875
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -44.05537923755627,
+          -168.3339318203013,
+          1164.9793701171875
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           185.70361486863794,
@@ -3148,7 +3806,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.044055379237556265,
+          1.1649793701171876,
+          0.16833393182030132
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "pulmonary venous system"
@@ -3185,6 +3848,14 @@
           1149.047899207885
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -2.8354312015674736,
+          -168.0365183093985,
+          1149.047899207885
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           134.47882507634117,
@@ -3205,7 +3876,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.002835431201567474,
+          1.149047899207885,
+          0.1680365183093985
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "left atrium"
@@ -3242,6 +3918,14 @@
           1174.6614698140588
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          23.24896544875024,
+          -187.38375177214144,
+          1174.6614698140588
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           102.06326419050944,
@@ -3262,7 +3946,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.023248965448750242,
+          1.174661469814059,
+          0.18738375177214145
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "left atrial appendage"
@@ -3299,6 +3988,14 @@
           1114.9793701171875
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          38.49588173414643,
+          -194.91694772864025,
+          1114.9793701171875
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           83.11564006885204,
@@ -3319,7 +4016,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.038495881734146434,
+          1.1149793701171875,
+          0.19491694772864027
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "left ventricle"
@@ -3356,6 +4058,14 @@
           1134.9793701171875
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          -37.278637189433084,
+          -198.68771762768097,
+          1134.9793701171875
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           177.28203251757222,
@@ -3376,7 +4086,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          -0.037278637189433084,
+          1.1349793701171875,
+          0.19868771762768098
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "right atrium"
@@ -3413,6 +4128,14 @@
           1110.9793701171875
         ]
       },
+      "world": {
+        "coordinateSystem": "LPS",
+        "position": [
+          3.8407107572487007,
+          -221.67145796469083,
+          1110.9793701171875
+        ]
+      },
       "derived": {
         "continuousVoxel": [
           126.18226031198708,
@@ -3433,7 +4156,12 @@
           "sagittal": "i",
           "coronal": "j",
           "axial": "k"
-        }
+        },
+        "scenePosition": [
+          0.0038407107572487006,
+          1.1109793701171875,
+          0.22167145796469084
+        ]
       },
       "meshExists": true,
       "meshNameResolved": "right ventricle"
@@ -3596,7 +4324,120 @@
     "stationMeshes": "Station 6 spelling has been normalized to match the corrected GLB mesh name. Each nodal target within a station points to the corresponding station mesh.",
     "uniqueLandmarks": "Aorta, brachiocephalic trunk, brachiocephalic veins, SVC, IVC, subclavian arteries, carotids, atria, ventricles, esophagus, and left atrial appendage each map to their own GLB mesh when present."
   },
-  "generatedAt": "2026-03-22T21:38:57.037Z",
+  "generatedAt": "2026-03-23T18:18:21.106Z",
+  "volumeGeometry": {
+    "coordinateSystem": "LPS",
+    "sizes": [
+      307,
+      228,
+      121
+    ],
+    "spaceDirections": [
+      [
+        -0.8046874999999998,
+        0,
+        0
+      ],
+      [
+        0,
+        -0.8046874999999998,
+        0
+      ],
+      [
+        0,
+        0,
+        2
+      ]
+    ],
+    "spaceOrigin": [
+      105.37799835205078,
+      -78.36019897460935,
+      1070.5999755859375
+    ],
+    "axisMap": {
+      "sagittal": "i",
+      "coronal": "j",
+      "axial": "k"
+    },
+    "ijkToWorldMatrix": [
+      -0.8046874999999998,
+      0,
+      0,
+      105.37799835205078,
+      0,
+      -0.8046874999999998,
+      0,
+      -78.36019897460935,
+      0,
+      0,
+      2,
+      1070.5999755859375,
+      0,
+      0,
+      0,
+      1
+    ],
+    "worldToIjkMatrix": [
+      -1.242718446601942,
+      0,
+      0,
+      130.95518241808256,
+      0,
+      -1.242718446601942,
+      0,
+      -97.37966474514562,
+      0,
+      0,
+      0.5,
+      -535.2999877929688,
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "patientToScene": {
+    "name": "patientToScene",
+    "from": "LPS-mm",
+    "to": "three-scene-meters",
+    "matrix": [
+      0.001,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0.001,
+      0,
+      0,
+      -0.001,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1
+    ],
+    "inverseMatrix": [
+      1000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      -1000,
+      0,
+      0,
+      1000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1
+    ],
+    "note": "This explicit transform maps CT/markup patient-space coordinates into the shared Three scene basis. The GLB is already exported in that scene basis, so it should be wrapped in the inverse transform before joining the patient-space group."
+  },
   "meshNames": [
     "airway",
     "aorta",
@@ -3639,5 +4480,46 @@
     "coronal": 220,
     "sagittal": 160
   },
-  "warnings": []
+  "sliceTextureMetadata": {
+    "axial": {
+      "pixelWidth": 714,
+      "pixelHeight": 556,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      "sourceLooksCropped": false,
+      "warning": null
+    },
+    "coronal": {
+      "pixelWidth": 714,
+      "pixelHeight": 556,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      "sourceLooksCropped": true,
+      "warning": "coronal slice textures look cropped or viewport-exported relative to CT geometry; use crop metadata for clean co-registration."
+    },
+    "sagittal": {
+      "pixelWidth": 712,
+      "pixelHeight": 556,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      "sourceLooksCropped": true,
+      "warning": "sagittal slice textures look cropped or viewport-exported relative to CT geometry; use crop metadata for clean co-registration."
+    }
+  },
+  "warnings": [
+    "coronal slice textures look cropped or viewport-exported relative to CT geometry; use crop metadata for clean co-registration.",
+    "sagittal slice textures look cropped or viewport-exported relative to CT geometry; use crop metadata for clean co-registration."
+  ]
 }
