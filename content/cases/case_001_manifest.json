@@ -49,8 +49,8 @@
       "sourceFolderSpelling": "sagital",
       "indexDerivation": "derive from .mrk.json + CT volume geometry + series count",
       "coverageAssumption": [
-        0.0,
-        1.0
+        1.0,
+        0.02
       ]
     }
   },

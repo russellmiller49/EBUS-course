@@ -68,7 +68,7 @@ const case3DModuleContent: Case3DModuleContent = {
     {
       id: 'why-case-linkage',
       title: 'One target, three linked views',
-      summary: 'This module keeps the selected station or landmark tied to a spatial target cloud plus the exported CT slice stacks.',
+      summary: 'This module keeps the selected station or landmark tied to the bundled 3D case model plus the exported CT slice stacks.',
       takeaway: 'Select a target once, then watch the slice viewer jump to the derived frame for that anatomy.',
     },
     {

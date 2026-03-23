@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '@/constants/theme';
@@ -16,6 +17,10 @@ interface SliceViewerProps {
   frameCount: number;
   source: any;
   targetLabel: string;
+  crosshairPosition: {
+    x: number;
+    y: number;
+  };
   onPlaneChange: (plane: CasePlane) => void;
   onStep: (delta: number) => void;
   onReset: () => void;
@@ -58,10 +63,45 @@ export function SliceViewer({
   frameCount,
   source,
   targetLabel,
+  crosshairPosition,
   onPlaneChange,
   onStep,
   onReset,
 }: SliceViewerProps) {
+  const [frameSize, setFrameSize] = useState({ height: 0, width: 0 });
+  const resolvedSource = Image.resolveAssetSource(source);
+  const imageAspectRatio =
+    resolvedSource?.width && resolvedSource?.height ? resolvedSource.width / resolvedSource.height : 714 / 556;
+  const imageRect = useMemo(() => {
+    if (frameSize.width <= 0 || frameSize.height <= 0) {
+      return null;
+    }
+
+    const frameAspectRatio = frameSize.width / frameSize.height;
+
+    if (frameAspectRatio > imageAspectRatio) {
+      const height = frameSize.height;
+      const width = height * imageAspectRatio;
+
+      return {
+        height,
+        left: (frameSize.width - width) / 2,
+        top: 0,
+        width,
+      };
+    }
+
+    const width = frameSize.width;
+    const height = width / imageAspectRatio;
+
+    return {
+      height,
+      left: 0,
+      top: (frameSize.height - height) / 2,
+      width,
+    };
+  }, [frameSize.height, frameSize.width, imageAspectRatio]);
+
   return (
     <View style={styles.container}>
       <View style={styles.planeRow}>
@@ -70,10 +110,21 @@ export function SliceViewer({
         ))}
       </View>
 
-      <View style={styles.frame}>
+      <View
+        onLayout={({ nativeEvent }) => {
+          const { height, width } = nativeEvent.layout;
+          setFrameSize((currentSize) =>
+            currentSize.height === height && currentSize.width === width ? currentSize : { height, width },
+          );
+        }}
+        style={styles.frame}>
         <Image source={source} resizeMode="contain" style={styles.image} />
-        <View pointerEvents="none" style={styles.crosshairVertical} />
-        <View pointerEvents="none" style={styles.crosshairHorizontal} />
+        {imageRect ? (
+          <View pointerEvents="none" style={[styles.imageOverlay, imageRect]}>
+            <View pointerEvents="none" style={[styles.crosshairVertical, { left: `${crosshairPosition.x * 100}%` }]} />
+            <View pointerEvents="none" style={[styles.crosshairHorizontal, { top: `${crosshairPosition.y * 100}%` }]} />
+          </View>
+        ) : null}
         <View style={styles.badge}>
           <Text style={styles.badgeLabel}>{targetLabel}</Text>
         </View>
@@ -122,17 +173,15 @@ const styles = StyleSheet.create({
   crosshairHorizontal: {
     backgroundColor: 'rgba(198, 93, 50, 0.75)',
     height: 2,
-    left: '10%',
+    left: 0,
     position: 'absolute',
-    right: '10%',
-    top: '50%',
+    right: 0,
   },
   crosshairVertical: {
     backgroundColor: 'rgba(198, 93, 50, 0.75)',
-    bottom: '10%',
-    left: '50%',
+    bottom: 0,
     position: 'absolute',
-    top: '10%',
+    top: 0,
     width: 2,
   },
   footer: {
@@ -163,6 +212,9 @@ const styles = StyleSheet.create({
   image: {
     height: '100%',
     width: '100%',
+  },
+  imageOverlay: {
+    position: 'absolute',
   },
   planeButton: {
     borderRadius: 18,

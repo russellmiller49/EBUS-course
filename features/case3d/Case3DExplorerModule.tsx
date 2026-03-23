@@ -31,6 +31,7 @@ import {
   normalizeVisibleToggleSetIds,
   resolveCaseSelection,
 } from '@/features/case3d/logic';
+import { getSliceCrosshairPosition } from '@/features/case3d/slice-logic';
 import { SliceViewer } from '@/features/case3d/SliceViewer';
 import { StructureToggles } from '@/features/case3d/StructureToggles';
 import { TargetPicker } from '@/features/case3d/TargetPicker';
@@ -138,6 +139,9 @@ export function Case3DExplorerModule({ module }: { module: ModuleContent }) {
         sliceAssets.length,
       )
     : 0;
+  const crosshairPosition = focusedTarget
+    ? getSliceCrosshairPosition(focusedTarget.derived.normalized, selectedPlane, caseManifest.sliceSeries)
+    : { x: 0.5, y: 0.5 };
   const currentPrompt: CaseReviewPrompt | null = reviewPrompts[reviewIndex] ?? null;
   const reviewSummary = buildCaseReviewSummary({
     reviewScore: state.case3dExplorer.reviewScore,
@@ -391,7 +395,7 @@ export function Case3DExplorerModule({ module }: { module: ModuleContent }) {
           <StructureToggles onToggle={handleToggle} toggleSet={toggleSet} />
         </SectionCard>
 
-        <SectionCard title="3D navigator" subtitle="This spatial cloud uses the derived case coordinates and keeps the current focus aligned with the slice viewer.">
+        <SectionCard title="3D navigator" subtitle="Native builds render the bundled GLB live, while the current focus still stays aligned with the linked slice viewer.">
           <Case3DCanvas
             activeTargetIds={resolvedSelection.activeTargets.map((target) => target.id)}
             focusTargetId={focusedTarget.id}
@@ -404,6 +408,7 @@ export function Case3DExplorerModule({ module }: { module: ModuleContent }) {
         <SectionCard title="Slice viewer" subtitle="The selected plane jumps to the derived target frame and lets the learner step around it.">
           <SliceViewer
             centerFrameIndex={centeredFrameIndex}
+            crosshairPosition={crosshairPosition}
             frameCount={sliceAssets.length}
             frameIndex={currentFrameIndex}
             onPlaneChange={setSelectedPlane}

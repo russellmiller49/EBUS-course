@@ -57,6 +57,10 @@ describe('mapFrameIndex', () => {
     expect(mapFrameIndex(0.5, 60, 121, 180)).toBe(90);
     expect(mapFrameIndex(0.9, 109, 121, 121)).toBe(109);
   });
+
+  it('honors reversed coverage assumptions for exported slice stacks', () => {
+    expect(mapFrameIndex(0.434640522875817, 133, 307, 160, [1, 0])).toBe(90);
+  });
 });
 
 describe('generated outputs', () => {

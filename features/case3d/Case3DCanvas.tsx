@@ -35,8 +35,8 @@ export function Case3DCanvas({
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerCopy}>
-          <Text style={styles.title}>Spatial target cloud</Text>
-          <Text style={styles.subtitle}>Build-time GLB mesh names are verified, then markup points place the targets in a linked 3D coordinate frame.</Text>
+          <Text style={styles.title}>Web fallback navigator</Text>
+          <Text style={styles.subtitle}>Native builds render the bundled GLB at runtime. Web and test environments keep this coordinate-based navigator so the explorer still exports cleanly.</Text>
         </View>
         <View style={styles.pillRow}>
           <StatusPill label={`${visibleTargets.length} visible`} tone="teal" />

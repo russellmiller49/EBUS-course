@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { mapNormalizedToFrameIndex } from '../features/case3d/slice-logic';
 import type {
   AxisMap,
   AxisName,
@@ -290,16 +291,26 @@ export function buildNormalizedPositions(roundedVoxel: Vector3, sizes: Vector3, 
   };
 }
 
-export function mapFrameIndex(normalizedPosition: number, voxelIndex: number, voxelAxisLength: number, frameCount: number): number {
+function usesDefaultCoverageAssumption(coverageAssumption?: [number, number]) {
+  return !coverageAssumption || (coverageAssumption[0] === 0 && coverageAssumption[1] === 1);
+}
+
+export function mapFrameIndex(
+  normalizedPosition: number,
+  voxelIndex: number,
+  voxelAxisLength: number,
+  frameCount: number,
+  coverageAssumption?: [number, number],
+): number {
   if (frameCount <= 1) {
     return 0;
   }
 
-  if (frameCount === voxelAxisLength) {
+  if (frameCount === voxelAxisLength && usesDefaultCoverageAssumption(coverageAssumption)) {
     return Math.min(frameCount - 1, Math.max(0, voxelIndex));
   }
 
-  return Math.min(frameCount - 1, Math.max(0, Math.round(normalizedPosition * (frameCount - 1))));
+  return mapNormalizedToFrameIndex(normalizedPosition, frameCount, coverageAssumption);
 }
 
 export function parseGlbMeshNames(buffer: Buffer): string[] {
@@ -555,18 +566,26 @@ export function generateCaseOutputs(rootDir: string): GeneratedCaseOutputs {
     const normalized = buildNormalizedPositions(roundedVoxel, geometry.sizes, axisMap);
     const voxelIndex = buildVoxelIndex(axisMap, roundedVoxel);
     const sliceIndex: SliceIndex = {
-      axial: mapFrameIndex(normalized.axial, voxelIndex.axial, geometry.sizes[axisNameToIndex(axisMap.axial)], sliceFiles.axial.length),
+      axial: mapFrameIndex(
+        normalized.axial,
+        voxelIndex.axial,
+        geometry.sizes[axisNameToIndex(axisMap.axial)],
+        sliceFiles.axial.length,
+        manifest.sliceSeries.axial.coverageAssumption,
+      ),
       coronal: mapFrameIndex(
         normalized.coronal,
         voxelIndex.coronal,
         geometry.sizes[axisNameToIndex(axisMap.coronal)],
         sliceFiles.coronal.length,
+        manifest.sliceSeries.coronal.coverageAssumption,
       ),
       sagittal: mapFrameIndex(
         normalized.sagittal,
         voxelIndex.sagittal,
         geometry.sizes[axisNameToIndex(axisMap.sagittal)],
         sliceFiles.sagittal.length,
+        manifest.sliceSeries.sagittal.coverageAssumption,
       ),
     };
     const meshNameResolved = resolveMeshName(target.meshNameExpected, meshNames);
