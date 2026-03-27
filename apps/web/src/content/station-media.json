@@ -1,0 +1,47 @@
+{
+  "2R": {
+    "notes": [
+      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/2R/ to replace this placeholder."
+    ]
+  },
+  "2L": {
+    "notes": [
+      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/2L/ to replace this placeholder."
+    ]
+  },
+  "4R": {
+    "notes": [
+      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/4R/ to replace this placeholder."
+    ]
+  },
+  "4L": {
+    "notes": [
+      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/4L/ to replace this placeholder."
+    ]
+  },
+  "7": {
+    "notes": [
+      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/7/ to replace this placeholder."
+    ]
+  },
+  "10R": {
+    "notes": [
+      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/10R/ to replace this placeholder."
+    ]
+  },
+  "10L": {
+    "notes": [
+      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/10L/ to replace this placeholder."
+    ]
+  },
+  "11R": {
+    "notes": [
+      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/11R/ to replace this placeholder."
+    ]
+  },
+  "11L": {
+    "notes": [
+      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/11L/ to replace this placeholder."
+    ]
+  }
+}

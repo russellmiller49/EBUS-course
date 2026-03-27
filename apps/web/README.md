@@ -1,0 +1,45 @@
+# SoCal EBUS Prep Web
+
+This folder contains the standalone web scaffold requested in `webapp_codex_instructions.md`.
+
+## Source of truth
+
+- UI shell and interaction style are adapted from the prototype.
+- Structured content still comes from the repo root where available:
+  - `content/stations/*`
+  - `content/modules/*`
+  - `content/course/course-info.json`
+  - `content/cases/generated/case_001.enriched.json`
+- Web-only lecture and media manifests live under `apps/web/src/content/`.
+
+## Commands
+
+Run from [`apps/web`](/home/rjm/projects/EBUS_course/apps/web):
+
+```bash
+npm install
+npm run dev
+npm run build
+npm run typecheck
+npm run test
+```
+
+## Media folders
+
+Static web media should be added under:
+
+- `public/media/stations/<stationId>/`
+- `public/media/knobology/`
+- `public/media/lectures/<lectureId>/`
+- `public/media/cases/case_001/`
+
+The corresponding manifests are:
+
+- [`src/content/station-media.json`](/home/rjm/projects/EBUS_course/apps/web/src/content/station-media.json)
+- [`src/content/knobology-media.json`](/home/rjm/projects/EBUS_course/apps/web/src/content/knobology-media.json)
+- [`src/content/lectures.json`](/home/rjm/projects/EBUS_course/apps/web/src/content/lectures.json)
+
+## Notes
+
+- Vite is configured to read repo-root JSON outside `apps/web`, so the web app does not duplicate station, quiz, or case content.
+- The `/cases/case-001` route is a hidden scaffold only. It reads the enriched manifest but does not ship the React Three Fiber viewer yet.

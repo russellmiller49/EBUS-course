@@ -1,0 +1,79 @@
+[
+  {
+    "id": "lecture-01",
+    "title": "Introduction to EBUS",
+    "subtitle": "Procedure nuts and bolts",
+    "week": "Week 1",
+    "duration": "2h 15m",
+    "poster": "/media/lectures/lecture-01/poster.jpg",
+    "video": "/media/lectures/lecture-01/video.mp4",
+    "topics": ["Equipment overview", "Scope anatomy", "Patient positioning", "Sedation considerations"],
+    "status": "available"
+  },
+  {
+    "id": "lecture-02",
+    "title": "Mediastinal Anatomy",
+    "subtitle": "IASLC station map and TNM-9 staging",
+    "week": "Week 1",
+    "duration": "2h 30m",
+    "poster": "/media/lectures/lecture-02/poster.jpg",
+    "video": "/media/lectures/lecture-02/video.mp4",
+    "topics": ["IASLC lymph node map", "Station boundaries", "TNM-9 updates", "N-staging patterns"],
+    "status": "available"
+  },
+  {
+    "id": "lecture-03",
+    "title": "Systematic EBUS Staging",
+    "subtitle": "Approach to the mediastinum",
+    "week": "Week 2",
+    "duration": "1h 45m",
+    "poster": "/media/lectures/lecture-03/poster.jpg",
+    "video": "/media/lectures/lecture-03/video.mp4",
+    "topics": ["Systematic survey technique", "Station identification by ultrasound", "Sampling order", "Adequate sampling criteria"],
+    "status": "available"
+  },
+  {
+    "id": "lecture-04",
+    "title": "Histology and Tissue Adequacy",
+    "subtitle": "Molecular testing essentials",
+    "week": "Week 2",
+    "duration": "1h 30m",
+    "poster": "/media/lectures/lecture-04/poster.jpg",
+    "video": "/media/lectures/lecture-04/video.mp4",
+    "topics": ["ROSE basics", "Specimen handling", "Molecular markers", "Tissue triage"],
+    "status": "available"
+  },
+  {
+    "id": "lecture-05",
+    "title": "Lymphoma and Non-Malignant Disease",
+    "subtitle": "Beyond lung cancer staging",
+    "week": "Week 3",
+    "duration": "1h 15m",
+    "poster": "/media/lectures/lecture-05/poster.jpg",
+    "video": "/media/lectures/lecture-05/video.mp4",
+    "topics": ["Lymphoma diagnosis by EBUS", "Sarcoidosis", "Infectious etiologies", "Flow cytometry considerations"],
+    "status": "available"
+  },
+  {
+    "id": "lecture-06",
+    "title": "Advanced EBUS Techniques",
+    "subtitle": "Elastography, miniforceps, cryobiopsy",
+    "week": "Week 3",
+    "duration": "2h 00m",
+    "poster": "/media/lectures/lecture-06/poster.jpg",
+    "video": "/media/lectures/lecture-06/video.mp4",
+    "topics": ["Strain elastography", "EBUS miniforceps biopsy", "Cryo-EBUS", "EUS-B technique"],
+    "status": "locked"
+  },
+  {
+    "id": "lecture-07",
+    "title": "Evidence Update 2026",
+    "subtitle": "Guideline-based planning and case synthesis",
+    "week": "Week 4",
+    "duration": "1h 45m",
+    "poster": "/media/lectures/lecture-07/poster.jpg",
+    "video": "/media/lectures/lecture-07/video.mp4",
+    "topics": ["AABIP guideline updates", "Case-based planning", "Pre-course knowledge check", "Liquid biopsy overview"],
+    "status": "locked"
+  }
+]

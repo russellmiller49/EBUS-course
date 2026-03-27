@@ -1,0 +1,23 @@
+{
+  "depth": {
+    "caption": "Add before-and-after depth examples to compare shallow framing versus a centered target."
+  },
+  "gain": {
+    "caption": "Add undergained, optimized, and overgained examples to replace the simulated frame."
+  },
+  "contrast": {
+    "caption": "Add comparison frames showing how contrast changes edge separation."
+  },
+  "color-doppler": {
+    "caption": "Add a short Doppler vessel-check clip when approved teaching media is ready."
+  },
+  "calipers": {
+    "caption": "Add a measured still frame to demonstrate correct caliper placement."
+  },
+  "freeze": {
+    "caption": "Add a frozen teaching frame that highlights the inspection step before measurement."
+  },
+  "save": {
+    "caption": "Add a final saved-frame example once a canonical teaching capture is available."
+  }
+}
