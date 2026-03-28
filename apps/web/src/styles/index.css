@@ -1432,31 +1432,6 @@ iframe {
   min-height: inherit;
 }
 
-.case3d-crosshair-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.case3d-crosshair-overlay__vertical,
-.case3d-crosshair-overlay__horizontal {
-  position: absolute;
-  background: rgba(255, 222, 120, 0.92);
-  box-shadow: 0 0 18px rgba(255, 214, 98, 0.28);
-}
-
-.case3d-crosshair-overlay__vertical {
-  top: 0;
-  bottom: 0;
-  width: 1px;
-}
-
-.case3d-crosshair-overlay__horizontal {
-  left: 0;
-  right: 0;
-  height: 1px;
-}
-
 .case3d-select,
 .case3d-slider {
   display: grid;
@@ -1513,6 +1488,24 @@ iframe {
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.5;
+}
+
+.case3d-segment-section {
+  display: grid;
+  gap: 10px;
+}
+
+.case3d-segment-section__title {
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+.case3d-segment-list {
+  display: grid;
+  gap: 10px;
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 6px;
 }
 
 @media (min-width: 760px) {

@@ -13,7 +13,9 @@ import { createCrosshairActors, updateCrosshairActors } from './vtk/buildCrossha
 import { loadGlbOverlay } from './vtk/buildGlbOverlay';
 import { createCutPlaneSlice } from './vtk/buildCutPlane';
 import { createOrthogonalPlaneActor } from './vtk/buildOrthogonalPlanes';
+import { createSegmentationSliceOverlay } from './vtk/buildSegmentationSliceOverlay';
 import { createSegmentationSurfaceActor } from './vtk/buildSegmentationSurface';
+import { createSliceCrosshairActors, updateSliceCrosshairActors } from './vtk/buildSliceCrosshair';
 import {
   boundsToExtent,
   getBoundsCenter,
@@ -23,6 +25,7 @@ import {
   getPlaneNormalWorld,
   getPlaneViewUp,
 } from './vtk/coordinateTransforms';
+import { normalizeStructureKey } from './structureKeys';
 
 import { crossVectors, normalizeVector } from '../../../../../features/case3d/patient-space';
 import type { LoadedCaseVolume } from './vtk/loadCaseVolume';
@@ -42,27 +45,38 @@ interface CommonViewportProps {
 interface SliceViewportProps extends CommonViewportProps {
   mode: 'slice';
   manifest: RuntimeCaseManifest;
-  volume: LoadedCaseVolume | null;
+  hasSegmentation: boolean;
+  hasVolume: boolean;
   plane: CasePlane;
   planeIndex: number;
+  crosshairWorld: Vector3Tuple;
+  overlayOpacity: number;
+  showSegmentationOverlay: boolean;
+  visibleSegments: SegmentationSegment[];
+  selectedSegments: SegmentationSegment[];
   visible: boolean;
+  segmentationRef: { current: LoadedSegmentation | null };
+  volumeRef: { current: LoadedCaseVolume | null };
 }
 
 interface CutViewportProps extends CommonViewportProps {
   mode: 'cut';
+  hasSegmentation?: boolean;
+  hasVolume: boolean;
   manifest: RuntimeCaseManifest;
-  volume: LoadedCaseVolume | null;
   origin: Vector3Tuple;
   normal: Vector3Tuple;
   opacity: number;
   visible: boolean;
+  segmentationRef?: { current: LoadedSegmentation | null };
+  volumeRef: { current: LoadedCaseVolume | null };
 }
 
 interface ThreeDViewportProps extends CommonViewportProps {
   mode: 'three-d';
+  hasSegmentation: boolean;
+  hasVolume: boolean;
   manifest: RuntimeCaseManifest;
-  volume: LoadedCaseVolume | null;
-  segmentation: LoadedSegmentation | null;
   planeIndices: SliceIndex;
   planeVisibility: Record<CasePlane, boolean>;
   crosshairWorld: Vector3Tuple;
@@ -76,13 +90,25 @@ interface ThreeDViewportProps extends CommonViewportProps {
   showGlb: boolean;
   resetCameraToken: number;
   onCutPlaneChange: (origin: Vector3Tuple, normal: Vector3Tuple) => void;
+  segmentationRef: { current: LoadedSegmentation | null };
+  volumeRef: { current: LoadedCaseVolume | null };
 }
 
 type VtkViewportProps = SliceViewportProps | CutViewportProps | ThreeDViewportProps;
 
+type SliceOverlayBundle = Exclude<ReturnType<typeof createSegmentationSliceOverlay>, null> & {
+  signature: string;
+};
+
+type SegmentationSurfaceBundle = Exclude<ReturnType<typeof createSegmentationSurfaceActor>, null> & {
+  signature: string;
+};
+
 type SlicePipeline = {
   actor: ReturnType<typeof createOrthogonalPlaneActor>['actor'];
+  crosshair: ReturnType<typeof createSliceCrosshairActors>;
   mapper: ReturnType<typeof createOrthogonalPlaneActor>['mapper'];
+  overlayActors: Map<string, SliceOverlayBundle>;
 };
 
 type CutPipeline = ReturnType<typeof createCutPlaneSlice>;
@@ -94,15 +120,53 @@ type ThreeDPipeline = {
   widgetFactory: any;
   widgetManager: vtkWidgetManager;
   widgetSubscription: { unsubscribe: () => void } | null;
-  segmentationActors: Map<string, Exclude<ReturnType<typeof createSegmentationSurfaceActor>, null>>;
+  interactionSubscriptions: Array<{ unsubscribe: () => void }>;
+  segmentationActors: Map<string, SegmentationSurfaceBundle>;
   selectedActor: Exclude<ReturnType<typeof createSegmentationSurfaceActor>, null> | null;
   glbImporter: Awaited<ReturnType<typeof loadGlbOverlay>> | null;
 };
 
 const EMPTY_SEGMENTS: SegmentationSegment[] = [];
+const THREE_D_ORTHOGONAL_PLANE_OPACITY = 0.2;
+const THREE_D_GLB_OPACITY = 0.68;
+
+const SEGMENT_GROUP_COLORS: Record<string, [number, number, number]> = {
+  airway: [0.55, 0.93, 0.95],
+  vessels: [0.91, 0.45, 0.43],
+  nodes: [0.43, 0.91, 0.62],
+  cardiac: [0.92, 0.75, 0.45],
+  gi: [0.86, 0.75, 0.59],
+  selected: [0.99, 0.92, 0.34],
+};
 
 function vectorsClose(left: readonly number[], right: readonly number[], epsilon = 1e-3) {
   return left.every((value, index) => Math.abs(value - right[index]) <= epsilon);
+}
+
+function getOverlayGroupKey(groupId: SegmentationSegment['groupId']) {
+  return groupId === 'other' ? 'vessels' : groupId;
+}
+
+function buildSegmentSignature(segments: SegmentationSegment[]) {
+  return segments
+    .map((segment) => segment.id)
+    .sort()
+    .join('|');
+}
+
+function ensureMapperClipping(
+  mapper: { addClippingPlane: (plane: any) => void; getClippingPlanes: () => any[]; removeAllClippingPlanes: () => void },
+  plane: any,
+  enabled: boolean,
+) {
+  if (!enabled) {
+    mapper.removeAllClippingPlanes();
+    return;
+  }
+
+  if (!mapper.getClippingPlanes().includes(plane)) {
+    mapper.addClippingPlane(plane);
+  }
 }
 
 function configureSliceCamera(
@@ -180,7 +244,7 @@ export function VtkViewport(props: VtkViewportProps) {
     const groups = new Map<string, SegmentationSegment[]>();
 
     props.visibleSegments.forEach((segment) => {
-      const key = segment.groupId;
+      const key = getOverlayGroupKey(segment.groupId);
       const existing = groups.get(key) ?? [];
       existing.push(segment);
       groups.set(key, existing);
@@ -188,6 +252,21 @@ export function VtkViewport(props: VtkViewportProps) {
 
     return groups;
   }, [props.mode, threeDVisibleSegments]);
+  const visibleStructureKeys = useMemo(() => {
+    if (props.mode !== 'three-d') {
+      return new Set<string>();
+    }
+
+    return new Set(
+      props.visibleSegments.map((segment) =>
+        normalizeStructureKey(segment.meshNameResolved ?? segment.name),
+      ),
+    );
+  }, [props.mode, threeDVisibleSegments]);
+  const visibleStructureSignature = useMemo(
+    () => [...visibleStructureKeys].sort().join('|'),
+    [visibleStructureKeys],
+  );
 
   useEffect(() => {
     if (props.mode !== 'three-d') {
@@ -216,6 +295,7 @@ export function VtkViewport(props: VtkViewportProps) {
     return () => {
       if (pipelineRef.current && 'widgetSubscription' in pipelineRef.current) {
         pipelineRef.current.widgetSubscription?.unsubscribe();
+        pipelineRef.current.interactionSubscriptions.forEach((subscription) => subscription.unsubscribe());
       }
 
       pipelineRef.current = null;
@@ -235,34 +315,55 @@ export function VtkViewport(props: VtkViewportProps) {
 
   useEffect(() => {
     const genericRenderWindow = genericRenderWindowRef.current;
+    const volume = props.volumeRef.current;
+    const segmentation = props.mode === 'cut' ? null : props.segmentationRef.current;
 
     if (!genericRenderWindow) {
       return;
     }
 
-    if (props.mode === 'slice' && props.volume && !pipelineRef.current) {
-      const renderer = genericRenderWindow.getRenderer();
-      const interactor = genericRenderWindow.getInteractor();
-      interactor.setInteractorStyle(vtkInteractorStyleImage.newInstance());
-      const planeActor = createOrthogonalPlaneActor(
-        props.volume.image,
-        props.manifest,
-        props.plane,
-        props.volume.scalarRange,
-      );
-      renderer.addActor(planeActor.actor);
-      pipelineRef.current = planeActor;
-      configureSliceCamera(genericRenderWindow, props.manifest, props.plane, props.planeIndex);
-      genericRenderWindow.getRenderWindow().render();
+    if (props.mode === 'slice' && volume && !pipelineRef.current) {
+      try {
+        const renderer = genericRenderWindow.getRenderer();
+        const interactor = genericRenderWindow.getInteractor();
+        interactor.setInteractorStyle(vtkInteractorStyleImage.newInstance());
+        const planeActor = createOrthogonalPlaneActor(
+          volume.image,
+          props.manifest,
+          props.plane,
+          volume.scalarRange,
+        );
+        const crosshair = createSliceCrosshairActors(
+          props.manifest,
+          props.plane,
+          props.planeIndex,
+          props.crosshairWorld,
+        );
+
+        renderer.addActor(planeActor.actor);
+        crosshair.forEach(({ actor }) => renderer.addActor(actor));
+        pipelineRef.current = {
+          ...planeActor,
+          crosshair,
+          overlayActors: new Map(),
+        };
+        configureSliceCamera(genericRenderWindow, props.manifest, props.plane, props.planeIndex);
+        genericRenderWindow.getRenderWindow().render();
+      } catch (error) {
+        console.error(
+          `[case3d] slice viewport init failed for ${props.plane}`,
+          error instanceof Error ? error.message : String(error),
+        );
+      }
     }
 
-    if (props.mode === 'cut' && props.volume && !pipelineRef.current) {
+    if (props.mode === 'cut' && volume && !pipelineRef.current) {
       const renderer = genericRenderWindow.getRenderer();
       const interactor = genericRenderWindow.getInteractor();
       interactor.setInteractorStyle(vtkInteractorStyleImage.newInstance());
       const cutSlice = createCutPlaneSlice(
-        props.volume.image,
-        props.volume.scalarRange,
+        volume.image,
+        volume.scalarRange,
         props.origin,
         props.normal,
       );
@@ -272,16 +373,17 @@ export function VtkViewport(props: VtkViewportProps) {
       genericRenderWindow.getRenderWindow().render();
     }
 
-    if (props.mode === 'three-d' && props.volume && props.segmentation && !pipelineRef.current) {
+    if (props.mode === 'three-d' && volume && segmentation && !pipelineRef.current) {
       const renderer = genericRenderWindow.getRenderer();
+      const interactor = genericRenderWindow.getInteractor();
       const planeActors = {
-        axial: createOrthogonalPlaneActor(props.volume.image, props.manifest, 'axial', props.volume.scalarRange),
-        coronal: createOrthogonalPlaneActor(props.volume.image, props.manifest, 'coronal', props.volume.scalarRange),
-        sagittal: createOrthogonalPlaneActor(props.volume.image, props.manifest, 'sagittal', props.volume.scalarRange),
+        axial: createOrthogonalPlaneActor(volume.image, props.manifest, 'axial', volume.scalarRange),
+        coronal: createOrthogonalPlaneActor(volume.image, props.manifest, 'coronal', volume.scalarRange),
+        sagittal: createOrthogonalPlaneActor(volume.image, props.manifest, 'sagittal', volume.scalarRange),
       } as const;
       const cutSlice = createCutPlaneSlice(
-        props.volume.image,
-        props.volume.scalarRange,
+        volume.image,
+        volume.scalarRange,
         props.cutPlaneOrigin,
         props.cutPlaneNormal,
       );
@@ -310,8 +412,16 @@ export function VtkViewport(props: VtkViewportProps) {
         props.onCutPlaneChange(nextOrigin, nextNormal);
       });
       widgetManager.addWidget(widgetFactory, ViewTypes.GEOMETRY);
+      const interactionSubscriptions = [
+        interactor.onAnimation(() => renderer.resetCameraClippingRange(boundsToExtent(props.manifest.bounds.union))),
+        interactor.onEndAnimation(() => renderer.resetCameraClippingRange(boundsToExtent(props.manifest.bounds.union))),
+      ];
 
-      Object.values(planeActors).forEach(({ actor }) => renderer.addActor(actor));
+      Object.values(planeActors).forEach(({ actor }) => {
+        actor.getProperty().setOpacity(THREE_D_ORTHOGONAL_PLANE_OPACITY);
+        renderer.addActor(actor);
+      });
+      cutSlice.actor.getProperty().setOpacity(props.cutPlaneOpacity);
       renderer.addActor(cutSlice.actor);
       crosshair.forEach(({ actor }) => renderer.addActor(actor));
       pipelineRef.current = {
@@ -325,6 +435,7 @@ export function VtkViewport(props: VtkViewportProps) {
         widgetFactory,
         widgetManager,
         widgetSubscription,
+        interactionSubscriptions,
         segmentationActors: new Map(),
         selectedActor: null,
         glbImporter: null,
@@ -335,21 +446,138 @@ export function VtkViewport(props: VtkViewportProps) {
     // The volume / segmentation objects are large and stable for the life of the viewer.
     // Keep them out of the dependency array so React dev logging does not recurse through
     // the entire vtk image graph if an imperative VTK call throws.
-  }, [props.mode, Boolean(props.volume), props.mode === 'three-d' ? Boolean(props.segmentation) : false]);
+  }, [props.mode, props.hasVolume, props.mode === 'three-d' ? props.hasSegmentation : false]);
 
   useEffect(() => {
     const genericRenderWindow = genericRenderWindowRef.current;
     const pipeline = pipelineRef.current;
+    const segmentation = props.mode === 'cut' ? null : props.segmentationRef.current;
 
     if (!genericRenderWindow || !pipeline) {
       return;
     }
 
-    if (props.mode === 'slice' && 'mapper' in pipeline) {
-      pipeline.mapper.setSlice(props.planeIndex);
-      pipeline.actor.setVisibility(props.visible);
-      configureSliceCamera(genericRenderWindow, props.manifest, props.plane, props.planeIndex);
-      genericRenderWindow.getRenderWindow().render();
+    if (props.mode === 'slice' && 'overlayActors' in pipeline) {
+      try {
+        const renderer = genericRenderWindow.getRenderer();
+        pipeline.mapper.setSlice(props.planeIndex);
+        pipeline.actor.setVisibility(props.visible);
+        updateSliceCrosshairActors(
+          pipeline.crosshair,
+          props.manifest,
+          props.plane,
+          props.planeIndex,
+          props.crosshairWorld,
+        );
+        pipeline.crosshair.forEach(({ actor }) => actor.setVisibility(props.visible));
+        const sliceOrigin = getPlaneCenterWorld(props.manifest.volumeGeometry, props.plane, props.planeIndex);
+        const sliceNormal = getPlaneNormalWorld(props.manifest.volumeGeometry, props.plane);
+        const overlayEntries = [
+          {
+            key: 'airway',
+            opacity: props.overlayOpacity,
+            segments: props.visibleSegments.filter((segment) => getOverlayGroupKey(segment.groupId) === 'airway'),
+          },
+          {
+            key: 'vessels',
+            opacity: props.overlayOpacity,
+            segments: props.visibleSegments.filter((segment) => getOverlayGroupKey(segment.groupId) === 'vessels'),
+          },
+          {
+            key: 'nodes',
+            opacity: props.overlayOpacity,
+            segments: props.visibleSegments.filter((segment) => getOverlayGroupKey(segment.groupId) === 'nodes'),
+          },
+          {
+            key: 'cardiac',
+            opacity: props.overlayOpacity,
+            segments: props.visibleSegments.filter((segment) => getOverlayGroupKey(segment.groupId) === 'cardiac'),
+          },
+          {
+            key: 'gi',
+            opacity: props.overlayOpacity,
+            segments: props.visibleSegments.filter((segment) => getOverlayGroupKey(segment.groupId) === 'gi'),
+          },
+          {
+            key: 'selected',
+            opacity: Math.min(1, props.overlayOpacity + 0.24),
+            segments: props.selectedSegments,
+          },
+        ];
+        const overlayKeys = new Set(overlayEntries.map((entry) => entry.key));
+
+        pipeline.overlayActors.forEach((bundle, key) => {
+          if (!overlayKeys.has(key)) {
+            renderer.removeActor(bundle.actor);
+            pipeline.overlayActors.delete(key);
+          }
+        });
+
+        if (!props.showSegmentationOverlay || !segmentation || !props.visible) {
+          pipeline.overlayActors.forEach((bundle) => renderer.removeActor(bundle.actor));
+          pipeline.overlayActors.clear();
+        } else {
+          overlayEntries.forEach((entry) => {
+            const signature = buildSegmentSignature(entry.segments);
+            const existing = pipeline.overlayActors.get(entry.key);
+
+            if (!entry.segments.length) {
+              if (existing) {
+                renderer.removeActor(existing.actor);
+                pipeline.overlayActors.delete(entry.key);
+              }
+              return;
+            }
+
+            if (!existing || existing.signature !== signature) {
+              if (existing) {
+                renderer.removeActor(existing.actor);
+                pipeline.overlayActors.delete(entry.key);
+              }
+
+              const overlayBundle = createSegmentationSliceOverlay(
+                segmentation,
+                entry.segments,
+                SEGMENT_GROUP_COLORS[entry.key],
+                entry.opacity,
+                sliceOrigin,
+                sliceNormal,
+              );
+
+              if (!overlayBundle) {
+                return;
+              }
+
+              renderer.addActor(overlayBundle.actor);
+              pipeline.overlayActors.set(entry.key, {
+                ...overlayBundle,
+                signature,
+              });
+            }
+
+            const bundle = pipeline.overlayActors.get(entry.key);
+
+            if (!bundle) {
+              return;
+            }
+
+            bundle.plane.setOrigin(sliceOrigin);
+            bundle.plane.setNormal(sliceNormal);
+            bundle.opacityTransfer.removeAllPoints();
+            bundle.opacityTransfer.addPoint(0, 0);
+            bundle.opacityTransfer.addPoint(255, entry.opacity);
+            bundle.actor.setVisibility(true);
+          });
+        }
+
+        configureSliceCamera(genericRenderWindow, props.manifest, props.plane, props.planeIndex);
+        genericRenderWindow.getRenderWindow().render();
+      } catch (error) {
+        console.error(
+          `[case3d] slice viewport update failed for ${props.plane}`,
+          error instanceof Error ? error.message : String(error),
+        );
+      }
     }
 
     if (props.mode === 'cut' && 'plane' in pipeline && !('planeActors' in pipeline)) {
@@ -372,6 +600,9 @@ export function VtkViewport(props: VtkViewportProps) {
     pipeline.planeActors.axial.actor.setVisibility(props.planeVisibility.axial);
     pipeline.planeActors.coronal.actor.setVisibility(props.planeVisibility.coronal);
     pipeline.planeActors.sagittal.actor.setVisibility(props.planeVisibility.sagittal);
+    pipeline.planeActors.axial.actor.getProperty().setOpacity(THREE_D_ORTHOGONAL_PLANE_OPACITY);
+    pipeline.planeActors.coronal.actor.getProperty().setOpacity(THREE_D_ORTHOGONAL_PLANE_OPACITY);
+    pipeline.planeActors.sagittal.actor.getProperty().setOpacity(THREE_D_ORTHOGONAL_PLANE_OPACITY);
     updateCrosshairActors(pipeline.crosshair, props.crosshairWorld, 18);
     pipeline.cutSlice.plane.setOrigin(props.cutPlaneOrigin);
     pipeline.cutSlice.plane.setNormal(props.cutPlaneNormal);
@@ -390,38 +621,58 @@ export function VtkViewport(props: VtkViewportProps) {
     pipeline.widgetFactory.setVisibility(props.cutPlaneVisible);
     pipeline.widgetFactory.setPickable(props.cutPlaneVisible);
 
-    const buildGroupActor = (groupKey: string, segments: SegmentationSegment[], color: [number, number, number]) => {
-      if (pipeline.segmentationActors.has(groupKey) || !props.segmentation) {
-        return;
-      }
-
-      const actorBundle = createSegmentationSurfaceActor(
-        props.manifest,
-        props.segmentation,
-        segments,
-        color,
-        props.overlayOpacity,
-        pipeline.cutSlice.plane,
-      );
-
-      if (!actorBundle) {
-        return;
-      }
-
-      renderer.addActor(actorBundle.actor);
-      pipeline.segmentationActors.set(groupKey, actorBundle);
-    };
-
-    buildGroupActor('airway', visibleGroupMap.get('airway') ?? [], [0.55, 0.93, 0.95]);
-    buildGroupActor('vessels', visibleGroupMap.get('vessels') ?? [], [0.91, 0.45, 0.43]);
-    buildGroupActor('nodes', visibleGroupMap.get('nodes') ?? [], [0.43, 0.91, 0.62]);
-    buildGroupActor('cardiac', visibleGroupMap.get('cardiac') ?? [], [0.92, 0.75, 0.45]);
-    buildGroupActor('gi', visibleGroupMap.get('gi') ?? [], [0.86, 0.75, 0.59]);
-
-    pipeline.segmentationActors.forEach((bundle, groupKey) => {
+    (['airway', 'vessels', 'nodes', 'cardiac', 'gi'] as const).forEach((groupKey) => {
       const segments = visibleGroupMap.get(groupKey) ?? [];
-      bundle.actor.setVisibility(segments.length > 0);
-      bundle.actor.getProperty().setOpacity(props.overlayOpacity);
+      const signature = buildSegmentSignature(segments);
+      const existing = pipeline.segmentationActors.get(groupKey);
+
+      if (!segments.length) {
+        if (existing) {
+          renderer.removeActor(existing.actor);
+          pipeline.segmentationActors.delete(groupKey);
+        }
+        return;
+      }
+
+      if (!existing || existing.signature !== signature) {
+        if (existing) {
+          renderer.removeActor(existing.actor);
+          pipeline.segmentationActors.delete(groupKey);
+        }
+
+        if (!segmentation) {
+          return;
+        }
+
+        const actorBundle = createSegmentationSurfaceActor(
+          props.manifest,
+          segmentation,
+          segments,
+          SEGMENT_GROUP_COLORS[groupKey],
+          props.overlayOpacity,
+          props.cutPlaneVisible ? pipeline.cutSlice.plane : undefined,
+        );
+
+        if (!actorBundle) {
+          return;
+        }
+
+        renderer.addActor(actorBundle.actor);
+        pipeline.segmentationActors.set(groupKey, {
+          ...actorBundle,
+          signature,
+        });
+      }
+
+      const bundle = pipeline.segmentationActors.get(groupKey);
+
+      if (!bundle) {
+        return;
+      }
+
+      ensureMapperClipping(bundle.mapper, pipeline.cutSlice.plane, props.cutPlaneVisible);
+      bundle.actor.setVisibility(true);
+      bundle.actor.getProperty().setOpacity(props.overlayOpacity * (props.showGlb ? 0.76 : 1));
     });
 
     if (pipeline.selectedActor) {
@@ -429,14 +680,14 @@ export function VtkViewport(props: VtkViewportProps) {
       pipeline.selectedActor = null;
     }
 
-    if (props.selectedSegments.length > 0 && props.segmentation) {
+    if (props.selectedSegments.length > 0 && segmentation) {
       pipeline.selectedActor = createSegmentationSurfaceActor(
         props.manifest,
-        props.segmentation,
+        segmentation,
         props.selectedSegments,
-        [0.99, 0.92, 0.34],
+        SEGMENT_GROUP_COLORS.selected,
         Math.min(1, props.overlayOpacity + 0.24),
-        pipeline.cutSlice.plane,
+        props.cutPlaneVisible ? pipeline.cutSlice.plane : undefined,
       );
 
       if (pipeline.selectedActor) {
@@ -456,10 +707,22 @@ export function VtkViewport(props: VtkViewportProps) {
     }
 
     if (pipeline.glbImporter) {
-      pipeline.glbImporter.getActors().forEach((actor) => {
-        actor.setVisibility(props.showGlb);
-        actor.getProperty().setOpacity(0.28);
-      });
+      if (pipeline.glbImporter.namedActors.size > 0) {
+        pipeline.glbImporter.importer.getActors().forEach((actor) => actor.setVisibility(false));
+        pipeline.glbImporter.namedActors.forEach((actors, key) => {
+          const visible = props.showGlb && visibleStructureKeys.has(key);
+
+          actors.forEach((actor) => {
+            actor.setVisibility(visible);
+            actor.getProperty().setOpacity(THREE_D_GLB_OPACITY);
+          });
+        });
+      } else {
+        pipeline.glbImporter.importer.getActors().forEach((actor) => {
+          actor.setVisibility(props.showGlb);
+          actor.getProperty().setOpacity(THREE_D_GLB_OPACITY);
+        });
+      }
     }
 
     if (props.resetCameraToken > lastResetCameraTokenRef.current) {
@@ -473,6 +736,12 @@ export function VtkViewport(props: VtkViewportProps) {
     visibleGroupMap,
     props.mode === 'slice' ? props.plane : null,
     props.mode === 'slice' ? props.planeIndex : null,
+    props.mode === 'slice' ? props.crosshairWorld : null,
+    props.mode === 'slice' ? props.overlayOpacity : null,
+    props.mode === 'slice' ? props.showSegmentationOverlay : null,
+    props.mode === 'slice' ? props.visibleSegments : null,
+    props.mode === 'slice' ? props.selectedSegments : null,
+    props.mode === 'slice' ? props.hasSegmentation : null,
     props.mode === 'slice' ? props.visible : null,
     props.mode === 'cut' ? props.origin : null,
     props.mode === 'cut' ? props.normal : null,
@@ -488,6 +757,7 @@ export function VtkViewport(props: VtkViewportProps) {
     props.mode === 'three-d' ? props.cutPlaneVisible : null,
     props.mode === 'three-d' ? props.showGlb : null,
     props.mode === 'three-d' ? props.resetCameraToken : null,
+    props.mode === 'three-d' ? visibleStructureSignature : null,
     props.mode === 'three-d' ? props.planeIndices.axial : null,
     props.mode === 'three-d' ? props.planeIndices.coronal : null,
     props.mode === 'three-d' ? props.planeIndices.sagittal : null,

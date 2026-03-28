@@ -1,4 +1,4 @@
-import { useMemo, useReducer, useState } from 'react';
+import { useMemo, useReducer, useRef, useState } from 'react';
 
 import { axisNameToIndex } from '../../../../../features/case3d/patient-space';
 import type { CasePlane, RuntimeCaseManifest } from '../../../../../features/case3d/types';
@@ -9,6 +9,8 @@ import { useCaseVolume } from './useCaseVolume';
 import { VtkViewport } from './VtkViewport';
 import { caseViewerReducer, createInitialViewerState } from './viewerState';
 import { getCrosshairWorld } from './vtk/coordinateTransforms';
+import type { LoadedCaseVolume } from './vtk/loadCaseVolume';
+import type { LoadedSegmentation } from './vtk/loadSegmentation';
 
 interface Case3DViewerProps {
   manifest: RuntimeCaseManifest;
@@ -20,6 +22,16 @@ const PLANE_LABELS: Record<CasePlane, string> = {
   sagittal: 'Sagittal',
 };
 
+const SEGMENT_GROUP_SORT_ORDER: Record<string, number> = {
+  airway: 0,
+  vessels: 1,
+  cardiac: 2,
+  gi: 3,
+  other: 4,
+  nodes: 5,
+};
+const EMPTY_SEGMENTS: RuntimeCaseManifest['segmentation']['segments'] = [];
+
 function getPlaneAxisSize(manifest: RuntimeCaseManifest, plane: CasePlane) {
   return manifest.volumeGeometry.sizes[axisNameToIndex(manifest.volumeGeometry.axisMap[plane])];
 }
@@ -29,8 +41,14 @@ function SliceCard({
   plane,
   planeIndex,
   visible,
-  crosshair,
-  volumeLoaded,
+  crosshairWorld,
+  overlayOpacity,
+  segmentationRef,
+  selectedSegments,
+  showSegmentationOverlay,
+  visibleSegments,
+  volumeReady,
+  volumeRef,
   onPlaneIndexChange,
   onToggleVisibility,
 }: {
@@ -38,8 +56,14 @@ function SliceCard({
   plane: CasePlane;
   planeIndex: number;
   visible: boolean;
-  crosshair: { u: number; v: number };
-  volumeLoaded: ReturnType<typeof useCaseVolume>['ct'];
+  crosshairWorld: [number, number, number];
+  overlayOpacity: number;
+  segmentationRef: { current: LoadedSegmentation | null };
+  selectedSegments: RuntimeCaseManifest['segmentation']['segments'];
+  showSegmentationOverlay: boolean;
+  visibleSegments: RuntimeCaseManifest['segmentation']['segments'];
+  volumeReady: boolean;
+  volumeRef: { current: LoadedCaseVolume | null };
   onPlaneIndexChange: (value: number) => void;
   onToggleVisibility: (value: boolean) => void;
 }) {
@@ -58,21 +82,25 @@ function SliceCard({
         </label>
       </div>
       <div className="case3d-panel__viewport">
-        {volumeLoaded ? (
+        {volumeReady ? (
           <>
             <VtkViewport
               className="case-vtk-viewport"
+              crosshairWorld={crosshairWorld}
+              hasSegmentation={showSegmentationOverlay}
+              hasVolume={volumeReady}
               manifest={manifest}
               mode="slice"
+              overlayOpacity={overlayOpacity}
               plane={plane}
               planeIndex={planeIndex}
+              segmentationRef={segmentationRef}
+              selectedSegments={showSegmentationOverlay ? selectedSegments : EMPTY_SEGMENTS}
+              showSegmentationOverlay={showSegmentationOverlay}
               visible={visible}
-              volume={volumeLoaded}
+              visibleSegments={showSegmentationOverlay ? visibleSegments : EMPTY_SEGMENTS}
+              volumeRef={volumeRef}
             />
-            <div aria-hidden className="case3d-crosshair-overlay">
-              <span className="case3d-crosshair-overlay__vertical" style={{ left: `${crosshair.u * 100}%` }} />
-              <span className="case3d-crosshair-overlay__horizontal" style={{ top: `${crosshair.v * 100}%` }} />
-            </div>
           </>
         ) : (
           <div className="case3d-panel__placeholder">Loading CT volume…</div>
@@ -98,18 +126,61 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
   const [state, dispatch] = useReducer(caseViewerReducer, manifest, createInitialViewerState);
   const [resetCameraToken, setResetCameraToken] = useState(0);
   const volumeState = useCaseVolume();
+  const volumeRef = useRef<LoadedCaseVolume | null>(null);
+  const segmentationRef = useRef<LoadedSegmentation | null>(null);
+
+  volumeRef.current = volumeState.ct;
+  segmentationRef.current = volumeState.segmentation;
   const { selectedStation, selectedTarget, stationTargets, landmarkTargets } = useCaseTargets(
     manifest,
     state.selectedStationId,
     state.selectedTargetId,
   );
   const crosshairWorld = useMemo(() => getCrosshairWorld(manifest, state.crosshairVoxel), [manifest, state.crosshairVoxel]);
-  const { planeIndices, crosshairUv } = useCasePlanes(manifest, state.crosshairVoxel, crosshairWorld);
-  const { selectedSegmentIds, visibleSegments } = useCaseOverlay(manifest, state.overlayGroups, state.selectedTargetId);
-  const selectedSegments = useMemo(
-    () => manifest.segmentation.segments.filter((segment) => selectedSegmentIds.has(segment.id)),
-    [manifest.segmentation.segments, selectedSegmentIds],
+  const { planeIndices } = useCasePlanes(manifest, state.crosshairVoxel, crosshairWorld);
+  const { selectedSegmentIds, visibleSegments } = useCaseOverlay(
+    manifest,
+    state.overlayGroups,
+    state.selectedTargetId,
+    state.hiddenSegmentIds,
   );
+  const selectedSegments = useMemo(
+    () => visibleSegments.filter((segment) => selectedSegmentIds.has(segment.id)),
+    [selectedSegmentIds, visibleSegments],
+  );
+  const stationOrder = useMemo(
+    () => new Map(manifest.stations.map((station, index) => [station.id, index])),
+    [manifest.stations],
+  );
+  const anatomySegments = useMemo(
+    () =>
+      manifest.segmentation.segments
+        .filter((segment) => segment.groupId !== 'nodes')
+        .sort((left, right) => {
+          const groupWeight = SEGMENT_GROUP_SORT_ORDER[left.groupId] - SEGMENT_GROUP_SORT_ORDER[right.groupId];
+
+          return groupWeight !== 0 ? groupWeight : left.name.localeCompare(right.name);
+        }),
+    [manifest.segmentation.segments],
+  );
+  const nodalSegments = useMemo(
+    () =>
+      manifest.segmentation.segments
+        .filter((segment) => segment.groupId === 'nodes')
+        .sort((left, right) => {
+          const leftOrder = stationOrder.get(left.stationIds[0] ?? '') ?? Number.MAX_SAFE_INTEGER;
+          const rightOrder = stationOrder.get(right.stationIds[0] ?? '') ?? Number.MAX_SAFE_INTEGER;
+          return leftOrder !== rightOrder ? leftOrder - rightOrder : left.name.localeCompare(right.name);
+        }),
+    [manifest.segmentation.segments, stationOrder],
+  );
+  const threeDPlaneVisibility = state.threeDOrthogonalPlanesVisible
+    ? state.planeVisibility
+    : {
+        axial: false,
+        coronal: false,
+        sagittal: false,
+      };
 
   const stationTargetOptions = stationTargets.length > 0 ? stationTargets : [selectedTarget];
 
@@ -270,6 +341,26 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
               />
               <span>Optional GLB polish</span>
             </label>
+            <label className="case3d-toggle">
+              <input
+                checked={state.sliceSegmentationVisible}
+                onChange={(event) =>
+                  dispatch({ type: 'set-slice-segmentation-visibility', visible: event.target.checked })
+                }
+                type="checkbox"
+              />
+              <span>2D segmentation overlay</span>
+            </label>
+            <label className="case3d-toggle">
+              <input
+                checked={state.threeDOrthogonalPlanesVisible}
+                onChange={(event) =>
+                  dispatch({ type: 'set-three-d-plane-visibility', visible: event.target.checked })
+                }
+                type="checkbox"
+              />
+              <span>Orthogonal CT planes in 3D</span>
+            </label>
             <label className="case3d-slider">
               <span>Overlay opacity</span>
               <input
@@ -281,6 +372,50 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
                 value={state.overlayOpacity}
               />
             </label>
+          </article>
+
+          <article className="case3d-panel case3d-panel--controls">
+            <div className="case3d-panel__header">
+              <div>
+                <div className="eyebrow">Visibility</div>
+                <h3>Individual structures</h3>
+              </div>
+            </div>
+            <p className="case3d-note">Group toggles above act as master switches. These checkboxes fine-tune specific structures and nodal stations.</p>
+            <div className="case3d-segment-section">
+              <strong className="case3d-segment-section__title">Anatomy structures</strong>
+              <div className="case3d-segment-list">
+                {anatomySegments.map((segment) => (
+                  <label className="case3d-toggle" key={segment.id}>
+                    <input
+                      checked={!state.hiddenSegmentIds.includes(segment.id)}
+                      onChange={(event) =>
+                        dispatch({ type: 'set-segment-visibility', segmentId: segment.id, visible: event.target.checked })
+                      }
+                      type="checkbox"
+                    />
+                    <span>{segment.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="case3d-segment-section">
+              <strong className="case3d-segment-section__title">Nodal stations</strong>
+              <div className="case3d-segment-list">
+                {nodalSegments.map((segment) => (
+                  <label className="case3d-toggle" key={segment.id}>
+                    <input
+                      checked={!state.hiddenSegmentIds.includes(segment.id)}
+                      onChange={(event) =>
+                        dispatch({ type: 'set-segment-visibility', segmentId: segment.id, visible: event.target.checked })
+                      }
+                      type="checkbox"
+                    />
+                    <span>{segment.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
           </article>
 
           <article className="case3d-panel case3d-panel--controls">
@@ -343,18 +478,20 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
                   cutPlaneOrigin={state.cutPlane.origin}
                   cutPlaneVisible={state.cutPlane.visible}
                   crosshairWorld={crosshairWorld}
+                  hasSegmentation={Boolean(volumeState.segmentation)}
+                  hasVolume={Boolean(volumeState.ct)}
                   manifest={manifest}
                   mode="three-d"
                   onCutPlaneChange={(origin, normal) => dispatch({ type: 'set-cut-plane', origin, normal })}
                   overlayOpacity={state.overlayOpacity}
                   planeIndices={planeIndices}
-                  planeVisibility={state.planeVisibility}
+                  planeVisibility={threeDPlaneVisibility}
                   resetCameraToken={resetCameraToken}
                   selectedSegments={selectedSegments}
-                  segmentation={volumeState.segmentation}
+                  segmentationRef={segmentationRef}
                   showGlb={state.overlayGroups.glb}
                   visibleSegments={visibleSegments}
-                  volume={volumeState.ct}
+                  volumeRef={volumeRef}
                 />
               )}
             </div>
@@ -362,38 +499,56 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
 
           <div className="case3d-grid">
             <SliceCard
-              crosshair={crosshairUv.axial}
+              crosshairWorld={crosshairWorld}
               manifest={manifest}
+              overlayOpacity={state.overlayOpacity}
               onPlaneIndexChange={(value) => dispatch({ type: 'set-plane-axis-index', plane: 'axial', axisIndex: value, manifest })}
               onToggleVisibility={(visible) => dispatch({ type: 'set-plane-visibility', plane: 'axial', visible })}
               plane="axial"
               planeIndex={planeIndices.axial}
+              segmentationRef={segmentationRef}
+              selectedSegments={selectedSegments}
+              showSegmentationOverlay={state.sliceSegmentationVisible}
               visible={state.planeVisibility.axial}
-              volumeLoaded={volumeState.ct}
+              visibleSegments={visibleSegments}
+              volumeReady={Boolean(volumeState.ct)}
+              volumeRef={volumeRef}
             />
             <SliceCard
-              crosshair={crosshairUv.coronal}
+              crosshairWorld={crosshairWorld}
               manifest={manifest}
+              overlayOpacity={state.overlayOpacity}
               onPlaneIndexChange={(value) =>
                 dispatch({ type: 'set-plane-axis-index', plane: 'coronal', axisIndex: value, manifest })
               }
               onToggleVisibility={(visible) => dispatch({ type: 'set-plane-visibility', plane: 'coronal', visible })}
               plane="coronal"
               planeIndex={planeIndices.coronal}
+              segmentationRef={segmentationRef}
+              selectedSegments={selectedSegments}
+              showSegmentationOverlay={state.sliceSegmentationVisible}
               visible={state.planeVisibility.coronal}
-              volumeLoaded={volumeState.ct}
+              visibleSegments={visibleSegments}
+              volumeReady={Boolean(volumeState.ct)}
+              volumeRef={volumeRef}
             />
             <SliceCard
-              crosshair={crosshairUv.sagittal}
+              crosshairWorld={crosshairWorld}
               manifest={manifest}
+              overlayOpacity={state.overlayOpacity}
               onPlaneIndexChange={(value) =>
                 dispatch({ type: 'set-plane-axis-index', plane: 'sagittal', axisIndex: value, manifest })
               }
               onToggleVisibility={(visible) => dispatch({ type: 'set-plane-visibility', plane: 'sagittal', visible })}
               plane="sagittal"
               planeIndex={planeIndices.sagittal}
+              segmentationRef={segmentationRef}
+              selectedSegments={selectedSegments}
+              showSegmentationOverlay={state.sliceSegmentationVisible}
               visible={state.planeVisibility.sagittal}
-              volumeLoaded={volumeState.ct}
+              visibleSegments={visibleSegments}
+              volumeReady={Boolean(volumeState.ct)}
+              volumeRef={volumeRef}
             />
             <article className="case3d-panel">
               <div className="case3d-panel__header">
@@ -406,13 +561,14 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
                 {volumeState.ct ? (
                   <VtkViewport
                     className="case-vtk-viewport"
+                    hasVolume={Boolean(volumeState.ct)}
                     manifest={manifest}
                     mode="cut"
                     normal={state.cutPlane.normal}
                     opacity={state.cutPlane.opacity}
                     origin={state.cutPlane.origin}
                     visible={state.cutPlane.visible}
-                    volume={volumeState.ct}
+                    volumeRef={volumeRef}
                   />
                 ) : (
                   <div className="case3d-panel__placeholder">Waiting for volume…</div>

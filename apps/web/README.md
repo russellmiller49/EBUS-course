@@ -24,6 +24,28 @@ npm run typecheck
 npm run test
 ```
 
+### LLM / code-review digest (gitingest-style markdown)
+
+From repo root:
+
+```bash
+npm run gitingest:web
+```
+
+Or from `apps/web`:
+
+```bash
+npm run gitingest
+```
+
+Writes `gitingest-webapp.md` (gitignored) with a directory tree plus inlined source and the repo-root JSON the app imports. Large files are omitted with a note unless you raise the limit, for example:
+
+```bash
+node scripts/generate-gitingest.mjs --max-bytes 2000000 --out ./my-digest.md
+```
+
+Use `--no-shared-content` to only bundle `apps/web`.
+
 ## Media folders
 
 Static web media should be added under:

@@ -7,7 +7,10 @@ export interface CaseViewerState {
   selectedTargetId: string;
   crosshairVoxel: Vector3Tuple;
   planeVisibility: Record<CasePlane, boolean>;
+  threeDOrthogonalPlanesVisible: boolean;
+  sliceSegmentationVisible: boolean;
   overlayOpacity: number;
+  hiddenSegmentIds: string[];
   overlayGroups: {
     allAnatomy: boolean;
     airway: boolean;
@@ -30,8 +33,11 @@ export type CaseViewerAction =
   | { type: 'select-target'; stationId: string; targetId: string; world: Vector3Tuple; manifest: RuntimeCaseManifest }
   | { type: 'set-plane-axis-index'; plane: CasePlane; axisIndex: number; manifest: RuntimeCaseManifest }
   | { type: 'set-plane-visibility'; plane: CasePlane; visible: boolean }
+  | { type: 'set-three-d-plane-visibility'; visible: boolean }
+  | { type: 'set-slice-segmentation-visibility'; visible: boolean }
   | { type: 'set-overlay-opacity'; value: number }
   | { type: 'set-overlay-group'; key: keyof CaseViewerState['overlayGroups']; value: boolean }
+  | { type: 'set-segment-visibility'; segmentId: string; visible: boolean }
   | { type: 'set-cut-plane-visibility'; visible: boolean }
   | { type: 'set-cut-plane-opacity'; value: number }
   | { type: 'set-cut-plane'; origin: Vector3Tuple; normal: Vector3Tuple }
@@ -72,7 +78,10 @@ export function createInitialViewerState(manifest: RuntimeCaseManifest): CaseVie
       coronal: true,
       sagittal: true,
     },
+    threeDOrthogonalPlanesVisible: false,
+    sliceSegmentationVisible: false,
     overlayOpacity: 0.36,
+    hiddenSegmentIds: [],
     overlayGroups: {
       allAnatomy: false,
       airway: true,
@@ -81,8 +90,8 @@ export function createInitialViewerState(manifest: RuntimeCaseManifest): CaseVie
       glb: false,
     },
     cutPlane: {
-      opacity: 0.92,
-      visible: true,
+      opacity: 0.48,
+      visible: false,
       origin: cutOrigin,
       normal: DEFAULT_CUT_NORMAL,
       initialOrigin: cutOrigin,
@@ -128,6 +137,16 @@ export function caseViewerReducer(state: CaseViewerState, action: CaseViewerActi
           [action.plane]: action.visible,
         },
       };
+    case 'set-three-d-plane-visibility':
+      return {
+        ...state,
+        threeDOrthogonalPlanesVisible: action.visible,
+      };
+    case 'set-slice-segmentation-visibility':
+      return {
+        ...state,
+        sliceSegmentationVisible: action.visible,
+      };
     case 'set-overlay-opacity':
       return {
         ...state,
@@ -141,6 +160,20 @@ export function caseViewerReducer(state: CaseViewerState, action: CaseViewerActi
           [action.key]: action.value,
         },
       };
+    case 'set-segment-visibility': {
+      const hiddenSet = new Set(state.hiddenSegmentIds);
+
+      if (action.visible) {
+        hiddenSet.delete(action.segmentId);
+      } else {
+        hiddenSet.add(action.segmentId);
+      }
+
+      return {
+        ...state,
+        hiddenSegmentIds: [...hiddenSet],
+      };
+    }
     case 'set-cut-plane-visibility':
       return {
         ...state,
