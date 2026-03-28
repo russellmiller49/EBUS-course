@@ -39,6 +39,11 @@ The corresponding manifests are:
 - [`src/content/knobology-media.json`](/home/rjm/projects/EBUS_course/apps/web/src/content/knobology-media.json)
 - [`src/content/lectures.json`](/home/rjm/projects/EBUS_course/apps/web/src/content/lectures.json)
 
+Processor hotspot tuning note:
+
+- The EU-ME2 hotspot coordinates are approximate starter values.
+- Retune hotspot positions in `src/features/knobology/processor/eu-me2-layout.json` only, not in JSX.
+
 ## Notes
 
 - Vite is configured to read repo-root JSON outside `apps/web`, so the web app does not duplicate station, quiz, or case content.

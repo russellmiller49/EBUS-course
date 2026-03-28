@@ -1,47 +1,354 @@
 {
   "2R": {
-    "notes": [
-      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/2R/ to replace this placeholder."
+    "ctVariants": [
+      {
+        "id": "axial",
+        "label": "Axial",
+        "image": "/media/stations/2R/ct/axial-marked.jpg",
+        "note": "Only a marked axial CT source was provided for 2R."
+      },
+      {
+        "id": "coronal",
+        "label": "Coronal",
+        "image": "/media/stations/2R/ct/coronal-marked.jpg",
+        "note": "Only a marked coronal CT source was provided for 2R."
+      },
+      {
+        "id": "sagittal",
+        "label": "Sagittal",
+        "image": "/media/stations/2R/ct/sagittal-marked.jpg",
+        "note": "Only a marked sagittal CT source was provided for 2R."
+      }
+    ],
+    "bronchoscopyVariants": [
+      {
+        "id": "shared",
+        "label": "Airway",
+        "image": "/media/stations/2R/bronchoscopy/view.png",
+        "revealImage": "/media/stations/2R/bronchoscopy/view-marked.png"
+      }
+    ],
+    "ebusVariants": [
+      {
+        "id": "primary",
+        "label": "EBUS",
+        "image": "/media/stations/2R/ultrasound/view.jpg",
+        "annotationKey": "EBUS_2R.jpg"
+      }
     ]
   },
   "2L": {
-    "notes": [
-      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/2L/ to replace this placeholder."
+    "ctVariants": [
+      {
+        "id": "axial",
+        "label": "Axial",
+        "image": "/media/stations/2L/ct/axial.jpg",
+        "revealImage": "/media/stations/2L/ct/axial-marked.jpg"
+      },
+      {
+        "id": "coronal",
+        "label": "Coronal",
+        "image": "/media/stations/2L/ct/coronal.jpg",
+        "revealImage": "/media/stations/2L/ct/coronal-marked.jpg"
+      },
+      {
+        "id": "sagittal",
+        "label": "Sagittal",
+        "image": "/media/stations/2L/ct/sagittal.jpg",
+        "revealImage": "/media/stations/2L/ct/sagittal-marked.jpg"
+      }
+    ],
+    "bronchoscopyVariants": [
+      {
+        "id": "shared",
+        "label": "Airway",
+        "image": "/media/stations/2L/bronchoscopy/view.png",
+        "revealImage": "/media/stations/2L/bronchoscopy/view-marked.png"
+      }
+    ],
+    "ebusVariants": [
+      {
+        "id": "primary",
+        "label": "EBUS",
+        "image": "/media/stations/2L/ultrasound/view.png",
+        "annotationKey": "EBUS_2L.png"
+      }
     ]
   },
   "4R": {
-    "notes": [
-      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/4R/ to replace this placeholder."
+    "ctVariants": [
+      {
+        "id": "axial",
+        "label": "Axial",
+        "image": "/media/stations/4R/ct/axial-marked.jpg",
+        "note": "Only a marked axial CT source was provided for 4R."
+      },
+      {
+        "id": "coronal",
+        "label": "Coronal",
+        "image": "/media/stations/4R/ct/coronal-marked.jpg",
+        "note": "Only a marked coronal CT source was provided for 4R."
+      },
+      {
+        "id": "sagittal",
+        "label": "Sagittal",
+        "image": "/media/stations/4R/ct/sagittal-marked.jpg",
+        "note": "Only a marked sagittal CT source was provided for 4R."
+      }
+    ],
+    "bronchoscopyVariants": [
+      {
+        "id": "primary",
+        "label": "Airway",
+        "image": "/media/stations/4R/bronchoscopy/view.png",
+        "revealImage": "/media/stations/4R/bronchoscopy/view-marked.png"
+      }
+    ],
+    "ebusVariants": [
+      {
+        "id": "primary",
+        "label": "EBUS",
+        "image": "/media/stations/4R/ultrasound/view.png",
+        "annotationKey": "EBUS_4R.png"
+      }
     ]
   },
   "4L": {
-    "notes": [
-      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/4L/ to replace this placeholder."
+    "ctVariants": [
+      {
+        "id": "axial",
+        "label": "Axial",
+        "image": "/media/stations/4L/ct/axial.jpg",
+        "revealImage": "/media/stations/4L/ct/axial-marked.jpg"
+      },
+      {
+        "id": "coronal",
+        "label": "Coronal",
+        "image": "/media/stations/4L/ct/coronal.jpg",
+        "revealImage": "/media/stations/4L/ct/coronal-marked.jpg"
+      },
+      {
+        "id": "sagittal",
+        "label": "Sagittal",
+        "image": "/media/stations/4L/ct/sagittal.jpg",
+        "revealImage": "/media/stations/4L/ct/sagittal-marked.jpg"
+      }
+    ],
+    "bronchoscopyVariants": [
+      {
+        "id": "primary",
+        "label": "Airway",
+        "image": "/media/stations/4L/bronchoscopy/view.png",
+        "revealImage": "/media/stations/4L/bronchoscopy/view-marked.png"
+      }
+    ],
+    "ebusVariants": [
+      {
+        "id": "primary",
+        "label": "EBUS",
+        "image": "/media/stations/4L/ultrasound/view.png",
+        "annotationKey": "EBUS_4L.png"
+      }
     ]
   },
   "7": {
-    "notes": [
-      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/7/ to replace this placeholder."
+    "ctVariants": [
+      {
+        "id": "axial",
+        "label": "Axial",
+        "image": "/media/stations/7/ct/axial.jpg",
+        "revealImage": "/media/stations/7/ct/axial-marked.jpg"
+      },
+      {
+        "id": "coronal",
+        "label": "Coronal",
+        "image": "/media/stations/7/ct/coronal.jpg",
+        "revealImage": "/media/stations/7/ct/coronal-marked.jpg"
+      },
+      {
+        "id": "sagittal",
+        "label": "Sagittal",
+        "image": "/media/stations/7/ct/sagittal.jpg",
+        "revealImage": "/media/stations/7/ct/sagittal-marked.jpg"
+      }
+    ],
+    "bronchoscopyVariants": [
+      {
+        "id": "primary",
+        "label": "Airway",
+        "image": "/media/stations/7/bronchoscopy/view.png",
+        "revealImage": "/media/stations/7/bronchoscopy/view-marked.png"
+      }
+    ],
+    "ebusVariants": [
+      {
+        "id": "primary",
+        "label": "EBUS",
+        "image": "/media/stations/7/ultrasound/view.jpg",
+        "annotationKey": "EBUS_7.jpg"
+      }
     ]
   },
   "10R": {
-    "notes": [
-      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/10R/ to replace this placeholder."
+    "ctVariants": [
+      {
+        "id": "axial",
+        "label": "Axial",
+        "image": "/media/stations/10R/ct/axial.jpg",
+        "revealImage": "/media/stations/10R/ct/axial-marked.jpg"
+      },
+      {
+        "id": "coronal",
+        "label": "Coronal",
+        "image": "/media/stations/10R/ct/coronal.jpg",
+        "revealImage": "/media/stations/10R/ct/coronal-marked.jpg"
+      },
+      {
+        "id": "sagittal",
+        "label": "Sagittal",
+        "image": "/media/stations/10R/ct/sagittal.jpg",
+        "revealImage": "/media/stations/10R/ct/sagittal-marked.jpg"
+      }
+    ],
+    "bronchoscopyVariants": [
+      {
+        "id": "primary",
+        "label": "Airway",
+        "image": "/media/stations/10R/bronchoscopy/view.png",
+        "revealImage": "/media/stations/10R/bronchoscopy/view-marked.png"
+      }
+    ],
+    "ebusVariants": [
+      {
+        "id": "primary",
+        "label": "EBUS",
+        "image": "/media/stations/10R/ultrasound/view.png",
+        "annotationKey": "EBUS_10R.png"
+      }
     ]
   },
   "10L": {
-    "notes": [
-      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/10L/ to replace this placeholder."
+    "ctVariants": [
+      {
+        "id": "axial",
+        "label": "Axial",
+        "image": "/media/stations/10L/ct/axial.jpg",
+        "revealImage": "/media/stations/10L/ct/axial-marked.jpg"
+      },
+      {
+        "id": "coronal",
+        "label": "Coronal",
+        "image": "/media/stations/10L/ct/coronal.jpg",
+        "revealImage": "/media/stations/10L/ct/coronal-marked.jpg"
+      },
+      {
+        "id": "sagittal",
+        "label": "Sagittal",
+        "image": "/media/stations/10L/ct/sagittal.jpg",
+        "revealImage": "/media/stations/10L/ct/sagittal-marked.jpg"
+      }
+    ],
+    "bronchoscopyVariants": [
+      {
+        "id": "primary",
+        "label": "Airway",
+        "image": "/media/stations/10L/bronchoscopy/view.png",
+        "revealImage": "/media/stations/10L/bronchoscopy/view-marked.png"
+      }
+    ],
+    "ebusVariants": [
+      {
+        "id": "primary",
+        "label": "EBUS",
+        "image": "/media/stations/10L/ultrasound/view.png",
+        "annotationKey": "EBUS_10L.png"
+      }
     ]
   },
   "11R": {
+    "ctVariants": [
+      {
+        "id": "axial",
+        "label": "Axial",
+        "image": "/media/stations/11R/ct/axial-marked.jpg",
+        "note": "Only a marked 11Rs axial CT source was provided for the 11R set."
+      },
+      {
+        "id": "coronal",
+        "label": "Coronal",
+        "image": "/media/stations/11R/ct/coronal-marked.jpg",
+        "note": "Only a marked 11Rs coronal CT source was provided for the 11R set."
+      },
+      {
+        "id": "sagittal",
+        "label": "Sagittal",
+        "image": "/media/stations/11R/ct/sagittal-marked.jpg",
+        "note": "Only a marked 11Rs sagittal CT source was provided for the 11R set."
+      }
+    ],
+    "bronchoscopyVariants": [
+      {
+        "id": "11rs",
+        "label": "11Rs",
+        "image": "/media/stations/11R/bronchoscopy/11rs.png",
+        "revealImage": "/media/stations/11R/bronchoscopy/11rs-marked.png"
+      },
+      {
+        "id": "11ri",
+        "label": "11Ri",
+        "image": "/media/stations/11R/bronchoscopy/11ri.png",
+        "revealImage": "/media/stations/11R/bronchoscopy/11ri-marked.png"
+      }
+    ],
+    "ebusVariants": [
+      {
+        "id": "11rs",
+        "label": "11Rs",
+        "image": "/media/stations/11R/ultrasound/11rs.png",
+        "annotationKey": "EBUS_11Rs.png"
+      },
+      {
+        "id": "11ri",
+        "label": "11Ri",
+        "image": "/media/stations/11R/ultrasound/11ri.png",
+        "annotationKey": "EBUS_11Ri.png"
+      }
+    ],
     "notes": [
-      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/11R/ to replace this placeholder."
+      "The provided 11R asset set is split into 11Rs and 11Ri examples."
     ]
   },
   "11L": {
+    "ctVariants": [
+      {
+        "id": "axial",
+        "label": "Axial",
+        "image": "/media/stations/11L/ct/axial.jpg",
+        "revealImage": "/media/stations/11L/ct/axial-marked.jpg"
+      },
+      {
+        "id": "coronal",
+        "label": "Coronal",
+        "image": "/media/stations/11L/ct/coronal.jpg",
+        "revealImage": "/media/stations/11L/ct/coronal-marked.jpg"
+      },
+      {
+        "id": "sagittal",
+        "label": "Sagittal",
+        "image": "/media/stations/11L/ct/sagittal.jpg",
+        "revealImage": "/media/stations/11L/ct/sagittal-marked.jpg"
+      }
+    ],
+    "bronchoscopyVariants": [
+      {
+        "id": "primary",
+        "label": "Airway",
+        "image": "/media/stations/11L/bronchoscopy/view.png",
+        "revealImage": "/media/stations/11L/bronchoscopy/view-marked.png"
+      }
+    ],
     "notes": [
-      "Add CT, bronchoscopy, and EBUS assets under /public/media/stations/11L/ to replace this placeholder."
+      "No EBUS image for 11L was present in the supplied ultrasound folder."
     ]
   }
 }

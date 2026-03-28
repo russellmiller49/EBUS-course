@@ -235,7 +235,31 @@ export interface KnobologyModuleContent {
   quizQuestionIds: string[];
 }
 
+export interface StationAnnotationRegion {
+  label: string;
+  points: Array<[number, number]>;
+}
+
+export interface StationAnnotationSet {
+  width: number;
+  height: number;
+  regions: StationAnnotationRegion[];
+}
+
+export interface StationMediaVariant {
+  id: string;
+  label: string;
+  image?: string;
+  revealImage?: string;
+  note?: string;
+  annotationKey?: string;
+  annotations?: StationAnnotationSet;
+}
+
 export interface StationMediaEntry {
+  ctVariants?: StationMediaVariant[];
+  bronchoscopyVariants?: StationMediaVariant[];
+  ebusVariants?: StationMediaVariant[];
   ctImage?: string;
   ctAnnotatedImage?: string;
   bronchoscopyImage?: string;

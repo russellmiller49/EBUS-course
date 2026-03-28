@@ -1,5 +1,60 @@
 import type { KnobologyCorrectionExercise } from '@/content/types';
 
+export type KnobologyImagingMode = 'b' | 'flow' | 'pw';
+export type KnobologyMeasurementMode = 'off' | 'measure' | 'trace';
+export type KnobologyMenuMode = 'none' | 'main' | 'image-adjust';
+export type KnobologyHarmonicMode = 'off' | 'p' | 'r';
+export type KnobologyObservationPreset = 'GI' | 'PB' | 'RSP' | null;
+
+export type KnobologyProcessorActionId =
+  | 'SAVE_REC'
+  | 'RELEASE'
+  | 'TOGGLE_PIP'
+  | 'PW_MODE'
+  | 'FLOW_MODE'
+  | 'B_MODE'
+  | 'CLEAR'
+  | 'TRACE_MODE'
+  | 'MEASURE_MODE'
+  | 'CURSOR_MODE'
+  | 'COMMENT_ADD'
+  | 'COMMENT_CLEAR'
+  | 'MEASURE_SET'
+  | 'PAGE_UP'
+  | 'HOME'
+  | 'END'
+  | 'PAGE_DOWN'
+  | 'IR_MODE'
+  | 'SCROLL_MODE'
+  | 'CINE_REVIEW_MODE'
+  | 'POWER_DOWN'
+  | 'POWER_UP'
+  | 'GAIN_DOWN'
+  | 'GAIN_UP'
+  | 'DEPTH_UP'
+  | 'FOCUS_CYCLE'
+  | 'CINE_STEP_BACK'
+  | 'CINE_PLAY_PAUSE'
+  | 'CINE_STEP_FORWARD'
+  | 'TOGGLE_FREEZE'
+  | 'OPEN_MAIN_MENU'
+  | 'OPEN_IMAGE_ADJUST'
+  | 'DISPLAY_LEFT'
+  | 'DISPLAY_CENTER'
+  | 'DISPLAY_RIGHT'
+  | 'TOGGLE_ENHANCE'
+  | 'THE_OFF'
+  | 'THE_P'
+  | 'THE_R'
+  | 'ELST'
+  | 'FREQUENCY_DOWN'
+  | 'FREQUENCY_UP'
+  | 'FOCUS_DOWN'
+  | 'FOCUS_UP'
+  | 'OBS_GI'
+  | 'OBS_PB'
+  | 'OBS_RSP';
+
 export interface KnobologyFrameState {
   depth: number;
   gain: number;
@@ -8,6 +63,25 @@ export interface KnobologyFrameState {
   calipers: boolean;
   frozen: boolean;
   saved: boolean;
+  pipEnabled: boolean;
+  mode: KnobologyImagingMode;
+  measurementMode: KnobologyMeasurementMode;
+  measurementPoints: number;
+  commentCount: number;
+  irMode: boolean;
+  scrollMode: boolean;
+  cineReviewMode: boolean;
+  cineFrame: number;
+  cinePlaying: boolean;
+  menu: KnobologyMenuMode;
+  enhanceEnabled: boolean;
+  harmonicMode: KnobologyHarmonicMode;
+  acousticPower: number;
+  frequencyIndex: number;
+  focusIndex: number;
+  observationPreset: KnobologyObservationPreset;
+  lastActionId: KnobologyProcessorActionId | null;
+  statusMessage: string;
 }
 
 export interface KnobologyFrameMetrics {
@@ -19,12 +93,68 @@ export interface KnobologyFrameMetrics {
   colorSignalOpacity: number;
   realFrameBrightness: number;
   realFrameContrast: number;
+  pipOpacity: number;
+  waveformOpacity: number;
+  focusMarkerY: number;
+  imageShiftX: number;
+  imageScale: number;
 }
 
 export interface ExerciseEvaluation {
   score: number;
   solved: boolean;
   feedback: string;
+}
+
+export type KnobologySimulatorAction =
+  | {
+      type: 'RESET_FOR_EXERCISE';
+      exercise: KnobologyCorrectionExercise;
+    }
+  | {
+      type: 'SET_NUMERIC_FIELD';
+      field: 'depth' | 'gain' | 'contrast';
+      value: number;
+    }
+  | {
+      type: 'SET_COLOR_DOPPLER';
+      enabled: boolean;
+    }
+  | {
+      type: 'PROCESSOR_ACTION';
+      actionId: KnobologyProcessorActionId;
+    };
+
+const DEFAULT_DEPTH_FRAME_LEVELS = [20, 40, 60, 80, 100] as const;
+const FOCUS_MARKER_LEVELS = [26, 42, 58, 74] as const;
+export const FREQUENCY_LABELS = ['5.0 MHz', '6.5 MHz', '7.5 MHz'] as const;
+const CINE_FRAME_COUNT = 7;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function cycleIndex(current: number, length: number, step: number = 1): number {
+  return (current + step + length) % length;
+}
+
+function cycleDepth(depth: number): number {
+  const currentIndex = DEFAULT_DEPTH_FRAME_LEVELS.findIndex((level) => level >= depth);
+  const nextIndex = currentIndex >= 0 ? cycleIndex(currentIndex, DEFAULT_DEPTH_FRAME_LEVELS.length) : 0;
+
+  return DEFAULT_DEPTH_FRAME_LEVELS[nextIndex];
+}
+
+function withAction(
+  state: KnobologyFrameState,
+  actionId: KnobologyProcessorActionId,
+  patch: Partial<KnobologyFrameState>,
+): KnobologyFrameState {
+  return {
+    ...state,
+    ...patch,
+    lastActionId: actionId,
+  };
 }
 
 export function createKnobologyFrameState(exercise: KnobologyCorrectionExercise): KnobologyFrameState {
@@ -34,10 +164,280 @@ export function createKnobologyFrameState(exercise: KnobologyCorrectionExercise)
     calipers: false,
     frozen: false,
     saved: false,
+    pipEnabled: false,
+    mode: 'b',
+    measurementMode: 'off',
+    measurementPoints: 0,
+    commentCount: 0,
+    irMode: false,
+    scrollMode: false,
+    cineReviewMode: false,
+    cineFrame: 0,
+    cinePlaying: false,
+    menu: 'none',
+    enhanceEnabled: false,
+    harmonicMode: 'off',
+    acousticPower: 50,
+    frequencyIndex: 1,
+    focusIndex: 1,
+    observationPreset: null,
+    lastActionId: null,
+    statusMessage: 'Ready',
   };
 }
 
-const DEFAULT_DEPTH_FRAME_LEVELS = [20, 40, 60, 80, 100] as const;
+function applyProcessorAction(
+  state: KnobologyFrameState,
+  actionId: KnobologyProcessorActionId,
+): KnobologyFrameState {
+  switch (actionId) {
+    case 'SAVE_REC':
+      return withAction(state, actionId, {
+        saved: true,
+        statusMessage: 'Saved still frame.',
+      });
+    case 'RELEASE':
+      return withAction(state, actionId, {
+        menu: 'none',
+        statusMessage: 'Release acknowledged.',
+      });
+    case 'TOGGLE_PIP':
+      return withAction(state, actionId, {
+        pipEnabled: !state.pipEnabled,
+        statusMessage: state.pipEnabled ? 'PIP closed.' : 'PIP opened.',
+      });
+    case 'PW_MODE':
+      return withAction(state, actionId, {
+        mode: 'pw',
+        colorDoppler: false,
+        cinePlaying: false,
+        statusMessage: 'PW mode active.',
+      });
+    case 'FLOW_MODE':
+      return withAction(state, actionId, {
+        mode: 'flow',
+        colorDoppler: true,
+        statusMessage: 'Flow mode active.',
+      });
+    case 'B_MODE':
+      return withAction(state, actionId, {
+        mode: 'b',
+        colorDoppler: false,
+        statusMessage: 'B mode active.',
+      });
+    case 'CLEAR':
+      return withAction(state, actionId, {
+        calipers: false,
+        measurementMode: 'off',
+        measurementPoints: 0,
+        commentCount: 0,
+        statusMessage: 'Measurements and comments cleared.',
+      });
+    case 'TRACE_MODE':
+      return withAction(state, actionId, {
+        calipers: false,
+        measurementMode: 'trace',
+        measurementPoints: 0,
+        statusMessage: 'Trace mode ready.',
+      });
+    case 'MEASURE_MODE':
+      return withAction(state, actionId, {
+        calipers: true,
+        measurementMode: 'measure',
+        measurementPoints: Math.max(1, state.measurementPoints),
+        statusMessage: 'Measure mode active.',
+      });
+    case 'COMMENT_ADD':
+      return withAction(state, actionId, {
+        commentCount: Math.min(3, state.commentCount + 1),
+        statusMessage: 'Comment marker added.',
+      });
+    case 'COMMENT_CLEAR':
+      return withAction(state, actionId, {
+        commentCount: 0,
+        statusMessage: 'Comments cleared.',
+      });
+    case 'MEASURE_SET':
+      return withAction(state, actionId, {
+        calipers: true,
+        measurementMode: state.measurementMode === 'trace' ? 'trace' : 'measure',
+        measurementPoints: clamp(state.measurementPoints + 1, 1, 2),
+        statusMessage: 'Measurement set.',
+      });
+    case 'IR_MODE':
+      return withAction(state, actionId, {
+        irMode: !state.irMode,
+        statusMessage: state.irMode ? 'I.R. off.' : 'I.R. on.',
+      });
+    case 'SCROLL_MODE':
+      return withAction(state, actionId, {
+        scrollMode: !state.scrollMode,
+        statusMessage: state.scrollMode ? 'Scroll off.' : 'Scroll on.',
+      });
+    case 'CINE_REVIEW_MODE':
+      return withAction(state, actionId, {
+        cineReviewMode: !state.cineReviewMode,
+        cinePlaying: false,
+        frozen: true,
+        statusMessage: state.cineReviewMode ? 'Cine review off.' : 'Cine review on.',
+      });
+    case 'POWER_DOWN':
+      return withAction(state, actionId, {
+        acousticPower: clamp(state.acousticPower - 10, 0, 100),
+        statusMessage: 'Acoustic output reduced.',
+      });
+    case 'POWER_UP':
+      return withAction(state, actionId, {
+        acousticPower: clamp(state.acousticPower + 10, 0, 100),
+        statusMessage: 'Acoustic output increased.',
+      });
+    case 'GAIN_DOWN':
+      return withAction(state, actionId, {
+        gain: clamp(state.gain - 8, 0, 100),
+        statusMessage: 'Gain decreased.',
+      });
+    case 'GAIN_UP':
+      return withAction(state, actionId, {
+        gain: clamp(state.gain + 8, 0, 100),
+        statusMessage: 'Gain increased.',
+      });
+    case 'DEPTH_UP':
+      return withAction(state, actionId, {
+        depth: cycleDepth(state.depth),
+        statusMessage: 'Depth advanced.',
+      });
+    case 'FOCUS_CYCLE':
+      return withAction(state, actionId, {
+        focusIndex: cycleIndex(state.focusIndex, FOCUS_MARKER_LEVELS.length),
+        statusMessage: 'Focus target cycled.',
+      });
+    case 'CINE_STEP_BACK':
+      return withAction(state, actionId, {
+        cineReviewMode: true,
+        cinePlaying: false,
+        frozen: true,
+        cineFrame: cycleIndex(state.cineFrame, CINE_FRAME_COUNT, -1),
+        statusMessage: 'Cine stepped backward.',
+      });
+    case 'CINE_PLAY_PAUSE':
+      return withAction(state, actionId, {
+        cineReviewMode: true,
+        frozen: true,
+        cinePlaying: !state.cinePlaying,
+        statusMessage: state.cinePlaying ? 'Cine paused.' : 'Cine playing.',
+      });
+    case 'CINE_STEP_FORWARD':
+      return withAction(state, actionId, {
+        cineReviewMode: true,
+        cinePlaying: state.cinePlaying,
+        frozen: true,
+        cineFrame: cycleIndex(state.cineFrame, CINE_FRAME_COUNT, 1),
+        statusMessage: 'Cine stepped forward.',
+      });
+    case 'TOGGLE_FREEZE':
+      return withAction(state, actionId, {
+        frozen: !state.frozen,
+        cinePlaying: false,
+        statusMessage: state.frozen ? 'Live imaging resumed.' : 'Image frozen.',
+      });
+    case 'OPEN_MAIN_MENU':
+      return withAction(state, actionId, {
+        menu: state.menu === 'main' ? 'none' : 'main',
+        statusMessage: state.menu === 'main' ? 'Main menu closed.' : 'Main menu opened.',
+      });
+    case 'OPEN_IMAGE_ADJUST':
+      return withAction(state, actionId, {
+        menu: state.menu === 'image-adjust' ? 'none' : 'image-adjust',
+        statusMessage: state.menu === 'image-adjust' ? 'Image adjust closed.' : 'Image adjust opened.',
+      });
+    case 'TOGGLE_ENHANCE':
+      return withAction(state, actionId, {
+        enhanceEnabled: !state.enhanceEnabled,
+        statusMessage: state.enhanceEnabled ? 'Enhance off.' : 'Enhance on.',
+      });
+    case 'THE_OFF':
+      return withAction(state, actionId, {
+        harmonicMode: 'off',
+        statusMessage: 'T.H.E. off.',
+      });
+    case 'THE_P':
+      return withAction(state, actionId, {
+        harmonicMode: 'p',
+        statusMessage: 'T.H.E. P selected.',
+      });
+    case 'THE_R':
+      return withAction(state, actionId, {
+        harmonicMode: 'r',
+        statusMessage: 'T.H.E. R selected.',
+      });
+    case 'FREQUENCY_DOWN':
+      return withAction(state, actionId, {
+        frequencyIndex: clamp(state.frequencyIndex - 1, 0, FREQUENCY_LABELS.length - 1),
+        statusMessage: 'Frequency decreased.',
+      });
+    case 'FREQUENCY_UP':
+      return withAction(state, actionId, {
+        frequencyIndex: clamp(state.frequencyIndex + 1, 0, FREQUENCY_LABELS.length - 1),
+        statusMessage: 'Frequency increased.',
+      });
+    case 'FOCUS_DOWN':
+      return withAction(state, actionId, {
+        focusIndex: clamp(state.focusIndex - 1, 0, FOCUS_MARKER_LEVELS.length - 1),
+        statusMessage: 'Focus moved shallower.',
+      });
+    case 'FOCUS_UP':
+      return withAction(state, actionId, {
+        focusIndex: clamp(state.focusIndex + 1, 0, FOCUS_MARKER_LEVELS.length - 1),
+        statusMessage: 'Focus moved deeper.',
+      });
+    case 'OBS_GI':
+      return withAction(state, actionId, {
+        observationPreset: 'GI',
+        statusMessage: 'Observation preset GI.',
+      });
+    case 'OBS_PB':
+      return withAction(state, actionId, {
+        observationPreset: 'PB',
+        statusMessage: 'Observation preset PB.',
+      });
+    case 'OBS_RSP':
+      return withAction(state, actionId, {
+        observationPreset: 'RSP',
+        statusMessage: 'Observation preset RSP.',
+      });
+    default:
+      return withAction(state, actionId, {
+        statusMessage: `${actionId.replace(/_/g, ' ')} not linked yet.`,
+      });
+  }
+}
+
+export function reduceKnobologyFrameState(
+  state: KnobologyFrameState,
+  action: KnobologySimulatorAction,
+): KnobologyFrameState {
+  switch (action.type) {
+    case 'RESET_FOR_EXERCISE':
+      return createKnobologyFrameState(action.exercise);
+    case 'SET_NUMERIC_FIELD':
+      return {
+        ...state,
+        [action.field]: clamp(action.value, 0, 100),
+        lastActionId: null,
+      };
+    case 'SET_COLOR_DOPPLER':
+      return {
+        ...state,
+        colorDoppler: action.enabled,
+        mode: action.enabled ? 'flow' : state.mode === 'flow' ? 'b' : state.mode,
+        lastActionId: null,
+      };
+    case 'PROCESSOR_ACTION':
+      return applyProcessorAction(state, action.actionId);
+    default:
+      return state;
+  }
+}
 
 export function getDepthFrameIndex(
   depth: number,
@@ -62,15 +462,22 @@ export function getDepthFrameIndex(
 }
 
 export function buildFrameMetrics(state: KnobologyFrameState): KnobologyFrameMetrics {
+  const harmonicBoost = state.harmonicMode === 'off' ? 0 : state.harmonicMode === 'p' ? 0.08 : 0.12;
+
   return {
     brightness: 0.16 + state.gain / 135,
-    hazeOpacity: 0.08 + (100 - state.contrast) / 200,
+    hazeOpacity: 0.08 + (100 - state.contrast) / 200 - (state.enhanceEnabled ? 0.03 : 0),
     nodeSize: 26 + (100 - state.depth) * 0.52,
     nodeY: 16 + state.depth * 0.58,
-    borderOpacity: Math.min(0.82, 0.18 + state.contrast / 140),
+    borderOpacity: Math.min(0.82, 0.18 + state.contrast / 140 + harmonicBoost / 2),
     colorSignalOpacity: state.colorDoppler ? 0.78 : 0,
-    realFrameBrightness: 0.48 + state.gain / 82,
-    realFrameContrast: 0.64 + state.contrast / 92,
+    realFrameBrightness: 0.48 + state.gain / 82 + (state.acousticPower - 50) / 240,
+    realFrameContrast: 0.64 + state.contrast / 92 + (state.enhanceEnabled ? 0.14 : 0) + harmonicBoost,
+    pipOpacity: state.pipEnabled ? 1 : 0,
+    waveformOpacity: state.mode === 'pw' ? 0.88 : 0,
+    focusMarkerY: FOCUS_MARKER_LEVELS[state.focusIndex],
+    imageShiftX: (state.cineFrame - Math.floor(CINE_FRAME_COUNT / 2)) * 2.4,
+    imageScale: 1 + state.frequencyIndex * 0.018,
   };
 }
 

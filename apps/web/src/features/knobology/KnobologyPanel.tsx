@@ -1,59 +1,108 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 
 import { knobologyContent, knobologyControlMeta, knobologyReferenceCards } from '@/content/knobology';
 import { getKnobologyMedia } from '@/content/media';
 import type { KnobologyControlId } from '@/content/types';
 import { getDepthFieldClipPath } from '@/features/knobology/depthField';
+import euMe2LayoutData from '@/features/knobology/processor/eu-me2-layout.json';
+import { EuMe2Keyboard, type EuMe2Layout } from '@/features/knobology/processor/EuMe2Keyboard';
 import {
   buildFrameMetrics,
   createKnobologyFrameState,
   evaluateExercise,
+  FREQUENCY_LABELS,
   getDepthFrameIndex,
-  type KnobologyFrameState,
+  reduceKnobologyFrameState,
+  type KnobologyProcessorActionId,
 } from '@/features/knobology/logic';
 import { useLearnerProgress } from '@/lib/progress';
 
-function setNumericField(
-  state: KnobologyFrameState,
-  field: 'depth' | 'gain' | 'contrast',
-  value: number,
-): KnobologyFrameState {
-  return {
-    ...state,
-    [field]: value,
-  };
+const euMe2Layout = euMe2LayoutData as EuMe2Layout;
+
+const ACCESSIBILITY_TOUCH_ACTIONS: KnobologyProcessorActionId[] = [
+  'OPEN_MAIN_MENU',
+  'OPEN_IMAGE_ADJUST',
+  'TOGGLE_ENHANCE',
+  'THE_OFF',
+  'THE_P',
+  'THE_R',
+  'FREQUENCY_DOWN',
+  'FREQUENCY_UP',
+  'FOCUS_DOWN',
+  'FOCUS_UP',
+  'OBS_GI',
+  'OBS_PB',
+  'OBS_RSP',
+];
+
+function getControlForAction(actionId: KnobologyProcessorActionId): KnobologyControlId | null {
+  switch (actionId) {
+    case 'GAIN_DOWN':
+    case 'GAIN_UP':
+      return 'gain';
+    case 'DEPTH_UP':
+    case 'FOCUS_CYCLE':
+    case 'FOCUS_DOWN':
+    case 'FOCUS_UP':
+      return 'depth';
+    case 'FLOW_MODE':
+    case 'B_MODE':
+    case 'PW_MODE':
+      return 'color-doppler';
+    case 'TRACE_MODE':
+    case 'MEASURE_MODE':
+    case 'MEASURE_SET':
+    case 'CLEAR':
+      return 'calipers';
+    case 'TOGGLE_FREEZE':
+    case 'CINE_REVIEW_MODE':
+    case 'CINE_STEP_BACK':
+    case 'CINE_PLAY_PAUSE':
+    case 'CINE_STEP_FORWARD':
+      return 'freeze';
+    case 'SAVE_REC':
+      return 'save';
+    default:
+      return null;
+  }
 }
 
-export function KnobologyPanel() {
+export function KnobologyPanel({ processorDebug = false }: { processorDebug?: boolean }) {
   const { setLastUsedKnobologyControl, setModuleProgress, state: progressState } = useLearnerProgress();
   const [activeExerciseId, setActiveExerciseId] = useState(knobologyContent.controlLabExercises[0]?.id ?? '');
   const [activeControl, setActiveControl] = useState<KnobologyControlId>(
     progressState.lastUsedKnobologyControl ?? 'depth',
   );
   const [referenceFilter, setReferenceFilter] = useState('');
-  const [dopplerEnabled, setDopplerEnabled] = useState(false);
   const [selectedPathId, setSelectedPathId] = useState<string | null>(null);
   const activeExercise =
     knobologyContent.controlLabExercises.find((exercise) => exercise.id === activeExerciseId) ??
     knobologyContent.controlLabExercises[0];
-  const [frameState, setFrameState] = useState(() => createKnobologyFrameState(activeExercise));
+  const [frameState, dispatchFrame] = useReducer(reduceKnobologyFrameState, activeExercise, createKnobologyFrameState);
 
   useEffect(() => {
-    setFrameState(createKnobologyFrameState(activeExercise));
+    dispatchFrame({ type: 'RESET_FOR_EXERCISE', exercise: activeExercise });
   }, [activeExercise]);
 
   useEffect(() => {
     setLastUsedKnobologyControl(activeControl);
   }, [activeControl, setLastUsedKnobologyControl]);
 
-  const frameMetrics = buildFrameMetrics({
-    ...frameState,
-    colorDoppler: dopplerEnabled,
-  });
-  const evaluation = evaluateExercise(activeExercise, {
-    ...frameState,
-    colorDoppler: dopplerEnabled,
-  });
+  useEffect(() => {
+    if (!frameState.cinePlaying) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      dispatchFrame({ type: 'PROCESSOR_ACTION', actionId: 'CINE_STEP_FORWARD' });
+    }, 420);
+
+    return () => window.clearInterval(timer);
+  }, [frameState.cinePlaying]);
+
+  const frameMetrics = buildFrameMetrics(frameState);
+  const evaluation = evaluateExercise(activeExercise, frameState);
+  const dopplerEnabled = frameState.colorDoppler;
   const safePathSelected = selectedPathId === knobologyContent.dopplerLab.safePathId;
   const depthMedia = getKnobologyMedia('depth');
   const depthFrames = depthMedia.comparisonImages ?? [];
@@ -78,6 +127,14 @@ export function KnobologyPanel() {
       card.whatChanges.toLowerCase().includes(query)
     );
   });
+  const compactTouchButtons = useMemo(
+    () =>
+      ACCESSIBILITY_TOUCH_ACTIONS.map((actionId) => ({
+        actionId,
+        label: euMe2Layout.hotspots.find((hotspot) => hotspot.action === actionId)?.label ?? actionId,
+      })),
+    [],
+  );
 
   function markExerciseSolved() {
     if (evaluation.solved) {
@@ -85,24 +142,45 @@ export function KnobologyPanel() {
     }
   }
 
+  function handleProcessorAction(actionId: KnobologyProcessorActionId) {
+    dispatchFrame({ type: 'PROCESSOR_ACTION', actionId });
+
+    const mappedControl = getControlForAction(actionId);
+
+    if (mappedControl) {
+      setActiveControl(mappedControl);
+    }
+
+    if (actionId === 'SAVE_REC') {
+      setModuleProgress('knobology', 70);
+    }
+
+    if (actionId === 'FLOW_MODE') {
+      setModuleProgress('knobology', 80);
+    }
+
+    if (actionId === 'MEASURE_MODE' || actionId === 'MEASURE_SET' || actionId === 'TRACE_MODE') {
+      setModuleProgress('knobology', 60);
+    }
+  }
+
   function handleControlSelect(controlId: KnobologyControlId) {
     setActiveControl(controlId);
 
     if (controlId === 'color-doppler') {
-      setDopplerEnabled((current) => !current);
+      handleProcessorAction(dopplerEnabled ? 'B_MODE' : 'FLOW_MODE');
     }
 
     if (controlId === 'calipers') {
-      setFrameState((current) => ({ ...current, calipers: !current.calipers }));
+      handleProcessorAction(frameState.measurementMode === 'measure' && frameState.calipers ? 'CLEAR' : 'MEASURE_MODE');
     }
 
     if (controlId === 'freeze') {
-      setFrameState((current) => ({ ...current, frozen: !current.frozen }));
+      handleProcessorAction('TOGGLE_FREEZE');
     }
 
     if (controlId === 'save') {
-      setFrameState((current) => ({ ...current, saved: !current.saved }));
-      setModuleProgress('knobology', 70);
+      handleProcessorAction('SAVE_REC');
     }
   }
 
@@ -161,6 +239,9 @@ export function KnobologyPanel() {
                     alt="EBUS teaching frame used for the knobology control lab"
                     className="knobology-frame__image knobology-frame__image--base"
                     src={controlLabImage}
+                    style={{
+                      transform: `translateX(${frameMetrics.imageShiftX}%) scale(${frameMetrics.imageScale})`,
+                    }}
                   />
                   {depthFieldClipPath ? (
                     <img
@@ -172,6 +253,7 @@ export function KnobologyPanel() {
                         clipPath: depthFieldClipPath,
                         WebkitClipPath: depthFieldClipPath,
                         filter: `brightness(${frameMetrics.realFrameBrightness}) contrast(${frameMetrics.realFrameContrast})`,
+                        transform: `translateX(${frameMetrics.imageShiftX}%) scale(${frameMetrics.imageScale})`,
                       }}
                     />
                   ) : (
@@ -182,6 +264,7 @@ export function KnobologyPanel() {
                       src={controlLabImage}
                       style={{
                         filter: `brightness(${frameMetrics.realFrameBrightness}) contrast(${frameMetrics.realFrameContrast})`,
+                        transform: `translateX(${frameMetrics.imageShiftX}%) scale(${frameMetrics.imageScale})`,
                       }}
                     />
                   )}
@@ -212,25 +295,111 @@ export function KnobologyPanel() {
                   ))}
                 </>
               )}
+
+              <div className="knobology-frame__focus-marker" style={{ top: `${frameMetrics.focusMarkerY}%` }} />
+              {frameState.mode === 'pw' ? (
+                <div className="knobology-frame__waveform" style={{ opacity: frameMetrics.waveformOpacity }}>
+                  {Array.from({ length: 20 }).map((_, index) => (
+                    <span
+                      key={index}
+                      className="knobology-frame__waveform-bar"
+                      style={{ height: `${28 + ((index * 17) % 56)}%` }}
+                    />
+                  ))}
+                </div>
+              ) : null}
               {dopplerEnabled ? <div className="knobology-frame__doppler" style={{ opacity: frameMetrics.colorSignalOpacity }} /> : null}
-              {frameState.calipers ? <div className="knobology-frame__calipers" /> : null}
+              {frameState.calipers ? (
+                <div className={`knobology-frame__calipers${frameState.measurementMode === 'trace' ? ' knobology-frame__calipers--trace' : ''}`}>
+                  {frameState.measurementPoints > 1 ? <span className="knobology-frame__measure-readout">12.4 mm</span> : null}
+                </div>
+              ) : null}
+              {frameState.pipEnabled && controlLabImage ? (
+                <div className="knobology-frame__pip" style={{ opacity: frameMetrics.pipOpacity }}>
+                  <img alt="" aria-hidden="true" src={controlLabImage} />
+                  <span>PIP</span>
+                </div>
+              ) : null}
+              {frameState.commentCount > 0 ? (
+                <div className="knobology-frame__comments">
+                  {Array.from({ length: frameState.commentCount }).map((_, index) => (
+                    <span
+                      key={index}
+                      className="knobology-frame__comment"
+                      style={{
+                        left: `${18 + index * 14}%`,
+                        top: `${22 + index * 12}%`,
+                      }}
+                    >
+                      Note {index + 1}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              {frameState.menu !== 'none' ? (
+                <div className="knobology-frame__menu">
+                  <strong>{frameState.menu === 'main' ? 'Main Menu' : 'Image Adjust'}</strong>
+                  <span>Freq {FREQUENCY_LABELS[frameState.frequencyIndex]}</span>
+                  <span>T.H.E. {frameState.harmonicMode.toUpperCase()}</span>
+                  <span>{frameState.enhanceEnabled ? 'Enhance on' : 'Enhance off'}</span>
+                </div>
+              ) : null}
+              {frameState.frozen || frameState.cineReviewMode ? (
+                <div className="knobology-frame__cine-strip">
+                  <span>Cine {frameState.cineFrame + 1}/7</span>
+                  <div className="knobology-frame__cine-track">
+                    <span
+                      className="knobology-frame__cine-thumb"
+                      style={{ left: `${(frameState.cineFrame / 6) * 100}%` }}
+                    />
+                  </div>
+                  <span>{frameState.cinePlaying ? 'Playing' : 'Paused'}</span>
+                </div>
+              ) : null}
               <div className="knobology-frame__status">
                 <span>D {frameState.depth}</span>
                 <span>G {frameState.gain}</span>
                 <span>C {frameState.contrast}</span>
+                <span>{frameState.mode.toUpperCase()}</span>
+                <span>F {FREQUENCY_LABELS[frameState.frequencyIndex]}</span>
                 {frameState.frozen ? <span>FRZ</span> : null}
                 {frameState.saved ? <span>SAV</span> : null}
-                {dopplerEnabled ? <span>CFM</span> : null}
+                {frameState.pipEnabled ? <span>PIP</span> : null}
               </div>
             </div>
             <div className="knobology-frame__caption">
               <strong>{activeExercise.title}</strong>
               <p>{activeExercise.symptom}</p>
+              <p className="knobology-frame__status-line">{frameState.statusMessage}</p>
               {controlLabImage && depthMedia.caption ? <p className="knobology-frame__media-note">{depthMedia.caption}</p> : null}
             </div>
           </div>
 
-          <div className="stack-card">
+          <div className="stack-card knobology-console">
+            <div className="eyebrow">Processor</div>
+            <EuMe2Keyboard
+              activeActionId={frameState.lastActionId}
+              debug={processorDebug}
+              layout={euMe2Layout}
+              onAction={handleProcessorAction}
+            />
+
+            <div className="knobology-console__touch-panel">
+              <div className="eyebrow">Touch panel mirror</div>
+              <div className="button-row button-row--wrap">
+                {compactTouchButtons.map((button) => (
+                  <button
+                    key={button.actionId}
+                    className={`control-pill${frameState.lastActionId === button.actionId ? ' control-pill--active' : ''}`}
+                    onClick={() => handleProcessorAction(button.actionId)}
+                    type="button"
+                  >
+                    {button.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="eyebrow">Instructions</div>
             <p>{activeExercise.instructions}</p>
             <div className="button-row button-row--wrap">
@@ -256,7 +425,11 @@ export function KnobologyPanel() {
                     max={100}
                     min={0}
                     onChange={(event) => {
-                      setFrameState((current) => setNumericField(current, field, Number(event.target.value)));
+                      dispatchFrame({
+                        type: 'SET_NUMERIC_FIELD',
+                        field,
+                        value: Number(event.target.value),
+                      });
                       setActiveControl(field);
                     }}
                     type="range"
@@ -275,7 +448,7 @@ export function KnobologyPanel() {
             <div className="button-row">
               <button
                 className="button button--ghost"
-                onClick={() => setFrameState(createKnobologyFrameState(activeExercise))}
+                onClick={() => dispatchFrame({ type: 'RESET_FOR_EXERCISE', exercise: activeExercise })}
                 type="button"
               >
                 Reset frame
@@ -325,13 +498,7 @@ export function KnobologyPanel() {
               </div>
               <button
                 className={`button${dopplerEnabled ? ' button--ghost' : ''}`}
-                onClick={() => {
-                  const nextValue = !dopplerEnabled;
-                  setDopplerEnabled(nextValue);
-                  if (nextValue) {
-                    setModuleProgress('knobology', 80);
-                  }
-                }}
+                onClick={() => handleProcessorAction(dopplerEnabled ? 'B_MODE' : 'FLOW_MODE')}
                 type="button"
               >
                 {dopplerEnabled ? 'Switch to Doppler Off' : 'Switch to Doppler On'}
