@@ -8,6 +8,7 @@ import {
   normalizeSliceCrop,
 } from '@/features/case3d/patient-space';
 import { useFrame, useLoader, useThree } from '@/features/case3d/r3f';
+import { SliceTextureLoader } from '@/features/case3d/slice-texture-loader';
 import { normalizeMeshKey } from '@/features/case3d/viewer-logic';
 import type {
   CasePlane,
@@ -80,6 +81,17 @@ const STRUCTURE_TONE_OVERRIDES: Record<string, ToneConfig> = {
 
 if (typeof globalThis.ProgressEvent === 'undefined') {
   globalThis.ProgressEvent = class ProgressEvent {} as unknown as typeof ProgressEvent;
+}
+
+if (typeof navigator !== 'undefined' && typeof navigator.userAgent !== 'string') {
+  try {
+    Object.defineProperty(navigator, 'userAgent', {
+      configurable: true,
+      value: 'Expo',
+    });
+  } catch {
+    // Ignore environments that do not allow overriding navigator.userAgent.
+  }
 }
 
 function asColor(hex: string) {
@@ -279,13 +291,16 @@ function SlicePlane({
   textureUri: string;
   axisIndex: number;
 }) {
-  const loadedTexture = useLoader(THREE.TextureLoader, textureUri);
+  const loadedTexture = useLoader(SliceTextureLoader, textureUri) as THREE.Texture;
   const crop = normalizeSliceCrop(manifest.sliceTextureMetadata[plane].crop);
   const texture = useMemo(() => {
     const nextTexture = loadedTexture.clone();
     nextTexture.image = loadedTexture.image;
     nextTexture.source = loadedTexture.source;
     nextTexture.colorSpace = THREE.SRGBColorSpace;
+    nextTexture.generateMipmaps = false;
+    nextTexture.magFilter = THREE.LinearFilter;
+    nextTexture.minFilter = THREE.LinearFilter;
     nextTexture.wrapS = THREE.ClampToEdgeWrapping;
     nextTexture.wrapT = THREE.ClampToEdgeWrapping;
     nextTexture.repeat.set(crop.width, crop.height);
