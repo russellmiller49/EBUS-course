@@ -3,7 +3,14 @@ import { useEffect, useState } from 'react';
 import { knobologyContent, knobologyControlMeta, knobologyReferenceCards } from '@/content/knobology';
 import { getKnobologyMedia } from '@/content/media';
 import type { KnobologyControlId } from '@/content/types';
-import { buildFrameMetrics, createKnobologyFrameState, evaluateExercise, type KnobologyFrameState } from '@/features/knobology/logic';
+import { getDepthFieldClipPath } from '@/features/knobology/depthField';
+import {
+  buildFrameMetrics,
+  createKnobologyFrameState,
+  evaluateExercise,
+  getDepthFrameIndex,
+  type KnobologyFrameState,
+} from '@/features/knobology/logic';
 import { useLearnerProgress } from '@/lib/progress';
 
 function setNumericField(
@@ -48,6 +55,16 @@ export function KnobologyPanel() {
     colorDoppler: dopplerEnabled,
   });
   const safePathSelected = selectedPathId === knobologyContent.dopplerLab.safePathId;
+  const depthMedia = getKnobologyMedia('depth');
+  const depthFrames = depthMedia.comparisonImages ?? [];
+  const depthFrameIndex = depthFrames.length > 0 ? getDepthFrameIndex(frameState.depth, depthFrames.length) : 0;
+  const controlLabImage = depthFrames[depthFrameIndex];
+  const depthFieldClipPath = getDepthFieldClipPath(depthFrameIndex);
+  const dopplerMedia = getKnobologyMedia('color-doppler');
+  const dopplerClip =
+    dopplerEnabled
+      ? dopplerMedia.clips?.[1] ?? dopplerMedia.clips?.[0]
+      : dopplerMedia.clips?.[0];
   const filteredReferenceCards = knobologyReferenceCards.filter((card) => {
     const query = referenceFilter.trim().toLowerCase();
 
@@ -138,28 +155,63 @@ export function KnobologyPanel() {
         <div className="knobology-lab">
           <div className="knobology-frame">
             <div className="knobology-frame__screen">
-              <div className="knobology-frame__sector" style={{ opacity: frameMetrics.brightness }} />
-              <div className="knobology-frame__haze" style={{ opacity: frameMetrics.hazeOpacity }} />
-              <div
-                className="knobology-frame__node"
-                style={{
-                  top: `${frameMetrics.nodeY}%`,
-                  width: `${frameMetrics.nodeSize}%`,
-                  height: `${frameMetrics.nodeSize * 0.62}%`,
-                  borderColor: `rgba(225, 241, 255, ${frameMetrics.borderOpacity})`,
-                }}
-              />
-              {Array.from({ length: 42 }).map((_, index) => (
-                <span
-                  key={index}
-                  className="knobology-frame__speck"
-                  style={{
-                    left: `${20 + ((index * 17) % 58)}%`,
-                    top: `${12 + ((index * 13) % 68)}%`,
-                    opacity: 0.08 + ((index % 4) + 1) * 0.04,
-                  }}
-                />
-              ))}
+              {controlLabImage ? (
+                <div className="knobology-frame__image-shell">
+                  <img
+                    alt="EBUS teaching frame used for the knobology control lab"
+                    className="knobology-frame__image knobology-frame__image--base"
+                    src={controlLabImage}
+                  />
+                  {depthFieldClipPath ? (
+                    <img
+                      alt=""
+                      aria-hidden="true"
+                      className="knobology-frame__image knobology-frame__image--field"
+                      src={controlLabImage}
+                      style={{
+                        clipPath: depthFieldClipPath,
+                        WebkitClipPath: depthFieldClipPath,
+                        filter: `brightness(${frameMetrics.realFrameBrightness}) contrast(${frameMetrics.realFrameContrast})`,
+                      }}
+                    />
+                  ) : (
+                    <img
+                      alt=""
+                      aria-hidden="true"
+                      className="knobology-frame__image knobology-frame__image--field"
+                      src={controlLabImage}
+                      style={{
+                        filter: `brightness(${frameMetrics.realFrameBrightness}) contrast(${frameMetrics.realFrameContrast})`,
+                      }}
+                    />
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="knobology-frame__sector" style={{ opacity: frameMetrics.brightness }} />
+                  <div className="knobology-frame__haze" style={{ opacity: frameMetrics.hazeOpacity }} />
+                  <div
+                    className="knobology-frame__node"
+                    style={{
+                      top: `${frameMetrics.nodeY}%`,
+                      width: `${frameMetrics.nodeSize}%`,
+                      height: `${frameMetrics.nodeSize * 0.62}%`,
+                      borderColor: `rgba(225, 241, 255, ${frameMetrics.borderOpacity})`,
+                    }}
+                  />
+                  {Array.from({ length: 42 }).map((_, index) => (
+                    <span
+                      key={index}
+                      className="knobology-frame__speck"
+                      style={{
+                        left: `${20 + ((index * 17) % 58)}%`,
+                        top: `${12 + ((index * 13) % 68)}%`,
+                        opacity: 0.08 + ((index % 4) + 1) * 0.04,
+                      }}
+                    />
+                  ))}
+                </>
+              )}
               {dopplerEnabled ? <div className="knobology-frame__doppler" style={{ opacity: frameMetrics.colorSignalOpacity }} /> : null}
               {frameState.calipers ? <div className="knobology-frame__calipers" /> : null}
               <div className="knobology-frame__status">
@@ -174,6 +226,7 @@ export function KnobologyPanel() {
             <div className="knobology-frame__caption">
               <strong>{activeExercise.title}</strong>
               <p>{activeExercise.symptom}</p>
+              {controlLabImage && depthMedia.caption ? <p className="knobology-frame__media-note">{depthMedia.caption}</p> : null}
             </div>
           </div>
 
@@ -247,9 +300,28 @@ export function KnobologyPanel() {
             <p>{knobologyContent.dopplerLab.brief}</p>
             <div className="doppler-lab">
               <div className="doppler-lab__frame">
-                <div className="doppler-lab__target" />
-                {dopplerEnabled ? <div className="doppler-lab__vessel" /> : null}
-                <span className="doppler-lab__label">Toggle Doppler to reveal flow</span>
+                {dopplerClip ? (
+                  <video
+                    key={dopplerClip}
+                    autoPlay
+                    className="doppler-lab__video"
+                    controls
+                    loop
+                    muted
+                    playsInline
+                    preload="metadata"
+                    src={dopplerClip}
+                  />
+                ) : (
+                  <>
+                    <div className="doppler-lab__target" />
+                    {dopplerEnabled ? <div className="doppler-lab__vessel" /> : null}
+                  </>
+                )}
+                <span className="doppler-lab__state">{dopplerEnabled ? 'Doppler on' : 'Doppler off'}</span>
+                <span className="doppler-lab__label">
+                  {dopplerMedia.caption ?? 'Toggle Doppler to reveal flow'}
+                </span>
               </div>
               <button
                 className={`button${dopplerEnabled ? ' button--ghost' : ''}`}
@@ -262,7 +334,7 @@ export function KnobologyPanel() {
                 }}
                 type="button"
               >
-                {dopplerEnabled ? 'Hide Doppler' : 'Show Doppler'}
+                {dopplerEnabled ? 'Switch to Doppler Off' : 'Switch to Doppler On'}
               </button>
             </div>
           </div>

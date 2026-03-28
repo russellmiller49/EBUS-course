@@ -1,6 +1,13 @@
 {
   "depth": {
-    "caption": "Add before-and-after depth examples to compare shallow framing versus a centered target."
+    "comparisonImages": [
+      "/media/knobology/ebus_depth_1.png",
+      "/media/knobology/ebus_depth_2.png",
+      "/media/knobology/ebus_depth_3.png",
+      "/media/knobology/ebus_depth_4.png",
+      "/media/knobology/ebus_depth_5.png"
+    ],
+    "caption": "Matched EBUS depth captures. Use the depth slider to step through real depth changes while the field angle stays consistent."
   },
   "gain": {
     "caption": "Add undergained, optimized, and overgained examples to replace the simulated frame."
@@ -9,7 +16,11 @@
     "caption": "Add comparison frames showing how contrast changes edge separation."
   },
   "color-doppler": {
-    "caption": "Add a short Doppler vessel-check clip when approved teaching media is ready."
+    "clips": [
+      "/media/knobology/doppler_off.mp4",
+      "/media/knobology/doppler_on.mp4"
+    ],
+    "caption": "Toggle between the Doppler-off and Doppler-on teaching clips to compare the grayscale view against visible flow."
   },
   "calipers": {
     "caption": "Add a measured still frame to demonstrate correct caliper placement."

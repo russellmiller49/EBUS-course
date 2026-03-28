@@ -679,7 +679,8 @@ iframe {
 }
 
 .knobology-frame__screen {
-  aspect-ratio: 16 / 11;
+  aspect-ratio: 772 / 418;
+  background: #04090f;
 }
 
 .knobology-frame__sector {
@@ -693,6 +694,25 @@ iframe {
 .knobology-frame__doppler {
   position: absolute;
   inset: 0;
+}
+
+.knobology-frame__image-shell {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.knobology-frame__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center top;
+}
+
+.knobology-frame__image--field {
+  pointer-events: none;
 }
 
 .knobology-frame__haze {
@@ -745,6 +765,12 @@ iframe {
 
 .knobology-frame__caption {
   padding: 14px 6px 0;
+}
+
+.knobology-frame__media-note {
+  margin-top: 10px;
+  font-size: 0.86rem;
+  color: var(--text-muted);
 }
 
 .slider-field {
@@ -808,6 +834,12 @@ iframe {
   min-height: 240px;
 }
 
+.doppler-lab__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .doppler-lab__target,
 .doppler-lab__vessel {
   position: absolute;
@@ -830,9 +862,30 @@ iframe {
   position: absolute;
   left: 14px;
   bottom: 14px;
+  right: 14px;
   font-family: 'Space Mono', monospace;
   font-size: 0.72rem;
-  color: var(--text-muted);
+  color: rgba(235, 241, 245, 0.82);
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(7, 17, 29, 0.68);
+  backdrop-filter: blur(10px);
+}
+
+.doppler-lab__state {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent-cyan);
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(7, 17, 29, 0.72);
+  border: 1px solid rgba(127, 189, 242, 0.18);
+  backdrop-filter: blur(10px);
 }
 
 .choice-card {

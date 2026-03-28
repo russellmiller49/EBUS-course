@@ -7,6 +7,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "simulator": "cd ebus-simulator-web && npm run dev",
     "generate:case-001": "tsc --pretty false --module commonjs --target es2020 --esModuleInterop --resolveJsonModule --types node --outDir .generated-scripts scripts/enrich-case-001.ts scripts/case-001-enrichment.ts features/case3d/types.ts && node .generated-scripts/scripts/enrich-case-001.js && rm -rf .generated-scripts",
     "test": "jest",
     "typecheck": "tsc --noEmit"

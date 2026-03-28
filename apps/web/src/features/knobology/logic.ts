@@ -17,6 +17,8 @@ export interface KnobologyFrameMetrics {
   nodeY: number;
   borderOpacity: number;
   colorSignalOpacity: number;
+  realFrameBrightness: number;
+  realFrameContrast: number;
 }
 
 export interface ExerciseEvaluation {
@@ -35,6 +37,30 @@ export function createKnobologyFrameState(exercise: KnobologyCorrectionExercise)
   };
 }
 
+const DEFAULT_DEPTH_FRAME_LEVELS = [20, 40, 60, 80, 100] as const;
+
+export function getDepthFrameIndex(
+  depth: number,
+  frameCount: number = DEFAULT_DEPTH_FRAME_LEVELS.length,
+): number {
+  if (frameCount <= 1) {
+    return 0;
+  }
+
+  const clampedDepth = Math.max(0, Math.min(100, depth));
+  const frameLevels =
+    frameCount === DEFAULT_DEPTH_FRAME_LEVELS.length
+      ? [...DEFAULT_DEPTH_FRAME_LEVELS]
+      : Array.from({ length: frameCount }, (_, index) => Math.round(((index + 1) / frameCount) * 100));
+
+  return frameLevels.reduce((closestIndex, level, index) => {
+    const closestDelta = Math.abs(frameLevels[closestIndex] - clampedDepth);
+    const currentDelta = Math.abs(level - clampedDepth);
+
+    return currentDelta < closestDelta ? index : closestIndex;
+  }, 0);
+}
+
 export function buildFrameMetrics(state: KnobologyFrameState): KnobologyFrameMetrics {
   return {
     brightness: 0.16 + state.gain / 135,
@@ -43,6 +69,8 @@ export function buildFrameMetrics(state: KnobologyFrameState): KnobologyFrameMet
     nodeY: 16 + state.depth * 0.58,
     borderOpacity: Math.min(0.82, 0.18 + state.contrast / 140),
     colorSignalOpacity: state.colorDoppler ? 0.78 : 0,
+    realFrameBrightness: 0.48 + state.gain / 82,
+    realFrameContrast: 0.64 + state.contrast / 92,
   };
 }
 
