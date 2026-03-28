@@ -54,7 +54,8 @@ export const stationConnections: StationMapConnection[] = [
   { from: '4L', to: '10L' },
   { from: '7', to: '10R' },
   { from: '7', to: '10L' },
-  { from: '10R', to: '11R' },
+  { from: '10R', to: '11Rs' },
+  { from: '10R', to: '11Ri' },
   { from: '10L', to: '11L' },
 ];
 

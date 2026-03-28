@@ -32,9 +32,9 @@ Codex usage flow:
 
 ## Case 001 Co-Registration
 
-The case 001 explorer now uses one patient-space scene instead of a separate GLB view plus 2D slice cards. `model/case_001_ct.nrrd` is the geometry truth: the enrichment step reads its `space origin`, `space directions`, and `sizes`, converts each `.mrk.json` control point into LPS world space, derives voxel indices with the inverse IJK-to-world transform, and writes that data into `content/cases/generated/case_001.enriched.json`.
+The case 001 viewer now uses one shared patient-space scene rooted in `model/case_001_ct.nrrd`. The build step reads its `space origin`, `space directions`, and `sizes`, converts each `.mrk.json` control point into LPS world space, derives voxel indices with the inverse IJK-to-world transform, parses segmentation metadata from `model/case_001_segmentation.nrrd`, and writes the runtime payload to `content/cases/case_001.runtime.json`.
 
-At runtime the viewer builds one explicit `patientToScene` transform and uses it for the shared scene graph. The CT slice planes, target markers, and crosshair are placed in patient coordinates under that transform, while the GLB is wrapped in the inverse so the pre-exported anatomy still lands in the same scene space without any extra auto-centering or rescaling. If a slice stack looks like a cropped viewport export instead of a clean full-extent texture, the enriched manifest now emits a warning and carries normalized crop metadata so the plane texture mapping can be corrected explicitly.
+Source-of-truth order matters: CT geometry comes first, segmentation comes second, markups provide targets, and the GLB is optional display polish only. The segmentation labelmap is trusted before the GLB because it carries explicit medical-image geometry and segment metadata, while the GLB is a presentation export that must be brought back into patient space with an explicit inverse transform instead of being auto-centered or rescaled independently.
 
 ## Suggested repo layout
 

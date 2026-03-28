@@ -4324,7 +4324,8 @@
     "stationMeshes": "Station 6 spelling has been normalized to match the corrected GLB mesh name. Each nodal target within a station points to the corresponding station mesh.",
     "uniqueLandmarks": "Aorta, brachiocephalic trunk, brachiocephalic veins, SVC, IVC, subclavian arteries, carotids, atria, ventricles, esophagus, and left atrial appendage each map to their own GLB mesh when present."
   },
-  "generatedAt": "2026-03-23T18:18:21.106Z",
+  "generatedAt": "2026-03-28T20:00:10.851Z",
+  "runtimeSchemaVersion": 1,
   "volumeGeometry": {
     "coordinateSystem": "LPS",
     "sizes": [
@@ -4521,5 +4522,1090 @@
   "warnings": [
     "coronal slice textures look cropped or viewport-exported relative to CT geometry; use crop metadata for clean co-registration.",
     "sagittal slice textures look cropped or viewport-exported relative to CT geometry; use crop metadata for clean co-registration."
-  ]
+  ],
+  "bounds": {
+    "ct": {
+      "coordinateSystem": "LPS",
+      "min": [
+        -140.85637664794916,
+        -261.02426147460926,
+        1070.5999755859375
+      ],
+      "max": [
+        105.37799835205078,
+        -78.36019897460935,
+        1310.5999755859375
+      ]
+    },
+    "segmentation": {
+      "coordinateSystem": "LPS",
+      "min": [
+        -219.59765625000009,
+        -386.59765625000017,
+        688
+      ],
+      "max": [
+        191.59765625000003,
+        24.597656249999943,
+        1340
+      ]
+    },
+    "union": {
+      "coordinateSystem": "LPS",
+      "min": [
+        -219.59765625000009,
+        -386.59765625000017,
+        688
+      ],
+      "max": [
+        191.59765625000003,
+        24.597656249999943,
+        1340
+      ]
+    }
+  },
+  "segmentation": {
+    "coordinateSystem": "LPS",
+    "sizes": [
+      512,
+      512,
+      327
+    ],
+    "componentCount": 3,
+    "spaceDirections": [
+      [
+        0.8046875000000002,
+        0,
+        0
+      ],
+      [
+        0,
+        0.8046875000000002,
+        0
+      ],
+      [
+        0,
+        0,
+        2
+      ]
+    ],
+    "spaceOrigin": [
+      -219.59765625000009,
+      -386.59765625000017,
+      688
+    ],
+    "ijkToWorldMatrix": [
+      0.8046875000000002,
+      0,
+      0,
+      -219.59765625000009,
+      0,
+      0.8046875000000002,
+      0,
+      -386.59765625000017,
+      0,
+      0,
+      2,
+      688,
+      0,
+      0,
+      0,
+      1
+    ],
+    "worldToIjkMatrix": [
+      1.2427184466019414,
+      0,
+      0,
+      272.89805825242723,
+      0,
+      1.2427184466019414,
+      0,
+      480.4320388349515,
+      0,
+      0,
+      0.5,
+      -344,
+      0,
+      0,
+      0,
+      1
+    ],
+    "worldBounds": {
+      "coordinateSystem": "LPS",
+      "min": [
+        -219.59765625000009,
+        -386.59765625000017,
+        688
+      ],
+      "max": [
+        191.59765625000003,
+        24.597656249999943,
+        1340
+      ]
+    },
+    "referenceImageGeometry": "-0.8046875000000001;0;0;219.59765625000003;0;-0.8046875000000001;0;386.59765625000006;0;0;2;688;0;0;0;1;0;511;0;511;0;326;",
+    "segments": [
+      {
+        "index": 0,
+        "id": "2.25.314609811388436314422080028160079540590",
+        "name": "airway",
+        "labelValue": 2,
+        "layer": 0,
+        "color": [
+          0.666667,
+          1,
+          1
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "airway",
+        "targetIds": [
+          "landmark_bronchus_intermedius",
+          "landmark_carina",
+          "landmark_trachea",
+          "landmark_left_mainstem",
+          "landmark_right_mainstem"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "airway"
+      },
+      {
+        "index": 1,
+        "id": "esophagus",
+        "name": "esophagus",
+        "labelValue": 3,
+        "layer": 0,
+        "color": [
+          0.827451,
+          0.670588,
+          0.560784
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "gi",
+        "targetIds": [
+          "landmark_esophagus"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "esophagus"
+      },
+      {
+        "index": 2,
+        "id": "brachiocephalic_vein_right",
+        "name": "right brachiocephalic vein",
+        "labelValue": 4,
+        "layer": 0,
+        "color": [
+          0,
+          0.592157,
+          0.807843
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "vessels",
+        "targetIds": [
+          "landmark_right_brachiocephalic_vein"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "right brachiocephalic vein"
+      },
+      {
+        "index": 3,
+        "id": "brachiocephalic_vein_left",
+        "name": "left brachiocephalic vein",
+        "labelValue": 5,
+        "layer": 0,
+        "color": [
+          0,
+          0.631373,
+          0.768627
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "vessels",
+        "targetIds": [
+          "landmark_left_brachiocephalic_vein"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "left brachiocephalic vein"
+      },
+      {
+        "index": 4,
+        "id": "superior_vena_cava",
+        "name": "superior vena cava",
+        "labelValue": 6,
+        "layer": 0,
+        "color": [
+          0.556863,
+          0.698039,
+          0.603922
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "vessels",
+        "targetIds": [
+          "landmark_superior_vena_cava"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "superior vena cava"
+      },
+      {
+        "index": 5,
+        "id": "2.25.111239317664077265941812615039469954434",
+        "name": "azygous vein",
+        "labelValue": 1,
+        "layer": 1,
+        "color": [
+          0.52549,
+          0.611765,
+          1
+        ],
+        "extent": [
+          222,
+          317,
+          187,
+          341,
+          136,
+          301
+        ],
+        "groupId": "vessels",
+        "targetIds": [
+          "landmark_azygous_vein"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "azygous vein"
+      },
+      {
+        "index": 6,
+        "id": "inferior_vena_cava",
+        "name": "inferior vena cava",
+        "labelValue": 7,
+        "layer": 0,
+        "color": [
+          0,
+          0.592157,
+          0.807843
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "vessels",
+        "targetIds": [
+          "landmark_inferior_vena_cava"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "inferior vena cava"
+      },
+      {
+        "index": 7,
+        "id": "2.25.94981541103766622373479159084072708115",
+        "name": "right atrium",
+        "labelValue": 1,
+        "layer": 2,
+        "color": [
+          0,
+          0.333333,
+          1
+        ],
+        "extent": [
+          194,
+          326,
+          192,
+          318,
+          204,
+          261
+        ],
+        "groupId": "cardiac",
+        "targetIds": [
+          "landmark_right_atrium"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "right atrium"
+      },
+      {
+        "index": 8,
+        "id": "2.25.306757321920428423854529791107945832273",
+        "name": "right ventricle",
+        "labelValue": 2,
+        "layer": 1,
+        "color": [
+          0,
+          0.333333,
+          1
+        ],
+        "extent": [
+          222,
+          317,
+          187,
+          341,
+          136,
+          301
+        ],
+        "groupId": "cardiac",
+        "targetIds": [
+          "landmark_right_ventricle"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "right ventricle"
+      },
+      {
+        "index": 9,
+        "id": "pulmonary_artery",
+        "name": "pulmonary artery",
+        "labelValue": 2,
+        "layer": 2,
+        "color": [
+          0,
+          0,
+          1
+        ],
+        "extent": [
+          194,
+          326,
+          192,
+          318,
+          204,
+          261
+        ],
+        "groupId": "vessels",
+        "targetIds": [
+          "landmark_main_pa",
+          "landmark_left_pa",
+          "landmark_right_pa"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "pulmonary artery"
+      },
+      {
+        "index": 10,
+        "id": "pulmonary_vein",
+        "name": "pulmonary venous system",
+        "labelValue": 3,
+        "layer": 2,
+        "color": [
+          0.729412,
+          0.301961,
+          0.25098
+        ],
+        "extent": [
+          194,
+          326,
+          192,
+          318,
+          204,
+          261
+        ],
+        "groupId": "vessels",
+        "targetIds": [
+          "landmark_left_inferior_pv",
+          "landmark_left_superior_pv",
+          "landmark_right_inferior_pv",
+          "landmark_right_superior_pv"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "pulmonary venous system"
+      },
+      {
+        "index": 11,
+        "id": "2.25.11162851537065423916236596478087091296",
+        "name": "left atrium",
+        "labelValue": 3,
+        "layer": 1,
+        "color": [
+          1,
+          0,
+          0
+        ],
+        "extent": [
+          222,
+          317,
+          187,
+          341,
+          136,
+          301
+        ],
+        "groupId": "cardiac",
+        "targetIds": [
+          "landmark_left_atrium"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "left atrium"
+      },
+      {
+        "index": 12,
+        "id": "atrial_appendage_left",
+        "name": "left atrial appendage",
+        "labelValue": 8,
+        "layer": 0,
+        "color": [
+          0.858824,
+          0.298039,
+          0.211765
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "cardiac",
+        "targetIds": [
+          "landmark_left_atrial_appendage"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "left atrial appendage"
+      },
+      {
+        "index": 13,
+        "id": "2.25.122868581635728138705614725803586075780",
+        "name": "left ventricle",
+        "labelValue": 1,
+        "layer": 0,
+        "color": [
+          1,
+          0,
+          0
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "cardiac",
+        "targetIds": [
+          "landmark_left_ventricle"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "left ventricle"
+      },
+      {
+        "index": 14,
+        "id": "aorta",
+        "name": "aorta",
+        "labelValue": 4,
+        "layer": 1,
+        "color": [
+          0.878431,
+          0.380392,
+          0.298039
+        ],
+        "extent": [
+          222,
+          317,
+          187,
+          341,
+          136,
+          301
+        ],
+        "groupId": "vessels",
+        "targetIds": [
+          "landmark_aorta"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "aorta"
+      },
+      {
+        "index": 15,
+        "id": "brachiocephalic_trunk",
+        "name": "brachiocephalic trunk",
+        "labelValue": 9,
+        "layer": 0,
+        "color": [
+          0.768627,
+          0.47451,
+          0.309804
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "other",
+        "targetIds": [
+          "landmark_brachiocephalic_trunk"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "brachiocephalic trunk"
+      },
+      {
+        "index": 16,
+        "id": "subclavian_artery_right",
+        "name": "right subclavian artery",
+        "labelValue": 10,
+        "layer": 0,
+        "color": [
+          0.847059,
+          0.396078,
+          0.34902
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "vessels",
+        "targetIds": [
+          "landmark_right_subclavian_artery"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "right subclavian artery"
+      },
+      {
+        "index": 17,
+        "id": "subclavian_artery_left",
+        "name": "left subclavian artery",
+        "labelValue": 11,
+        "layer": 0,
+        "color": [
+          0.847059,
+          0.396078,
+          0.270588
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "vessels",
+        "targetIds": [
+          "landmark_left_subclavian_artery"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "left subclavian artery"
+      },
+      {
+        "index": 18,
+        "id": "common_carotid_artery_right",
+        "name": "right common carotid artery",
+        "labelValue": 12,
+        "layer": 0,
+        "color": [
+          0,
+          0.439216,
+          0.647059
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "vessels",
+        "targetIds": [
+          "landmark_right_common_carotid_artery"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "right common carotid artery"
+      },
+      {
+        "index": 19,
+        "id": "common_carotid_artery_left",
+        "name": "left common carotid artery",
+        "labelValue": 13,
+        "layer": 0,
+        "color": [
+          0.0392157,
+          0.411765,
+          0.607843
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "vessels",
+        "targetIds": [
+          "landmark_left_common_carotid_artery"
+        ],
+        "stationIds": [],
+        "meshNameResolved": "left common carotid artery"
+      },
+      {
+        "index": 20,
+        "id": "2.25.53993552652818166383402955961129171632",
+        "name": "Station 1R",
+        "labelValue": 14,
+        "layer": 0,
+        "color": [
+          0,
+          1,
+          0
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "nodes",
+        "targetIds": [
+          "node_1R"
+        ],
+        "stationIds": [
+          "1R"
+        ],
+        "meshNameResolved": "Station 1R"
+      },
+      {
+        "index": 21,
+        "id": "2.25.60762053273684785009037968769448832207",
+        "name": "Station 1L",
+        "labelValue": 19,
+        "layer": 0,
+        "color": [
+          0.564706,
+          0.933333,
+          0.564706
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "nodes",
+        "targetIds": [
+          "node_1L"
+        ],
+        "stationIds": [
+          "1L"
+        ],
+        "meshNameResolved": "Station 1L"
+      },
+      {
+        "index": 22,
+        "id": "2.25.20830374192229656165820331138320646873",
+        "name": "Station 2R",
+        "labelValue": 5,
+        "layer": 1,
+        "color": [
+          0,
+          1,
+          0
+        ],
+        "extent": [
+          222,
+          317,
+          187,
+          341,
+          136,
+          301
+        ],
+        "groupId": "nodes",
+        "targetIds": [
+          "node_2R"
+        ],
+        "stationIds": [
+          "2R"
+        ],
+        "meshNameResolved": "Station 2R"
+      },
+      {
+        "index": 23,
+        "id": "2.25.48624296096474164041790855708405278758",
+        "name": "Station 2L",
+        "labelValue": 6,
+        "layer": 1,
+        "color": [
+          0,
+          1,
+          0
+        ],
+        "extent": [
+          222,
+          317,
+          187,
+          341,
+          136,
+          301
+        ],
+        "groupId": "nodes",
+        "targetIds": [
+          "node_2L"
+        ],
+        "stationIds": [
+          "2L"
+        ],
+        "meshNameResolved": "Station 2L"
+      },
+      {
+        "index": 24,
+        "id": "2.25.312506753561539454691948452144159132025",
+        "name": "Station 3A",
+        "labelValue": 15,
+        "layer": 0,
+        "color": [
+          0,
+          1,
+          0
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "nodes",
+        "targetIds": [
+          "node_3A_1",
+          "node_3A_2",
+          "node_3A_3",
+          "node_3A_4",
+          "node_3A_5",
+          "node_3A_6",
+          "node_3A_7"
+        ],
+        "stationIds": [
+          "3A"
+        ],
+        "meshNameResolved": "Station 3A"
+      },
+      {
+        "index": 25,
+        "id": "2.25.121062370142623028444183689976439892722",
+        "name": "Station 4R",
+        "labelValue": 20,
+        "layer": 0,
+        "color": [
+          0,
+          1,
+          0
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "nodes",
+        "targetIds": [
+          "node_4R_1",
+          "node_4R_2",
+          "node_4R_3"
+        ],
+        "stationIds": [
+          "4R"
+        ],
+        "meshNameResolved": "Station 4R"
+      },
+      {
+        "index": 26,
+        "id": "2.25.276115978171104054815639826201025438059",
+        "name": "Station 4L",
+        "labelValue": 21,
+        "layer": 0,
+        "color": [
+          0,
+          1,
+          0
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "nodes",
+        "targetIds": [
+          "node_4L_1",
+          "node_4L_2",
+          "node_4L_3"
+        ],
+        "stationIds": [
+          "4L"
+        ],
+        "meshNameResolved": "Station 4L"
+      },
+      {
+        "index": 27,
+        "id": "2.25.212414958810818875948453230124833991184",
+        "name": "Station 5",
+        "labelValue": 22,
+        "layer": 0,
+        "color": [
+          0,
+          1,
+          0
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "nodes",
+        "targetIds": [
+          "node_5_nod5"
+        ],
+        "stationIds": [
+          "5"
+        ],
+        "meshNameResolved": "Station 5"
+      },
+      {
+        "index": 28,
+        "id": "2.25.239492796546459861507994252932045774720",
+        "name": "Station 6",
+        "labelValue": 23,
+        "layer": 0,
+        "color": [
+          0,
+          1,
+          0
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "nodes",
+        "targetIds": [
+          "node_6_nod5"
+        ],
+        "stationIds": [
+          "6"
+        ],
+        "meshNameResolved": "Station 6"
+      },
+      {
+        "index": 29,
+        "id": "2.25.268879151571743626125047618104203736194",
+        "name": "Station 7",
+        "labelValue": 7,
+        "layer": 1,
+        "color": [
+          0,
+          1,
+          0
+        ],
+        "extent": [
+          222,
+          317,
+          187,
+          341,
+          136,
+          301
+        ],
+        "groupId": "nodes",
+        "targetIds": [
+          "node_7_1"
+        ],
+        "stationIds": [
+          "7"
+        ],
+        "meshNameResolved": "Station 7"
+      },
+      {
+        "index": 30,
+        "id": "2.25.108758159455925476842465611424706367338",
+        "name": "Station 10R",
+        "labelValue": 16,
+        "layer": 0,
+        "color": [
+          0,
+          1,
+          0
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "nodes",
+        "targetIds": [
+          "node_10R_1",
+          "node_10R_2"
+        ],
+        "stationIds": [
+          "10R"
+        ],
+        "meshNameResolved": "Station 10R"
+      },
+      {
+        "index": 31,
+        "id": "2.25.265963977509172877070359499184196808585",
+        "name": "Station 10L",
+        "labelValue": 17,
+        "layer": 0,
+        "color": [
+          0,
+          1,
+          0
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "nodes",
+        "targetIds": [
+          "node_10L"
+        ],
+        "stationIds": [
+          "10L"
+        ],
+        "meshNameResolved": "Station 10L"
+      },
+      {
+        "index": 32,
+        "id": "2.25.273934619515693923059552848848411656207",
+        "name": "Station 11Rs",
+        "labelValue": 24,
+        "layer": 0,
+        "color": [
+          0,
+          1,
+          0
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "nodes",
+        "targetIds": [
+          "node_11Rs_1",
+          "node_11Rs_2"
+        ],
+        "stationIds": [
+          "11Rs"
+        ],
+        "meshNameResolved": "Station 11Rs"
+      },
+      {
+        "index": 33,
+        "id": "2.25.203565841377755533927323140586090706777",
+        "name": "Station 11Ri",
+        "labelValue": 25,
+        "layer": 0,
+        "color": [
+          0,
+          1,
+          0
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "nodes",
+        "targetIds": [
+          "node_11Ri"
+        ],
+        "stationIds": [
+          "11Ri"
+        ],
+        "meshNameResolved": "Station 11Ri"
+      },
+      {
+        "index": 34,
+        "id": "2.25.26054851494271011036540584591024408830",
+        "name": "Station 11L",
+        "labelValue": 18,
+        "layer": 0,
+        "color": [
+          0,
+          1,
+          0
+        ],
+        "extent": [
+          159,
+          382,
+          187,
+          335,
+          84,
+          326
+        ],
+        "groupId": "nodes",
+        "targetIds": [
+          "node_11L"
+        ],
+        "stationIds": [
+          "11L"
+        ],
+        "meshNameResolved": "Station 11L"
+      }
+    ]
+  }
 }

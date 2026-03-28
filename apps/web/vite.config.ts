@@ -7,6 +7,12 @@ const repoRoot = resolve(__dirname, '../..');
 
 export default defineConfig({
   plugins: [react()],
+  worker: {
+    format: 'es',
+  },
+  optimizeDeps: {
+    exclude: ['itk-wasm', '@itk-wasm/image-io', '@thewtex/zstddec'],
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),

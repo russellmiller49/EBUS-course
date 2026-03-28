@@ -18,6 +18,14 @@ describe('getStationMediaVariants', () => {
     expect(variants.every((variant) => Boolean(variant.image))).toBe(true);
   });
 
+  it('supports the split right interlobar media entries', () => {
+    const superior = getStationMediaVariants(getStationMedia('11Rs'), 'ultrasound');
+    const inferior = getStationMediaVariants(getStationMedia('11Ri'), 'ultrasound');
+
+    expect(superior[0]?.annotationKey).toBe('EBUS_11Rs.png');
+    expect(inferior[0]?.annotationKey).toBe('EBUS_11Ri.png');
+  });
+
   it('falls back to legacy media fields when explicit variants are absent', () => {
     const media = {
       ctImage: '/legacy/ct.jpg',

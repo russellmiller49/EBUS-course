@@ -68,11 +68,16 @@ describe('generated outputs', () => {
     const outputs = generateCaseOutputs(repoRoot);
 
     expect(outputs.enrichedManifest.targets).toHaveLength(56);
+    expect(outputs.runtimeManifest.targets).toHaveLength(56);
     expect(outputs.enrichedManifest.targets.every((target) => target.sliceIndex.axial !== null)).toBe(true);
     expect(outputs.enrichedManifest.volumeGeometry.coordinateSystem).toBe('LPS');
     expect(outputs.enrichedManifest.patientToScene.name).toBe('patientToScene');
     expect(outputs.enrichedManifest.targets[0].world.coordinateSystem).toBe('LPS');
     expect(outputs.enrichedManifest.sliceTextureMetadata.coronal.sourceLooksCropped).toBe(true);
+    expect(outputs.runtimeManifest.segmentation.coordinateSystem).toBe('LPS');
+    expect(outputs.runtimeManifest.segmentation.segments.length).toBeGreaterThan(10);
+    expect(outputs.runtimeManifest.bounds.union.coordinateSystem).toBe('LPS');
+    expect(outputs.runtimeManifest.targets.every((target) => target.insideCtBounds)).toBe(true);
     expect(outputs.enrichedManifest.warnings.length).toBeGreaterThan(0);
     expect(outputs.assetIndexSource).toContain('export const axialSliceAssets');
   });

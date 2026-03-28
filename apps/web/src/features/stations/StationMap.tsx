@@ -19,7 +19,7 @@ function getQuizMaskDimensions(stationId: string) {
     return { width: 86, height: 58 };
   }
 
-  if (stationId === '11R' || stationId === '11L') {
+  if (stationId === '11Rs' || stationId === '11Ri' || stationId === '11L') {
     return { width: 98, height: 58 };
   }
 

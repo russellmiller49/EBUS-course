@@ -15,6 +15,7 @@ import { useLearnerProgress } from '@/lib/progress';
 const navItems: NavigationItem[] = [
   { id: 'home', label: 'Home', icon: '⌂', path: '/' },
   { id: 'stations', label: 'Stations', icon: '◎', path: '/stations' },
+  { id: 'case-001', label: 'Case 3D', icon: '◫', path: '/cases/case-001' },
   { id: 'knobology', label: 'Knobology', icon: '◐', path: '/knobology' },
   { id: 'lectures', label: 'Lectures', icon: '▶', path: '/lectures' },
   { id: 'quiz', label: 'Quiz', icon: '✎', path: '/quiz' },

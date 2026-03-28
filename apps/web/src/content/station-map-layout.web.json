@@ -53,9 +53,16 @@
       "height": 48
     },
     {
-      "stationId": "11R",
+      "stationId": "11Rs",
       "x": 73,
-      "y": 479,
+      "y": 474,
+      "width": 48,
+      "height": 48
+    },
+    {
+      "stationId": "11Ri",
+      "x": 83,
+      "y": 571,
       "width": 48,
       "height": 48
     },

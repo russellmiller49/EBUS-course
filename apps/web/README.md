@@ -47,4 +47,10 @@ Processor hotspot tuning note:
 ## Notes
 
 - Vite is configured to read repo-root JSON outside `apps/web`, so the web app does not duplicate station, quiz, or case content.
-- The `/cases/case-001` route is a hidden scaffold only. It reads the enriched manifest but does not ship the React Three Fiber viewer yet.
+- The `/cases/case-001` route now uses the repo-native vtk.js viewer.
+
+Case 001 source-of-truth note:
+
+- Runtime hierarchy is `case_001_ct.nrrd` for image geometry, `case_001_segmentation.nrrd` for anatomy overlay alignment, then `model/markups/*.mrk.json` for targets. The GLB is optional display polish only.
+- Segmentation is trusted before GLB because the labelmap shares explicit medical-image world geometry, while the GLB is a presentation export that needs an explicit transform to re-enter patient space.
+- `scripts/cases/build-case-assets.ts` reads the CT, segmentation header metadata, and markups, validates target bounds, derives voxel and slice coordinates, and emits `content/cases/case_001.runtime.json` for the web viewer.

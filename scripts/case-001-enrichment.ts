@@ -16,6 +16,7 @@ import {
   roundVoxel as roundVoxelShared,
   toSceneCoordinates,
   vectorLength,
+  voxelToWorld,
   worldToContinuousVoxel as worldToContinuousVoxelShared,
 } from '../features/case3d/patient-space';
 import { mapNormalizedToFrameIndex } from '../features/case3d/slice-logic';
@@ -32,14 +33,21 @@ import type {
   SliceIndex,
   SliceTextureMetadata,
   ToggleSetId,
+  RuntimeCaseManifest,
+  RuntimeCaseTarget,
+  SegmentationGroupId,
+  SegmentationSegment,
+  SegmentationVolumeGeometry,
   Vector3Tuple,
   VolumeGeometry,
+  WorldBounds,
 } from '../features/case3d/types';
 
 const PLANES: CasePlane[] = ['axial', 'coronal', 'sagittal'];
 const DEFAULT_GENERATED_DIR = path.join('content', 'cases', 'generated');
 const ENRICHED_MANIFEST_PATH = path.join(DEFAULT_GENERATED_DIR, 'case_001.enriched.json');
 const ASSET_INDEX_PATH = path.join(DEFAULT_GENERATED_DIR, 'case_001-asset-index.ts');
+const RUNTIME_MANIFEST_PATH = path.join('content', 'cases', 'case_001.runtime.json');
 
 type Vector3 = Vector3Tuple;
 
@@ -59,9 +67,30 @@ interface ResolvedCasePaths {
 
 export interface GeneratedCaseOutputs {
   enrichedManifest: EnrichedCaseManifest;
+  runtimeManifest: RuntimeCaseManifest;
   assetIndexSource: string;
   enrichedManifestPath: string;
+  runtimeManifestPath: string;
   assetIndexPath: string;
+}
+
+interface SegmentationHeaderSegment {
+  index: number;
+  id: string;
+  name: string;
+  labelValue: number;
+  layer: number;
+  color: Vector3;
+  extent: [number, number, number, number, number, number];
+}
+
+interface ParsedSegmentationHeader {
+  componentCount: number;
+  sizes: Vector3;
+  spaceDirections: Matrix3;
+  spaceOrigin: Vector3;
+  referenceImageGeometry?: string;
+  segments: SegmentationHeaderSegment[];
 }
 
 export function naturalCompare(left: string, right: string): number {
@@ -188,6 +217,119 @@ export function parseNrrdHeader(input: string | Buffer): NrrdGeometry {
   };
 }
 
+function parseIntegerTuple(fieldValue: string, fieldName: string, expectedLength: number) {
+  const values = fieldValue
+    .trim()
+    .split(/\s+/)
+    .map((value) => Number(value));
+
+  if (values.length !== expectedLength || values.some((value) => !Number.isFinite(value))) {
+    throw new Error(`Unable to parse ${fieldName} as ${expectedLength} integers.`);
+  }
+
+  return values as number[];
+}
+
+function parseSegmentationHeader(input: string | Buffer): ParsedSegmentationHeader {
+  const headerText = Buffer.isBuffer(input) ? extractNrrdHeader(input) : input;
+  const dimensionMatch = headerText.match(/^dimension:\s*(\d+)$/m);
+  const sizesMatch = headerText.match(/^sizes:\s*([^\n\r]+)$/m);
+  const directionsMatch = headerText.match(/^space directions:\s*([^\n\r]+)$/m);
+  const originMatch = headerText.match(/^space origin:\s*(\([^)]+\))$/m);
+  const referenceImageGeometryMatch = headerText.match(/^Segmentation_ConversionParameters:=.*Reference image geometry\|([^|]+)\|/m);
+
+  if (!dimensionMatch || Number(dimensionMatch[1]) !== 4) {
+    throw new Error('Segmentation NRRD must be 4D with a leading list axis.');
+  }
+
+  if (!sizesMatch || !directionsMatch || !originMatch) {
+    throw new Error('Segmentation NRRD header is missing required geometry fields.');
+  }
+
+  const sizes = parseIntegerTuple(sizesMatch[1], 'segmentation sizes', 4);
+  const directionEntries = directionsMatch[1].match(/(?:\([^)]+\)|none)/g);
+
+  if (!directionEntries || directionEntries.length !== 4) {
+    throw new Error('Segmentation NRRD must declare exactly four space direction entries.');
+  }
+
+  if (directionEntries[0] !== 'none') {
+    throw new Error('Segmentation NRRD must use a non-spatial leading list axis.');
+  }
+
+  const segmentMap = new Map<number, Partial<SegmentationHeaderSegment>>();
+  const segmentPattern = /^Segment(\d+)_([A-Za-z]+):=(.*)$/gm;
+  let match = segmentPattern.exec(headerText);
+
+  while (match) {
+    const index = Number(match[1]);
+    const key = match[2];
+    const rawValue = match[3].trim();
+    const existing = segmentMap.get(index) ?? { index };
+
+    switch (key) {
+      case 'Color': {
+        const color = rawValue.split(/\s+/).map((value) => Number(value));
+
+        if (color.length === 3 && color.every((value) => Number.isFinite(value))) {
+          existing.color = [color[0], color[1], color[2]];
+        }
+        break;
+      }
+      case 'Extent': {
+        const extent = rawValue.split(/\s+/).map((value) => Number(value));
+
+        if (extent.length === 6 && extent.every((value) => Number.isFinite(value))) {
+          existing.extent = extent as [number, number, number, number, number, number];
+        }
+        break;
+      }
+      case 'ID':
+        existing.id = rawValue;
+        break;
+      case 'LabelValue':
+        existing.labelValue = Number(rawValue);
+        break;
+      case 'Layer':
+        existing.layer = Number(rawValue);
+        break;
+      case 'Name':
+        existing.name = rawValue;
+        break;
+      default:
+        break;
+    }
+
+    segmentMap.set(index, existing);
+    match = segmentPattern.exec(headerText);
+  }
+
+  const segments = [...segmentMap.values()]
+    .filter(
+      (segment): segment is SegmentationHeaderSegment =>
+        typeof segment.id === 'string' &&
+        typeof segment.name === 'string' &&
+        typeof segment.labelValue === 'number' &&
+        typeof segment.layer === 'number' &&
+        Boolean(segment.color) &&
+        Boolean(segment.extent),
+    )
+    .sort((left, right) => left.index - right.index);
+
+  return {
+    componentCount: sizes[0],
+    sizes: [sizes[1], sizes[2], sizes[3]],
+    spaceDirections: [
+      parseVector3(directionEntries[1], 'segmentation space directions[0]'),
+      parseVector3(directionEntries[2], 'segmentation space directions[1]'),
+      parseVector3(directionEntries[3], 'segmentation space directions[2]'),
+    ],
+    spaceOrigin: parseVector3(originMatch[1], 'segmentation space origin'),
+    referenceImageGeometry: referenceImageGeometryMatch?.[1],
+    segments,
+  };
+}
+
 export function worldToContinuousVoxel(pointLps: Vector3, geometry: NrrdGeometry): Vector3 {
   return worldToContinuousVoxelShared(pointLps, geometry);
 }
@@ -232,6 +374,107 @@ export function mapFrameIndex(
   }
 
   return mapNormalizedToFrameIndex(normalizedPosition, frameCount, coverageAssumption);
+}
+
+function buildWorldBounds(geometry: Pick<VolumeGeometry, 'sizes' | 'spaceDirections' | 'spaceOrigin'>): WorldBounds {
+  const corners: Vector3[] = [];
+
+  for (const i of [0, geometry.sizes[0] - 1]) {
+    for (const j of [0, geometry.sizes[1] - 1]) {
+      for (const k of [0, geometry.sizes[2] - 1]) {
+        corners.push(voxelToWorld([i, j, k], geometry));
+      }
+    }
+  }
+
+  return {
+    coordinateSystem: 'LPS',
+    min: [
+      Math.min(...corners.map((corner) => corner[0])),
+      Math.min(...corners.map((corner) => corner[1])),
+      Math.min(...corners.map((corner) => corner[2])),
+    ],
+    max: [
+      Math.max(...corners.map((corner) => corner[0])),
+      Math.max(...corners.map((corner) => corner[1])),
+      Math.max(...corners.map((corner) => corner[2])),
+    ],
+  };
+}
+
+function mergeWorldBounds(bounds: WorldBounds[]): WorldBounds {
+  return {
+    coordinateSystem: 'LPS',
+    min: [
+      Math.min(...bounds.map((entry) => entry.min[0])),
+      Math.min(...bounds.map((entry) => entry.min[1])),
+      Math.min(...bounds.map((entry) => entry.min[2])),
+    ],
+    max: [
+      Math.max(...bounds.map((entry) => entry.max[0])),
+      Math.max(...bounds.map((entry) => entry.max[1])),
+      Math.max(...bounds.map((entry) => entry.max[2])),
+    ],
+  };
+}
+
+function normalizeLookupKey(value: string | null | undefined) {
+  return (value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/station\s+/g, 'station ')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function classifySegmentationGroup(name: string): SegmentationGroupId {
+  const normalized = name.toLowerCase();
+
+  if (normalized.startsWith('station ')) {
+    return 'nodes';
+  }
+
+  if (
+    normalized.includes('airway') ||
+    normalized.includes('trachea') ||
+    normalized.includes('carina') ||
+    normalized.includes('mainstem') ||
+    normalized.includes('bronchus')
+  ) {
+    return 'airway';
+  }
+
+  if (normalized.includes('esophagus')) {
+    return 'gi';
+  }
+
+  if (
+    normalized.includes('atrium') ||
+    normalized.includes('ventricle') ||
+    normalized.includes('appendage') ||
+    normalized.includes('cardiac')
+  ) {
+    return 'cardiac';
+  }
+
+  if (
+    normalized.includes('artery') ||
+    normalized.includes('vein') ||
+    normalized.includes('aorta') ||
+    normalized.includes('vena') ||
+    normalized.includes('vascular') ||
+    normalized.includes('pulmonary')
+  ) {
+    return 'vessels';
+  }
+
+  return 'other';
+}
+
+function isPointInsideGeometry(pointLps: Vector3, geometry: NrrdGeometry, tolerance = 0) {
+  const voxel = worldToContinuousVoxel(pointLps, geometry);
+
+  return voxel.every((value, index) => value >= -tolerance && value <= geometry.sizes[index] - 1 + tolerance);
 }
 
 export function parseGlbMeshNames(buffer: Buffer): string[] {
@@ -488,6 +731,96 @@ function buildVoxelIndex(axisMap: AxisMap, roundedVoxel: Vector3): SliceIndex {
   };
 }
 
+function buildSegmentationGeometry(segmentationHeader: ParsedSegmentationHeader): SegmentationVolumeGeometry {
+  const geometry: NrrdGeometry = {
+    sizes: segmentationHeader.sizes,
+    spaceDirections: segmentationHeader.spaceDirections,
+    spaceOrigin: segmentationHeader.spaceOrigin,
+  };
+
+  return {
+    coordinateSystem: 'LPS',
+    sizes: segmentationHeader.sizes,
+    componentCount: segmentationHeader.componentCount,
+    spaceDirections: segmentationHeader.spaceDirections,
+    spaceOrigin: segmentationHeader.spaceOrigin,
+    ijkToWorldMatrix: buildIjkToWorldMatrix4(geometry),
+    worldToIjkMatrix: buildWorldToIjkMatrix4(geometry),
+    worldBounds: buildWorldBounds(geometry),
+    referenceImageGeometry: segmentationHeader.referenceImageGeometry,
+  };
+}
+
+function buildSegmentationSegments(
+  segments: ParsedSegmentationHeader['segments'],
+  targets: EnrichedCaseTarget[],
+): SegmentationSegment[] {
+  const targetsByMeshKey = new Map<string, EnrichedCaseTarget[]>();
+
+  targets.forEach((target) => {
+    const keys = new Set<string>([
+      normalizeLookupKey(target.meshNameResolved),
+      normalizeLookupKey(target.meshNameExpected),
+      normalizeLookupKey(target.displayLabel),
+      normalizeLookupKey(target.stationGroupId ? `Station ${target.stationGroupId}` : null),
+      normalizeLookupKey(target.stationId ? `Station ${target.stationId}` : null),
+    ]);
+
+    keys.forEach((key) => {
+      if (!key) {
+        return;
+      }
+
+      const existing = targetsByMeshKey.get(key) ?? [];
+      existing.push(target);
+      targetsByMeshKey.set(key, existing);
+    });
+  });
+
+  return segments.map((segment) => {
+    const matchedTargets = targetsByMeshKey.get(normalizeLookupKey(segment.name)) ?? [];
+
+    return {
+      index: segment.index,
+      id: segment.id,
+      name: segment.name,
+      labelValue: segment.labelValue,
+      layer: segment.layer,
+      color: segment.color,
+      extent: segment.extent,
+      groupId: classifySegmentationGroup(segment.name),
+      targetIds: [...new Set(matchedTargets.map((target) => target.id))],
+      stationIds: [...new Set(matchedTargets.flatMap((target) => (target.stationId ? [target.stationId] : [])))],
+      meshNameResolved: matchedTargets[0]?.meshNameResolved ?? null,
+    };
+  });
+}
+
+function buildRuntimeTargets(
+  targets: EnrichedCaseTarget[],
+  ctGeometry: NrrdGeometry,
+  segmentationGeometry: NrrdGeometry,
+  segmentationSegments: SegmentationSegment[],
+): RuntimeCaseTarget[] {
+  const segmentIdsByTargetId = new Map<string, string[]>();
+
+  segmentationSegments.forEach((segment) => {
+    segment.targetIds.forEach((targetId) => {
+      const existing = segmentIdsByTargetId.get(targetId) ?? [];
+      existing.push(segment.id);
+      segmentIdsByTargetId.set(targetId, existing);
+    });
+  });
+
+  return targets.map((target) => ({
+    ...target,
+    recommendedSliceIndex: target.sliceIndex,
+    matchedSegmentIds: segmentIdsByTargetId.get(target.id) ?? [],
+    insideCtBounds: isPointInsideGeometry(target.world.position, ctGeometry, 1e-4),
+    insideSegmentationBounds: isPointInsideGeometry(target.world.position, segmentationGeometry, 1e-4),
+  }));
+}
+
 function getResolvedPaths(rootDir: string, manifest: CaseManifest): ResolvedCasePaths {
   const segmentationPath = manifest.assets.segmentationFile
     ? tryResolveRepoPath(rootDir, manifest.assets.segmentationFile)
@@ -547,12 +880,16 @@ export function generateCaseOutputs(rootDir: string): GeneratedCaseOutputs {
   };
   const meshNames = parseGlbMeshNames(fs.readFileSync(resolvedPaths.glbPath)).sort(naturalCompare);
   const warnings: string[] = [];
+  const parsedMarkupFiles = fs
+    .readdirSync(resolveRepoPath(rootDir, 'model/markups'))
+    .filter((fileName) => fileName.toLowerCase().endsWith('.mrk.json'));
   const sliceFiles: Record<CasePlane, string[]> = {
     axial: listSliceSeriesFiles(rootDir, manifest.sliceSeries.axial.folder),
     coronal: listSliceSeriesFiles(rootDir, manifest.sliceSeries.coronal.folder),
     sagittal: listSliceSeriesFiles(rootDir, manifest.sliceSeries.sagittal.folder),
   };
   const sliceTextureMetadata = buildSliceTextureMetadata(rootDir, manifest, geometry, sliceFiles, warnings);
+  const ctBounds = buildWorldBounds(geometry);
 
   if (manifest.assets.segmentationFile && !resolvedPaths.segmentationPath) {
     warnings.push(`Segmentation file is referenced but missing: ${manifest.assets.segmentationFile}`);
@@ -625,31 +962,87 @@ export function generateCaseOutputs(rootDir: string): GeneratedCaseOutputs {
     throw new Error('At least one target is missing a derived slice index.');
   }
 
+  const referencedMarkupFiles = new Set(
+    manifest.targets.map((target) => path.basename(target.markupFile).toLowerCase()),
+  );
+  const unreferencedMarkupFiles = parsedMarkupFiles.filter(
+    (fileName) => !referencedMarkupFiles.has(fileName.toLowerCase()),
+  );
+
+  if (unreferencedMarkupFiles.length > 0) {
+    warnings.push(
+      `Found ${unreferencedMarkupFiles.length} unreferenced markup files under model/markups that are not part of the runtime target list.`,
+    );
+  }
+
+  if (!resolvedPaths.segmentationPath) {
+    throw new Error('Segmentation file is required to build the case_001 runtime manifest.');
+  }
+
+  const parsedSegmentationHeader = parseSegmentationHeader(fs.readFileSync(resolvedPaths.segmentationPath));
+  const segmentationGeometry = buildSegmentationGeometry(parsedSegmentationHeader);
+  const segmentationSegments = buildSegmentationSegments(parsedSegmentationHeader.segments, enrichedTargets);
+  const runtimeTargets = buildRuntimeTargets(
+    enrichedTargets,
+    nrrdGeometry,
+    {
+      sizes: segmentationGeometry.sizes,
+      spaceDirections: segmentationGeometry.spaceDirections,
+      spaceOrigin: segmentationGeometry.spaceOrigin,
+    },
+    segmentationSegments,
+  );
+
+  const outsideCtTargets = runtimeTargets.filter((target) => !target.insideCtBounds);
+
+  if (outsideCtTargets.length > 0) {
+    throw new Error(
+      `Found ${outsideCtTargets.length} targets outside CT bounds: ${outsideCtTargets.map((target) => target.id).join(', ')}`,
+    );
+  }
+
+  const runtimeManifest: RuntimeCaseManifest = {
+    ...manifest,
+    generatedAt: new Date().toISOString(),
+    runtimeSchemaVersion: 1,
+    volumeGeometry: geometry,
+    patientToScene: {
+      name: 'patientToScene',
+      from: 'LPS-mm',
+      to: 'three-scene-meters',
+      matrix: buildPatientToSceneMatrix(),
+      inverseMatrix: buildSceneToPatientMatrix(),
+      note: 'This explicit transform maps CT/markup patient-space coordinates into the shared Three scene basis. The GLB is already exported in that scene basis, so it should be wrapped in the inverse transform before joining the patient-space group.',
+    },
+    meshNames,
+    sliceAssetCounts: {
+      axial: sliceFiles.axial.length,
+      coronal: sliceFiles.coronal.length,
+      sagittal: sliceFiles.sagittal.length,
+    },
+    sliceTextureMetadata,
+    warnings,
+    bounds: {
+      ct: ctBounds,
+      segmentation: segmentationGeometry.worldBounds,
+      union: mergeWorldBounds([ctBounds, segmentationGeometry.worldBounds]),
+    },
+    segmentation: {
+      ...segmentationGeometry,
+      segments: segmentationSegments,
+    },
+    targets: runtimeTargets,
+  };
+
   return {
     enrichedManifest: {
-      ...manifest,
-      generatedAt: new Date().toISOString(),
-      volumeGeometry: geometry,
-      patientToScene: {
-        name: 'patientToScene',
-        from: 'LPS-mm',
-        to: 'three-scene-meters',
-        matrix: buildPatientToSceneMatrix(),
-        inverseMatrix: buildSceneToPatientMatrix(),
-        note: 'This explicit transform maps CT/markup patient-space coordinates into the shared Three scene basis. The GLB is already exported in that scene basis, so it should be wrapped in the inverse transform before joining the patient-space group.',
-      },
-      meshNames,
-      sliceAssetCounts: {
-        axial: sliceFiles.axial.length,
-        coronal: sliceFiles.coronal.length,
-        sagittal: sliceFiles.sagittal.length,
-      },
-      sliceTextureMetadata,
-      warnings,
+      ...runtimeManifest,
       targets: enrichedTargets,
     },
+    runtimeManifest,
     assetIndexSource: buildAssetIndexSource(sliceFiles),
     enrichedManifestPath: path.join(rootDir, ENRICHED_MANIFEST_PATH),
+    runtimeManifestPath: path.join(rootDir, RUNTIME_MANIFEST_PATH),
     assetIndexPath: path.join(rootDir, ASSET_INDEX_PATH),
   };
 }
@@ -659,7 +1052,35 @@ export function writeCaseOutputs(rootDir: string): GeneratedCaseOutputs {
 
   fs.mkdirSync(path.dirname(outputs.enrichedManifestPath), { recursive: true });
   fs.writeFileSync(outputs.enrichedManifestPath, `${JSON.stringify(outputs.enrichedManifest, null, 2)}\n`);
+  fs.writeFileSync(outputs.runtimeManifestPath, `${JSON.stringify(outputs.runtimeManifest, null, 2)}\n`);
   fs.writeFileSync(outputs.assetIndexPath, outputs.assetIndexSource);
 
   return outputs;
+}
+
+export interface Case001ValidationSummary {
+  caseId: string;
+  targetCount: number;
+  stationCount: number;
+  parsedMarkupCount: number;
+  segmentationSegmentCount: number;
+  outsideCtTargetIds: string[];
+}
+
+export function validateCase001(rootDir: string): Case001ValidationSummary {
+  const outputs = generateCaseOutputs(rootDir);
+  const markupCount = fs
+    .readdirSync(resolveRepoPath(rootDir, 'model/markups'))
+    .filter((fileName) => fileName.toLowerCase().endsWith('.mrk.json')).length;
+
+  return {
+    caseId: outputs.runtimeManifest.caseId,
+    targetCount: outputs.runtimeManifest.targets.length,
+    stationCount: outputs.runtimeManifest.stations.length,
+    parsedMarkupCount: markupCount,
+    segmentationSegmentCount: outputs.runtimeManifest.segmentation.segments.length,
+    outsideCtTargetIds: outputs.runtimeManifest.targets
+      .filter((target) => !target.insideCtBounds)
+      .map((target) => target.id),
+  };
 }

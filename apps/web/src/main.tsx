@@ -6,12 +6,14 @@ import { App } from '@/app/App';
 import { LearnerProgressProvider } from '@/lib/progress';
 import '@/styles/index.css';
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <LearnerProgressProvider>
-        <App />
-      </LearnerProgressProvider>
-    </BrowserRouter>
-  </React.StrictMode>,
+const app = (
+  <BrowserRouter>
+    <LearnerProgressProvider>
+      <App />
+    </LearnerProgressProvider>
+  </BrowserRouter>
 );
+
+// The vtk.js / itk-wasm case viewer uses imperative rendering and widget setup that does
+// not currently tolerate StrictMode's development-only effect replay.
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(app);

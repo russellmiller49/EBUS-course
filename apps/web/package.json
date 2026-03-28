@@ -11,6 +11,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@itk-wasm/image-io": "^1.6.1",
+    "@kitware/vtk.js": "^35.5.1",
+    "itk-wasm": "^1.0.0-b.196",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^6.30.1"

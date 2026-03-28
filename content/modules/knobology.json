@@ -181,11 +181,12 @@
     }
   ],
   "quizQuestionIds": [
-    "knobology-depth-01",
-    "knobology-gain-02",
-    "knobology-contrast-03",
-    "knobology-doppler-04",
-    "knobology-freeze-save-05"
+    "knobology-sequence-01",
+    "knobology-cp-vs-rp-02",
+    "knobology-artifact-03",
+    "knobology-order-04",
+    "knobology-necrosis-05",
+    "knobology-doppler-06"
   ],
   "assetPlaceholders": [
     {

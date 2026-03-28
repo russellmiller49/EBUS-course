@@ -10,6 +10,12 @@ export function QuizPage() {
   const { recordQuizResult, setModuleProgress, state } = useLearnerProgress();
   const [filter, setFilter] = useState<QuizFilter>('all');
   const questions = filter === 'all' ? getQuizQuestions() : getQuizQuestions(filter);
+  const filterLabels: Record<QuizFilter, string> = {
+    all: 'All',
+    knobology: 'Knobology',
+    'station-map': 'Station map',
+    'station-explorer': 'Explorer',
+  };
 
   return (
     <div className="page-stack">
@@ -28,13 +34,14 @@ export function QuizPage() {
               onClick={() => setFilter(candidate)}
               type="button"
             >
-              {candidate === 'all' ? 'All' : candidate}
+              {filterLabels[candidate]}
             </button>
           ))}
         </div>
       </section>
 
       <QuizCard
+        key={filter}
         label={filter === 'all' ? 'Mixed quiz' : `${filter} quiz`}
         onComplete={(result) => {
           recordQuizResult({

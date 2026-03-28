@@ -1,3 +1,5 @@
+import { EducationModuleRenderer } from '@/components/education/EducationModuleRenderer';
+import { knobologyAdvancedContent } from '@/content/education';
 import { KnobologyPanel } from '@/features/knobology/KnobologyPanel';
 import { QuizCard } from '@/features/quiz/QuizCard';
 import { getKnobologyQuizQuestions } from '@/content/knobology';
@@ -23,6 +25,8 @@ export function KnobologyPage() {
           <span className="tag">Educational approximation only</span>
         </div>
       </section>
+
+      <EducationModuleRenderer module={knobologyAdvancedContent} />
 
       <KnobologyPanel />
 

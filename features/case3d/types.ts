@@ -1,6 +1,7 @@
 export type CasePlane = 'axial' | 'coronal' | 'sagittal';
 export type CaseSelectionMode = 'station' | 'target';
 export type ToggleSetId = 'lymph_nodes' | 'airway' | 'vessels' | 'cardiac' | 'gi';
+export type SegmentationGroupId = 'airway' | 'vessels' | 'nodes' | 'cardiac' | 'gi' | 'other';
 export type AxisName = 'i' | 'j' | 'k';
 export type SceneLayerId = 'anatomy' | CasePlane;
 export type Vector3Tuple = [number, number, number];
@@ -204,6 +205,60 @@ export interface EnrichedCaseManifest extends Omit<CaseManifest, 'targets'> {
   sliceTextureMetadata: Record<CasePlane, SliceTextureMetadata>;
   warnings: string[];
   targets: EnrichedCaseTarget[];
+}
+
+export interface WorldBounds {
+  coordinateSystem: 'LPS';
+  min: Vector3Tuple;
+  max: Vector3Tuple;
+}
+
+export interface SegmentationSegment {
+  index: number;
+  id: string;
+  name: string;
+  labelValue: number;
+  layer: number;
+  color: Vector3Tuple;
+  extent: [number, number, number, number, number, number];
+  groupId: SegmentationGroupId;
+  targetIds: string[];
+  stationIds: string[];
+  meshNameResolved: string | null;
+}
+
+export interface SegmentationVolumeGeometry {
+  coordinateSystem: 'LPS';
+  sizes: Vector3Tuple;
+  componentCount: number;
+  spaceDirections: Matrix3;
+  spaceOrigin: Vector3Tuple;
+  ijkToWorldMatrix: Matrix4Tuple;
+  worldToIjkMatrix: Matrix4Tuple;
+  worldBounds: WorldBounds;
+  referenceImageGeometry?: string;
+}
+
+export interface RuntimeCaseBounds {
+  ct: WorldBounds;
+  segmentation: WorldBounds;
+  union: WorldBounds;
+}
+
+export interface RuntimeCaseTarget extends EnrichedCaseTarget {
+  recommendedSliceIndex: SliceIndex;
+  matchedSegmentIds: string[];
+  insideCtBounds: boolean;
+  insideSegmentationBounds: boolean;
+}
+
+export interface RuntimeCaseManifest extends Omit<EnrichedCaseManifest, 'targets'> {
+  runtimeSchemaVersion: number;
+  bounds: RuntimeCaseBounds;
+  segmentation: SegmentationVolumeGeometry & {
+    segments: SegmentationSegment[];
+  };
+  targets: RuntimeCaseTarget[];
 }
 
 export interface CaseReviewPrompt {

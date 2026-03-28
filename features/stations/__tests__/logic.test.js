@@ -39,7 +39,7 @@ describe('buildStationMapReviewSummary', () => {
     const summary = buildStationMapReviewSummary({
       bookmarkedCount: 3,
       correctCount: 4,
-      reviewedStationIds: ['2R', '4R', '7', '7', '10R', '11R'],
+      reviewedStationIds: ['2R', '4R', '7', '7', '10R', '11Rs'],
       totalRounds: 5,
       totalStations: 9,
     });

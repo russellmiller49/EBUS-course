@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
 
+import { EducationModuleRenderer } from '@/components/education/EducationModuleRenderer';
+import {
+  mediastinalAnatomyContent,
+  proceduralTechniqueContent,
+  sonographicInterpretationContent,
+  stagingStrategyContent,
+} from '@/content/education';
 import { EmptyState } from '@/components/EmptyState';
 import { getStationExplorerContent, getStationMapContent, getStationMapLayout, getStations } from '@/content/stations';
 import { StationDetail } from '@/features/stations/StationDetail';
@@ -73,6 +80,8 @@ export function StationsPage() {
           ))}
         </div>
       </section>
+
+      <EducationModuleRenderer compact module={mediastinalAnatomyContent} />
 
       <section className="section-card">
         <div className="section-card__heading">
@@ -162,6 +171,7 @@ export function StationsPage() {
               <>
                 <h3>{currentFlashcard.displayName}</h3>
                 <p>{currentFlashcard.description}</p>
+                <span>{currentFlashcard.iaslcName}</span>
                 <span>{currentFlashcard.memoryCues[0]}</span>
               </>
             )}
@@ -214,7 +224,7 @@ export function StationsPage() {
           />
           <div className={`feedback-banner${mapQuizAnswer === currentQuizRound.stationId ? ' feedback-banner--success' : ''}`}>
             <strong>{mapQuizAnswer ? (mapQuizAnswer === currentQuizRound.stationId ? 'Correct station' : 'Not quite') : 'Hint'}</strong>
-            <p>{mapQuizAnswer ? currentQuizRound.hint : currentQuizRound.hint}</p>
+            <p>{mapQuizAnswer ? currentQuizRound.explanation : currentQuizRound.hint}</p>
           </div>
           <div className="button-row">
             <button
@@ -253,33 +263,40 @@ export function StationsPage() {
             <>
               <div className="stack-list">
                 {challengePrompt.optionIds.map((optionId) => (
-                  <button
-                    key={optionId}
-                    className={`choice-card${challengeAnswer === optionId ? ' choice-card--selected' : ''}${
-                      challengeAnswer
-                        ? optionId === selectedStation.id
-                          ? ' choice-card--correct'
-                          : challengeAnswer === optionId
-                            ? ' choice-card--incorrect'
+                  (() => {
+                    const optionStation = stations.find((station) => station.id === optionId);
+
+                    return (
+                      <button
+                        key={optionId}
+                        className={`choice-card${challengeAnswer === optionId ? ' choice-card--selected' : ''}${
+                          challengeAnswer
+                            ? optionId === selectedStation.id
+                              ? ' choice-card--correct'
+                              : challengeAnswer === optionId
+                                ? ' choice-card--incorrect'
+                                : ''
                             : ''
-                        : ''
-                    }`}
-                    onClick={() => {
-                      setChallengeAnswer(optionId);
-                      recordRecognitionAttempt(selectedStation.id, optionId === selectedStation.id);
-                      setModuleProgress('station-explorer', optionId === selectedStation.id ? 80 : 55);
-                    }}
-                    type="button"
-                  >
-                    <strong>{optionId}</strong>
-                  </button>
+                        }`}
+                        onClick={() => {
+                          setChallengeAnswer(optionId);
+                          recordRecognitionAttempt(selectedStation.id, optionId === selectedStation.id);
+                          setModuleProgress('station-explorer', optionId === selectedStation.id ? 80 : 55);
+                        }}
+                        type="button"
+                      >
+                        <strong>{optionStation?.displayName ?? optionId}</strong>
+                        <span>{optionStation?.iaslcName ?? optionId}</span>
+                      </button>
+                    );
+                  })()
                 ))}
               </div>
               <div className={`feedback-banner${challengeAnswer === selectedStation.id ? ' feedback-banner--success' : ''}`}>
                 <strong>{challengeAnswer ? (challengeAnswer === selectedStation.id ? 'Correct' : 'Review the correlate') : 'Use the selected station detail card'}</strong>
                 <p>
                   {challengeAnswer
-                    ? selectedStation.views[challengePrompt.viewId].caption
+                    ? challengePrompt.explanation
                     : 'The selected station detail card stays synchronized with this challenge so you can compare cues before answering.'}
                 </p>
                 {challengeStat ? (
@@ -298,6 +315,10 @@ export function StationsPage() {
           )}
         </section>
       </div>
+
+      <EducationModuleRenderer compact module={sonographicInterpretationContent} />
+      <EducationModuleRenderer compact module={proceduralTechniqueContent} />
+      <EducationModuleRenderer compact module={stagingStrategyContent} />
     </div>
   );
 }

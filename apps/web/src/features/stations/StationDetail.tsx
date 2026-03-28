@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 
-import { getStationMediaVariants } from '@/content/media';
+import {
+  LandmarkChecklist,
+  RelatedImagesStrip,
+  StationBoundaryCard,
+  StationStagingSummary,
+} from '@/components/education/EducationModuleRenderer';
+import { getStationMediaVariants, getStationPrimaryMedia } from '@/content/media';
 import { getViewLabel, zoneThemes } from '@/content/stations';
 import type { CombinedStation, ExplorerViewId, StationAnnotationSet } from '@/content/types';
 
@@ -201,6 +207,21 @@ export function StationDetail({
   onToggleBookmark: (stationId: string) => void;
 }) {
   const theme = zoneThemes[station.zoneKey];
+  const relatedImages = (['ct', 'bronchoscopy', 'ultrasound'] as const).flatMap((viewId) => {
+    const primary = getStationPrimaryMedia(station.media, viewId);
+
+    if (!primary || primary.kind !== 'image') {
+      return [];
+    }
+
+    return [
+      {
+        id: `${station.id}-${viewId}`,
+        label: `${station.id} ${getViewLabel(viewId)}`,
+        src: primary.src,
+      },
+    ];
+  });
 
   return (
     <section className="detail-card" style={{ ['--detail-accent' as string]: theme.border }}>
@@ -210,6 +231,7 @@ export function StationDetail({
             <span className="chip chip--accent">{station.id}</span>
             <span className="chip">{theme.label}</span>
             <span className="chip">{station.laterality}</span>
+            <span className="chip">{station.iaslcName}</span>
           </div>
           <h2>{station.displayName}</h2>
           <p>{station.description}</p>
@@ -227,27 +249,48 @@ export function StationDetail({
       <div className="detail-card__grid">
         <div className="detail-card__column">
           <div className="stack-card">
-            <div className="eyebrow">Access notes</div>
+            <div className="eyebrow">Access and window</div>
+            <p>
+              <strong>Access:</strong> {station.accessProfile}
+            </p>
+            <p>
+              <strong>Best EBUS window:</strong> {station.bestEbusWindow}
+            </p>
             <p>{station.accessNotes}</p>
           </div>
-          <div className="stack-card">
+          <StationBoundaryCard boundary={station.boundaryDefinition} notes={station.boundaryNotes} />
+          <StationStagingSummary accessProfile={station.accessProfile} staging={station.nStageImplication} />
+          <LandmarkChecklist items={station.landmarkChecklist} />
+          <div className="education-card">
+            <div className="eyebrow">Why this station matters</div>
+            <p>{station.clinicalImportance}</p>
+            <p>
+              <strong>Staging impact:</strong> {station.stagingChangeFinding}
+            </p>
+          </div>
+          <div className="education-card">
+            <div className="eyebrow">Landmark vessels</div>
+            <div className="tag-row">
+              {station.landmarkVessels.map((vessel) => (
+                <span key={vessel} className="tag">
+                  {vessel}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="education-card">
             <div className="eyebrow">Memory cues</div>
-            <ul className="plain-list">
+            <ul className="plain-list education-list">
               {station.memoryCues.map((cue) => (
                 <li key={cue}>{cue}</li>
               ))}
             </ul>
           </div>
-          <div className="stack-card">
-            <div className="eyebrow">Landmark checklist</div>
-            <ul className="plain-list">
-              {station.landmarkChecklist.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="stack-card">
+          <div className="education-card">
             <div className="eyebrow">Common confusion pairs</div>
+            <p>
+              <strong>Most common:</strong> {station.commonConfusionPair}
+            </p>
             <div className="tag-row">
               {station.confusionPairs.map((pair) => (
                 <span key={pair} className="tag">
@@ -263,6 +306,39 @@ export function StationDetail({
             <MediaSlot station={station} viewId="ct" />
             <MediaSlot station={station} viewId="bronchoscopy" />
             <MediaSlot station={station} viewId="ultrasound" />
+          </div>
+          <RelatedImagesStrip items={relatedImages} />
+          <div className="education-card">
+            <div className="eyebrow">What you should see on CT</div>
+            <ul className="plain-list education-list">
+              {station.whatYouSee.ct.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="education-card">
+            <div className="eyebrow">What you should see bronchoscopically</div>
+            <ul className="plain-list education-list">
+              {station.whatYouSee.bronchoscopy.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="education-card">
+            <div className="eyebrow">What you should see on EBUS</div>
+            <ul className="plain-list education-list">
+              {station.whatYouSee.ultrasound.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="education-card">
+            <div className="eyebrow">Safe puncture considerations</div>
+            <ul className="plain-list education-list">
+              {station.safePunctureConsiderations.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
           </div>
           <div className="stack-card">
             <div className="eyebrow">Aliases</div>

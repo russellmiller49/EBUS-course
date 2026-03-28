@@ -22,6 +22,15 @@ export const homeModuleCards: AppModuleCard[] = [
     path: '/knobology',
   },
   {
+    id: 'case-001',
+    title: 'Case 001 3D Viewer',
+    description:
+      'Repo-native tri-planar CT, segmentation, markups, and shared patient-space targeting for case exploration.',
+    accent: 'var(--accent-cyan)',
+    icon: '◫',
+    path: '/cases/case-001',
+  },
+  {
     id: 'lectures',
     title: 'Pre-Course Lectures',
     description: 'Manifest-driven lecture cards with poster and video slots ready for local media.',

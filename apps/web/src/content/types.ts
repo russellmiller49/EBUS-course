@@ -2,6 +2,26 @@ export type RootModuleId = 'knobology' | 'station-map' | 'station-explorer' | 'c
 export type AppRouteId = 'home' | 'stations' | 'knobology' | 'lectures' | 'quiz' | 'case-001';
 export type StationZoneKey = 'upper' | 'subcarinal' | 'hilar';
 export type ExplorerViewId = 'ct' | 'bronchoscopy' | 'ultrasound';
+export type LessonSectionKind =
+  | 'overview'
+  | 'learning-objectives'
+  | 'core-concept'
+  | 'landmarks'
+  | 'pitfall'
+  | 'clinical-pearl'
+  | 'technique'
+  | 'staging'
+  | 'artifact'
+  | 'sonographic-pattern'
+  | 'case';
+export type QuizQuestionType =
+  | 'single-best-answer'
+  | 'multi-select'
+  | 'ordering'
+  | 'image-interpretation'
+  | 'case-vignette';
+export type QuizDifficulty = 'basic' | 'intermediate' | 'advanced';
+export type StationAccessProfile = 'EBUS' | 'EUS-B' | 'Both' | 'Visualized only';
 export type KnobologyControlId =
   | 'depth'
   | 'gain'
@@ -28,16 +48,21 @@ export interface ModuleContent {
 export interface QuizQuestionOption {
   id: string;
   label: string;
+  rationale: string;
 }
 
 export interface QuizQuestionContent {
   id: string;
   moduleId: RootModuleId;
   prompt: string;
-  type: 'single-best-answer' | 'image-interpretation' | 'scenario';
+  type: QuizQuestionType;
   options: QuizQuestionOption[];
-  correctOptionId: string;
+  correctOptionIds: string[];
   explanation: string;
+  difficulty: QuizDifficulty;
+  tags: string[];
+  caseTitle?: string;
+  caseSummary?: string;
 }
 
 export interface CourseInfoQuickFact {
@@ -80,17 +105,79 @@ export interface StationAssetKeys {
   ultrasound: string;
 }
 
+export interface LessonCaseVignette {
+  title: string;
+  scenario: string;
+  prompt: string;
+  takeaway: string;
+}
+
+export interface LessonSection {
+  id: string;
+  title: string;
+  kind: LessonSectionKind;
+  body: string;
+  bullets?: string[];
+  imageIds?: string[];
+  relatedStationIds?: string[];
+  pearl?: string;
+  pitfall?: string;
+  checklist?: string[];
+  caseVignette?: LessonCaseVignette;
+}
+
+export interface EducationalModuleContent {
+  id: string;
+  title: string;
+  summary: string;
+  learningObjectives: string[];
+  sections: LessonSection[];
+}
+
+export interface StationBoundaryDefinition {
+  superior: string;
+  inferior: string;
+  medial?: string;
+  lateral?: string;
+  anterior?: string;
+  posterior?: string;
+}
+
+export interface StationStagingImplication {
+  ipsilateral: string;
+  contralateral: string;
+  note: string;
+}
+
+export interface StationPerspectiveChecklist {
+  ct: string[];
+  bronchoscopy: string[];
+  ultrasound: string[];
+}
+
 export interface StationContent {
   id: string;
   displayName: string;
   shortLabel: string;
+  iaslcName: string;
   zone: string;
   laterality: string;
   description: string;
   accessNotes: string;
+  accessProfile: StationAccessProfile;
+  bestEbusWindow: string;
+  landmarkVessels: string[];
+  boundaryDefinition: StationBoundaryDefinition;
+  boundaryNotes: string[];
+  nStageImplication: StationStagingImplication;
+  clinicalImportance: string;
   memoryCues: string[];
   confusionPairs: string[];
+  commonConfusionPair: string;
   relatedStationIds: string[];
+  whatYouSee: StationPerspectiveChecklist;
+  safePunctureConsiderations: string[];
+  stagingChangeFinding: string;
   assetKeys: StationAssetKeys;
 }
 
@@ -125,6 +212,7 @@ export interface StationMapQuizRound {
   stationId: string;
   prompt: string;
   hint: string;
+  explanation: string;
 }
 
 export interface StationMapModuleContent {
@@ -156,17 +244,20 @@ export interface ExplorerViewContent {
     | 'lower-right';
 }
 
+export interface StationRecognitionQuizItem {
+  id: string;
+  viewId: ExplorerViewId;
+  prompt: string;
+  optionIds: string[];
+  explanation: string;
+}
+
 export interface StationCorrelationContent {
   stationId: string;
   aliases: string[];
   landmarkChecklist: string[];
   views: Record<ExplorerViewId, ExplorerViewContent>;
-  quizItems: Array<{
-    id: string;
-    viewId: ExplorerViewId;
-    prompt: string;
-    optionIds: string[];
-  }>;
+  quizItems: StationRecognitionQuizItem[];
 }
 
 export interface StationExplorerModuleContent {
@@ -311,23 +402,13 @@ export interface ZoneTheme {
   label: string;
 }
 
-export interface CombinedStation {
-  id: string;
-  displayName: string;
-  shortLabel: string;
-  zone: string;
+export interface CombinedStation extends StationContent {
   zoneKey: StationZoneKey;
-  laterality: string;
-  description: string;
-  accessNotes: string;
-  memoryCues: string[];
-  confusionPairs: string[];
-  relatedStationIds: string[];
   aliases: string[];
   landmarkChecklist: string[];
   mapNode: StationMapNode;
   views: Record<ExplorerViewId, ExplorerViewContent>;
-  quizItems: StationCorrelationContent['quizItems'];
+  quizItems: StationRecognitionQuizItem[];
   media: StationMediaEntry;
 }
 
