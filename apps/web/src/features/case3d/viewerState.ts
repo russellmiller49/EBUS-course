@@ -17,7 +17,6 @@ export interface CaseViewerState {
     airway: boolean;
     vessels: boolean;
     nodes: boolean;
-    glb: boolean;
   };
   cutPlane: {
     opacity: number;
@@ -94,7 +93,6 @@ export function createInitialViewerState(manifest: RuntimeCaseManifest): CaseVie
       airway: true,
       vessels: true,
       nodes: true,
-      glb: true,
     },
     cutPlane: {
       opacity: 0.48,

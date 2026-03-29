@@ -178,38 +178,6 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
 
   return (
     <div className="page-stack">
-      <section className="section-card">
-        <div className="section-card__heading">
-          <div>
-            <div className="eyebrow">Case 001</div>
-            <h2>Patient-space tri-planar viewer</h2>
-          </div>
-        </div>
-        <p>
-          CT geometry is the runtime truth, segmentation is the anatomy alignment truth, and markups drive the target
-          list and crosshair. The smooth GLB can also replace the rough segmentation surfaces in the 3D view when you
-          want a cleaner anatomy render.
-        </p>
-        <div className="mini-card-grid">
-          <article className="mini-card">
-            <strong>{manifest.stations.length}</strong>
-            <p>Stations</p>
-          </article>
-          <article className="mini-card">
-            <strong>{manifest.targets.length}</strong>
-            <p>Targets from markups</p>
-          </article>
-          <article className="mini-card">
-            <strong>{manifest.segmentation.segments.length}</strong>
-            <p>Segmentation segments</p>
-          </article>
-          <article className="mini-card">
-            <strong>{selectedTarget.displayLabel}</strong>
-            <p>Current target</p>
-          </article>
-        </div>
-      </section>
-
       <section className="section-card case3d-layout">
         <div className="case3d-sidebar">
           <article className="case3d-panel case3d-panel--controls">
@@ -273,18 +241,71 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
                 ))}
               </select>
             </label>
-            <div className="stack-list">
-              <article className="mini-card">
-                <strong>Crosshair</strong>
-                <p>
-                  {crosshairWorld[0].toFixed(1)}, {crosshairWorld[1].toFixed(1)}, {crosshairWorld[2].toFixed(1)} mm
-                </p>
-              </article>
-              <article className="mini-card">
-                <strong>Matched segments</strong>
-                <p>{selectedSegments.length > 0 ? selectedSegments.map((segment) => segment.name).join(', ') : 'None'}</p>
-              </article>
-            </div>
+            <section className="case3d-hero__control-group">
+              <div>
+                <div className="eyebrow">3D CT</div>
+                <h4 className="case3d-hero__control-title">Orthogonal planes</h4>
+              </div>
+              <p className="case3d-note">3D-only visibility. The slice cards below stay visible.</p>
+              <label className="case3d-toggle">
+                <input
+                  checked={state.threeDOrthogonalPlanesVisible}
+                  onChange={(event) =>
+                    dispatch({ type: 'set-three-d-plane-visibility', visible: event.target.checked })
+                  }
+                  type="checkbox"
+                />
+                <span>Show 3D CT planes</span>
+              </label>
+              <div className="case3d-toggle-list">
+                <label className="case3d-toggle">
+                  <input
+                    checked={state.planeVisibility.axial}
+                    disabled={!state.threeDOrthogonalPlanesVisible}
+                    onChange={(event) =>
+                      dispatch({ type: 'set-plane-visibility', plane: 'axial', visible: event.target.checked })
+                    }
+                    type="checkbox"
+                  />
+                  <span>Axial</span>
+                </label>
+                <label className="case3d-toggle">
+                  <input
+                    checked={state.planeVisibility.coronal}
+                    disabled={!state.threeDOrthogonalPlanesVisible}
+                    onChange={(event) =>
+                      dispatch({ type: 'set-plane-visibility', plane: 'coronal', visible: event.target.checked })
+                    }
+                    type="checkbox"
+                  />
+                  <span>Coronal</span>
+                </label>
+                <label className="case3d-toggle">
+                  <input
+                    checked={state.planeVisibility.sagittal}
+                    disabled={!state.threeDOrthogonalPlanesVisible}
+                    onChange={(event) =>
+                      dispatch({ type: 'set-plane-visibility', plane: 'sagittal', visible: event.target.checked })
+                    }
+                    type="checkbox"
+                  />
+                  <span>Sagittal</span>
+                </label>
+              </div>
+              <label className="case3d-slider">
+                <span>3D CT plane opacity</span>
+                <input
+                  max={1}
+                  min={0}
+                  onChange={(event) =>
+                    dispatch({ type: 'set-three-d-plane-opacity', value: Number(event.target.value) })
+                  }
+                  step={0.01}
+                  type="range"
+                  value={state.orthogonalPlaneOpacity}
+                />
+              </label>
+            </section>
           </article>
 
           <article className="case3d-panel case3d-panel--controls">
@@ -328,14 +349,6 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
             </label>
             <label className="case3d-toggle">
               <input
-                checked={state.overlayGroups.glb}
-                onChange={(event) => dispatch({ type: 'set-overlay-group', key: 'glb', value: event.target.checked })}
-                type="checkbox"
-              />
-              <span>Use smooth GLB anatomy in 3D</span>
-            </label>
-            <label className="case3d-toggle">
-              <input
                 checked={state.sliceSegmentationVisible}
                 onChange={(event) =>
                   dispatch({ type: 'set-slice-segmentation-visibility', visible: event.target.checked })
@@ -343,27 +356,6 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
                 type="checkbox"
               />
               <span>2D segmentation overlay</span>
-            </label>
-            <label className="case3d-toggle">
-              <input
-                checked={state.threeDOrthogonalPlanesVisible}
-                onChange={(event) =>
-                  dispatch({ type: 'set-three-d-plane-visibility', visible: event.target.checked })
-                }
-                type="checkbox"
-              />
-              <span>Orthogonal CT planes in 3D</span>
-            </label>
-            <label className="case3d-slider">
-              <span>Anatomy opacity</span>
-              <input
-                max={1}
-                min={0.05}
-                onChange={(event) => dispatch({ type: 'set-overlay-opacity', value: Number(event.target.value) })}
-                step={0.01}
-                type="range"
-                value={state.overlayOpacity}
-              />
             </label>
           </article>
 
@@ -410,183 +402,105 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
               </div>
             </div>
           </article>
-
-          <article className="case3d-panel case3d-panel--controls">
-            <div className="case3d-panel__header">
-              <div>
-                <div className="eyebrow">Cut Plane</div>
-                <h3>Arbitrary reslice</h3>
-              </div>
-            </div>
-            <label className="case3d-toggle">
-              <input
-                checked={state.cutPlane.visible}
-                onChange={(event) => dispatch({ type: 'set-cut-plane-visibility', visible: event.target.checked })}
-                type="checkbox"
-              />
-              <span>Show cut plane</span>
-            </label>
-            <label className="case3d-slider">
-              <span>Cut-plane opacity</span>
-              <input
-                max={1}
-                min={0.05}
-                onChange={(event) => dispatch({ type: 'set-cut-plane-opacity', value: Number(event.target.value) })}
-                step={0.01}
-                type="range"
-                value={state.cutPlane.opacity}
-              />
-            </label>
-            <button className="case3d-button" onClick={() => dispatch({ type: 'reset-cut-plane' })} type="button">
-              Reset cut plane
-            </button>
-            <p className="case3d-note">
-              Drag or rotate the plane directly in the 3D view. The cut viewport and segmentation clipping stay tied to
-              that same world-space plane.
-            </p>
-          </article>
         </div>
 
         <div className="case3d-main">
-            <article className="case3d-panel case3d-panel--hero">
-              <div className="case3d-panel__header">
-                <div>
-                  <div className="eyebrow">Shared Scene</div>
-                  <h3>3D patient-space view</h3>
+          <article className="case3d-panel case3d-panel--hero">
+            <div className="case3d-panel__header">
+              <div>
+                <div className="eyebrow">Shared Scene</div>
+                <h3>3D patient-space view</h3>
               </div>
-                  <button className="case3d-button" onClick={() => setResetCameraToken((value) => value + 1)} type="button">
-                    Reset camera
-                  </button>
-                </div>
-              <div className="case3d-hero">
-                <div className="case3d-panel__viewport case3d-panel__viewport--hero">
-                  {volumeState.loading ? (
-                    <div className="case3d-panel__placeholder">Loading case geometry…</div>
-                  ) : volumeState.error ? (
-                    <div className="case3d-panel__placeholder">{volumeState.error}</div>
-                  ) : (
-                    <VtkViewport
-                      className="case-vtk-viewport"
-                      cutPlaneNormal={state.cutPlane.normal}
-                      cutPlaneOpacity={state.cutPlane.opacity}
-                      cutPlaneOrigin={state.cutPlane.origin}
-                      cutPlaneVisible={state.cutPlane.visible}
-                      crosshairWorld={crosshairWorld}
-                      hasSegmentation={Boolean(volumeState.segmentation)}
-                      hasVolume={Boolean(volumeState.ct)}
-                      manifest={manifest}
-                      mode="three-d"
-                      onCutPlaneChange={(origin, normal) => dispatch({ type: 'set-cut-plane', origin, normal })}
-                      orthogonalPlaneOpacity={state.orthogonalPlaneOpacity}
-                      overlayOpacity={state.overlayOpacity}
-                      planeIndices={planeIndices}
-                      planeVisibility={threeDPlaneVisibility}
-                      resetCameraToken={resetCameraToken}
-                      selectedSegments={selectedSegments}
-                      segmentationRef={segmentationRef}
-                      showGlb={state.overlayGroups.glb}
-                      visibleSegments={visibleSegments}
-                      volumeRef={volumeRef}
+              <button className="case3d-button" onClick={() => setResetCameraToken((value) => value + 1)} type="button">
+                Reset camera
+              </button>
+            </div>
+            <div className="case3d-hero">
+              <div className="case3d-panel__viewport case3d-panel__viewport--hero">
+                {volumeState.loading ? (
+                  <div className="case3d-panel__placeholder">Loading case geometry…</div>
+                ) : volumeState.error ? (
+                  <div className="case3d-panel__placeholder">{volumeState.error}</div>
+                ) : (
+                  <VtkViewport
+                    className="case-vtk-viewport"
+                    cutPlaneNormal={state.cutPlane.normal}
+                    cutPlaneOpacity={state.cutPlane.opacity}
+                    cutPlaneOrigin={state.cutPlane.origin}
+                    cutPlaneVisible={state.cutPlane.visible}
+                    crosshairWorld={crosshairWorld}
+                    hasSegmentation={Boolean(volumeState.segmentation)}
+                    hasVolume={Boolean(volumeState.ct)}
+                    manifest={manifest}
+                    mode="three-d"
+                    onCutPlaneChange={(origin, normal) => dispatch({ type: 'set-cut-plane', origin, normal })}
+                    orthogonalPlaneOpacity={state.orthogonalPlaneOpacity}
+                    overlayOpacity={state.overlayOpacity}
+                    planeIndices={planeIndices}
+                    planeVisibility={threeDPlaneVisibility}
+                    resetCameraToken={resetCameraToken}
+                    selectedSegments={selectedSegments}
+                    segmentationRef={segmentationRef}
+                    showGlb
+                    visibleSegments={visibleSegments}
+                    volumeRef={volumeRef}
+                  />
+                )}
+              </div>
+              <aside className="case3d-hero__controls" aria-label="3D scene controls">
+                <section className="case3d-hero__control-group">
+                  <div>
+                    <div className="eyebrow">3D Anatomy</div>
+                    <h4 className="case3d-hero__control-title">Surface opacity</h4>
+                  </div>
+                  <label className="case3d-slider">
+                    <span>Anatomy opacity</span>
+                    <input
+                      max={1}
+                      min={0.05}
+                      onChange={(event) => dispatch({ type: 'set-overlay-opacity', value: Number(event.target.value) })}
+                      step={0.01}
+                      type="range"
+                      value={state.overlayOpacity}
                     />
-                  )}
-                </div>
-                <aside className="case3d-hero__controls" aria-label="3D scene controls">
-                  <section className="case3d-hero__control-group">
-                    <div>
-                      <div className="eyebrow">3D CT</div>
-                      <h4 className="case3d-hero__control-title">Orthogonal planes</h4>
-                    </div>
-                    <label className="case3d-toggle">
-                      <input
-                        checked={state.threeDOrthogonalPlanesVisible}
-                        onChange={(event) =>
-                          dispatch({ type: 'set-three-d-plane-visibility', visible: event.target.checked })
-                        }
-                        type="checkbox"
-                      />
-                      <span>Show 3D CT planes</span>
-                    </label>
-                    <div className="case3d-toggle-list">
-                      <label className="case3d-toggle">
-                        <input
-                          checked={state.planeVisibility.axial}
-                          disabled={!state.threeDOrthogonalPlanesVisible}
-                          onChange={(event) =>
-                            dispatch({ type: 'set-plane-visibility', plane: 'axial', visible: event.target.checked })
-                          }
-                          type="checkbox"
-                        />
-                        <span>Axial</span>
-                      </label>
-                      <label className="case3d-toggle">
-                        <input
-                          checked={state.planeVisibility.coronal}
-                          disabled={!state.threeDOrthogonalPlanesVisible}
-                          onChange={(event) =>
-                            dispatch({ type: 'set-plane-visibility', plane: 'coronal', visible: event.target.checked })
-                          }
-                          type="checkbox"
-                        />
-                        <span>Coronal</span>
-                      </label>
-                      <label className="case3d-toggle">
-                        <input
-                          checked={state.planeVisibility.sagittal}
-                          disabled={!state.threeDOrthogonalPlanesVisible}
-                          onChange={(event) =>
-                            dispatch({ type: 'set-plane-visibility', plane: 'sagittal', visible: event.target.checked })
-                          }
-                          type="checkbox"
-                        />
-                        <span>Sagittal</span>
-                      </label>
-                    </div>
-                    <label className="case3d-slider">
-                      <span>3D CT plane opacity</span>
-                      <input
-                        max={1}
-                        min={0}
-                        onChange={(event) =>
-                          dispatch({ type: 'set-three-d-plane-opacity', value: Number(event.target.value) })
-                        }
-                        step={0.01}
-                        type="range"
-                        value={state.orthogonalPlaneOpacity}
-                      />
-                    </label>
-                  </section>
+                  </label>
+                </section>
 
-                  <section className="case3d-hero__control-group">
-                    <div>
-                      <div className="eyebrow">Cut Plane</div>
-                      <h4 className="case3d-hero__control-title">Arbitrary reslice</h4>
-                    </div>
-                    <label className="case3d-toggle">
-                      <input
-                        checked={state.cutPlane.visible}
-                        onChange={(event) => dispatch({ type: 'set-cut-plane-visibility', visible: event.target.checked })}
-                        type="checkbox"
-                      />
-                      <span>Show cut plane</span>
-                    </label>
-                    <label className="case3d-slider">
-                      <span>Cut-plane opacity</span>
-                      <input
-                        max={1}
-                        min={0.05}
-                        onChange={(event) => dispatch({ type: 'set-cut-plane-opacity', value: Number(event.target.value) })}
-                        step={0.01}
-                        type="range"
-                        value={state.cutPlane.opacity}
-                      />
-                    </label>
-                    <button className="case3d-button" onClick={() => dispatch({ type: 'reset-cut-plane' })} type="button">
-                      Reset cut plane
-                    </button>
-                  </section>
-                </aside>
-              </div>
-            </article>
+                <section className="case3d-hero__control-group">
+                  <div>
+                    <div className="eyebrow">Cut Plane</div>
+                    <h4 className="case3d-hero__control-title">Arbitrary reslice</h4>
+                  </div>
+                  <label className="case3d-toggle">
+                    <input
+                      checked={state.cutPlane.visible}
+                      onChange={(event) => dispatch({ type: 'set-cut-plane-visibility', visible: event.target.checked })}
+                      type="checkbox"
+                    />
+                    <span>Show cut plane</span>
+                  </label>
+                  <label className="case3d-slider">
+                    <span>Cut-plane opacity</span>
+                    <input
+                      max={1}
+                      min={0.05}
+                      onChange={(event) => dispatch({ type: 'set-cut-plane-opacity', value: Number(event.target.value) })}
+                      step={0.01}
+                      type="range"
+                      value={state.cutPlane.opacity}
+                    />
+                  </label>
+                  <button className="case3d-button" onClick={() => dispatch({ type: 'reset-cut-plane' })} type="button">
+                    Reset cut plane
+                  </button>
+                  <p className="case3d-note">
+                    Drag or rotate the cut plane in the 3D scene. The resliced CT panel below stays locked to that same
+                    plane.
+                  </p>
+                </section>
+              </aside>
+            </div>
+          </article>
 
           <div className="case3d-grid">
             <SliceCard

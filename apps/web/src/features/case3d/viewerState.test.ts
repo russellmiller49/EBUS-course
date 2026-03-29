@@ -15,7 +15,6 @@ describe('caseViewerReducer', () => {
     expect(initialState.threeDOrthogonalPlanesVisible).toBe(false);
     expect(initialState.orthogonalPlaneOpacity).toBeCloseTo(0.2, 3);
     expect(initialState.sliceSegmentationVisible).toBe(false);
-    expect(initialState.overlayGroups.glb).toBe(true);
     expect(initialState.cutPlane.visible).toBe(false);
     expect(initialState.cutPlane.opacity).toBeCloseTo(0.48, 3);
   });

@@ -7,7 +7,6 @@ interface OverlayGroupsState {
   airway: boolean;
   vessels: boolean;
   nodes: boolean;
-  glb: boolean;
 }
 
 export function resolveCaseOverlay(

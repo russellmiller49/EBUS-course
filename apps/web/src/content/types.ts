@@ -94,12 +94,36 @@ export interface QuizQuestionContent {
 export interface CourseInfoQuickFact {
   value: string;
   label: string;
+  detail?: string;
 }
 
 export interface CourseInfoAgendaItem {
   time: string;
   title: string;
   detail: string;
+}
+
+export interface CourseInfoFeature {
+  title: string;
+  detail: string;
+}
+
+export interface CourseInfoDirection {
+  origin: string;
+  detail: string;
+}
+
+export interface CourseInfoImageAsset {
+  src: string;
+  alt: string;
+  caption?: string;
+}
+
+export interface CourseInfoVisuals {
+  logo: CourseInfoImageAsset;
+  hero: CourseInfoImageAsset;
+  inset: CourseInfoImageAsset;
+  gallery: CourseInfoImageAsset[];
 }
 
 export interface CourseInfoContent {
@@ -113,15 +137,22 @@ export interface CourseInfoContent {
   audience: string;
   overview: string;
   quickFacts: CourseInfoQuickFact[];
+  positioningHighlights: string[];
   courseDirectors: string[];
   facultySummary: string;
+  facultyInstitutions: string[];
   formatHighlights: string[];
+  experienceHighlights: CourseInfoFeature[];
   prepWindow: string;
   prepTopics: string[];
+  liveSessionTracks: CourseInfoFeature[];
   liveDayAgenda: CourseInfoAgendaItem[];
   addressLines: string[];
   parkingNote: string;
   travelNote: string;
+  travelDirections: CourseInfoDirection[];
+  facilityUrl: string;
+  visuals: CourseInfoVisuals;
 }
 
 export interface StationAssetKeys {
