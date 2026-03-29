@@ -1,8 +1,8 @@
 # AGENTS.md
 
 ## Product
-Build **SoCal EBUS Prep**, a cross-platform mobile app for iOS and Android.
-Use a single React Native + Expo + TypeScript codebase unless the repo already has another approved mobile stack.
+Build **SoCal EBUS Prep** as a web app.
+Use the existing React + Vite + TypeScript web stack in `apps/web` unless the repo already has another approved web stack.
 
 ## Course-derived v1 scope
 The first three modules are:
@@ -22,8 +22,8 @@ For any medium or large task:
 6. Summarize what changed, what was verified, and any follow-up risk.
 
 ## Architecture rules
-- Single mobile codebase for iOS and Android.
-- Prefer Expo-managed or Expo-compatible packages.
+- Single web app codebase.
+- Prefer browser-native and Vite-compatible packages.
 - Keep routing simple and explicit.
 - Separate content from components.
 - Prefer reusable feature folders over dumping logic into screens.
@@ -40,7 +40,7 @@ For any medium or large task:
 - Keep all curriculum text in local content files for easy update later.
 
 ## UX rules
-- Mobile-first, clean, minimal, high-contrast UI.
+- Responsive, touch-friendly, clean, minimal, high-contrast UI.
 - Fast startup.
 - Offline-first for v1.
 - Large tap targets.
@@ -97,7 +97,7 @@ Before considering a task done:
 - app compiles
 - typecheck passes
 - lint passes if configured
-- new screens render without crashes
+- new routes render without crashes
 - key state persists after restart when relevant
 - tests added or updated for non-trivial logic
 

@@ -46,7 +46,6 @@ import type {
 const PLANES: CasePlane[] = ['axial', 'coronal', 'sagittal'];
 const DEFAULT_GENERATED_DIR = path.join('content', 'cases', 'generated');
 const ENRICHED_MANIFEST_PATH = path.join(DEFAULT_GENERATED_DIR, 'case_001.enriched.json');
-const ASSET_INDEX_PATH = path.join(DEFAULT_GENERATED_DIR, 'case_001-asset-index.ts');
 const RUNTIME_MANIFEST_PATH = path.join('content', 'cases', 'case_001.runtime.json');
 
 type Vector3 = Vector3Tuple;
@@ -68,10 +67,8 @@ interface ResolvedCasePaths {
 export interface GeneratedCaseOutputs {
   enrichedManifest: EnrichedCaseManifest;
   runtimeManifest: RuntimeCaseManifest;
-  assetIndexSource: string;
   enrichedManifestPath: string;
   runtimeManifestPath: string;
-  assetIndexPath: string;
 }
 
 interface SegmentationHeaderSegment {
@@ -834,35 +831,6 @@ function getResolvedPaths(rootDir: string, manifest: CaseManifest): ResolvedCase
   };
 }
 
-export function buildAssetIndexSource(sliceFiles: Record<CasePlane, string[]>): string {
-  const seriesToSource = (plane: CasePlane, sourceFolder: string) => {
-    const entries = sliceFiles[plane].map(
-      (fileName) => `  require('../../../model/sliceSeries/${sourceFolder}/${fileName}') as ImageSourcePropType,`,
-    );
-
-    return `export const ${plane}SliceAssets: ImageSourcePropType[] = [\n${entries.join('\n')}\n];`;
-  };
-
-  return [
-    "import type { ImageSourcePropType } from 'react-native';",
-    '',
-    seriesToSource('axial', 'axial'),
-    '',
-    seriesToSource('coronal', 'coronal'),
-    '',
-    seriesToSource('sagittal', 'sagital'),
-    '',
-    'export const case001SliceAssetIndex = {',
-    '  axial: axialSliceAssets,',
-    '  coronal: coronalSliceAssets,',
-    '  sagittal: sagittalSliceAssets,',
-    '} as const;',
-    '',
-    'export type Case001SliceAssetIndex = typeof case001SliceAssetIndex;',
-    '',
-  ].join('\n');
-}
-
 export function generateCaseOutputs(rootDir: string): GeneratedCaseOutputs {
   const manifestPath = path.join(rootDir, 'content', 'cases', 'case_001_manifest.json');
   const manifest = readSeedManifest(manifestPath);
@@ -1040,10 +1008,8 @@ export function generateCaseOutputs(rootDir: string): GeneratedCaseOutputs {
       targets: enrichedTargets,
     },
     runtimeManifest,
-    assetIndexSource: buildAssetIndexSource(sliceFiles),
     enrichedManifestPath: path.join(rootDir, ENRICHED_MANIFEST_PATH),
     runtimeManifestPath: path.join(rootDir, RUNTIME_MANIFEST_PATH),
-    assetIndexPath: path.join(rootDir, ASSET_INDEX_PATH),
   };
 }
 
@@ -1053,7 +1019,6 @@ export function writeCaseOutputs(rootDir: string): GeneratedCaseOutputs {
   fs.mkdirSync(path.dirname(outputs.enrichedManifestPath), { recursive: true });
   fs.writeFileSync(outputs.enrichedManifestPath, `${JSON.stringify(outputs.enrichedManifest, null, 2)}\n`);
   fs.writeFileSync(outputs.runtimeManifestPath, `${JSON.stringify(outputs.runtimeManifest, null, 2)}\n`);
-  fs.writeFileSync(outputs.assetIndexPath, outputs.assetIndexSource);
 
   return outputs;
 }

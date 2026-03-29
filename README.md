@@ -1,27 +1,24 @@
-# SoCal EBUS Prep — Codex kit
+# SoCal EBUS Prep
 
-This kit is meant to be dropped into a fresh repository before asking Codex to build the first three mobile app modules:
+This repository now targets the web app only. The active application lives in `apps/web`, with shared curriculum content and case assets kept at the repo root.
 
 1. Ultrasound Foundations + EBUS Knobology
 2. Mediastinal Station Map
 3. CT ↔ Bronchoscopic ↔ Ultrasound Station Explorer
 
-## Recommended setup
+## Commands
 
-- Put `AGENTS.md` at the repository root.
-- Keep the three skills in `.agents/skills/...` at the repository root.
-- Start Codex from the repository root so it can see both `AGENTS.md` and the repo skills.
-- For major work, ask Codex to plan first, then implement.
+From the repo root:
 
-Codex usage flow:
+```bash
+npm install
+npm run dev
+npm run build
+npm run typecheck
+npm run test
+```
 
-1. Start in the repo root.
-2. Run a planning prompt from `prompts/01_scaffold.md`.
-3. After the shell app is in place, use the feature prompts in order:
-   - `prompts/02_knobology.md`
-   - `prompts/03_station_map.md`
-   - `prompts/04_station_explorer.md`
-4. Review the diff, run the app on iOS and Android, and make Codex fix issues before moving to the next feature.
+These commands proxy into `apps/web`.
 
 ## Notes for curriculum assets
 
@@ -36,26 +33,21 @@ The case 001 viewer now uses one shared patient-space scene rooted in `model/cas
 
 Source-of-truth order matters: CT geometry comes first, segmentation comes second, markups provide targets, and the GLB is optional display polish only. The segmentation labelmap is trusted before the GLB because it carries explicit medical-image geometry and segment metadata, while the GLB is a presentation export that must be brought back into patient space with an explicit inverse transform instead of being auto-centered or rescaled independently.
 
-## Suggested repo layout
+## Repo layout
 
 ```text
-app/
-  (tabs)/
-  modules/
-components/
-features/
-  knobology/
-  stations/
-  explorer/
+apps/
+  web/
 content/
+  cases/
+  course/
   modules/
+  quizzes/
   stations/
 assets/
-  illustrations/
-  ultrasound/
-  ct/
-  bronchoscopy/
-lib/
-store/
-utils/
+  pretest/
+features/
+  case3d/
+model/
+scripts/
 ```

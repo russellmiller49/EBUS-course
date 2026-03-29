@@ -13,7 +13,9 @@ describe('caseViewerReducer', () => {
     const initialState = createInitialViewerState(manifest);
 
     expect(initialState.threeDOrthogonalPlanesVisible).toBe(false);
+    expect(initialState.orthogonalPlaneOpacity).toBeCloseTo(0.2, 3);
     expect(initialState.sliceSegmentationVisible).toBe(false);
+    expect(initialState.overlayGroups.glb).toBe(true);
     expect(initialState.cutPlane.visible).toBe(false);
     expect(initialState.cutPlane.opacity).toBeCloseTo(0.48, 3);
   });
@@ -48,6 +50,22 @@ describe('caseViewerReducer', () => {
     expect(nextState.crosshairVoxel[2]).toBe(80);
     expect(nextState.crosshairVoxel[0]).toBe(initialState.crosshairVoxel[0]);
     expect(nextState.crosshairVoxel[1]).toBe(initialState.crosshairVoxel[1]);
+  });
+
+  it('clamps the 3D orthogonal plane opacity into a valid range', () => {
+    const initialState = createInitialViewerState(manifest);
+
+    const hiddenState = caseViewerReducer(initialState, {
+      type: 'set-three-d-plane-opacity',
+      value: -1,
+    });
+    const visibleState = caseViewerReducer(initialState, {
+      type: 'set-three-d-plane-opacity',
+      value: 2,
+    });
+
+    expect(hiddenState.orthogonalPlaneOpacity).toBe(0);
+    expect(visibleState.orthogonalPlaneOpacity).toBe(1);
   });
 
   it('tracks per-segment visibility overrides', () => {

@@ -1,10 +1,10 @@
 # SoCal EBUS Prep Web
 
-This folder contains the standalone web scaffold requested in `webapp_codex_instructions.md`.
+This folder contains the active SoCal EBUS Prep web application.
 
 ## Source of truth
 
-- UI shell and interaction style are adapted from the prototype.
+- The web UI in `src/` is the active source of truth for presentation and interaction.
 - Structured content still comes from the repo root where available:
   - `content/stations/*`
   - `content/modules/*`
@@ -14,7 +14,7 @@ This folder contains the standalone web scaffold requested in `webapp_codex_inst
 
 ## Commands
 
-Run from [`apps/web`](/home/rjm/projects/EBUS_course/apps/web):
+Run from `apps/web`:
 
 ```bash
 npm install
@@ -57,9 +57,9 @@ Static web media should be added under:
 
 The corresponding manifests are:
 
-- [`src/content/station-media.json`](/home/rjm/projects/EBUS_course/apps/web/src/content/station-media.json)
-- [`src/content/knobology-media.json`](/home/rjm/projects/EBUS_course/apps/web/src/content/knobology-media.json)
-- [`src/content/lectures.json`](/home/rjm/projects/EBUS_course/apps/web/src/content/lectures.json)
+- `src/content/station-media.json`
+- `src/content/knobology-media.json`
+- `src/content/lectures.json`
 
 Processor hotspot tuning note:
 

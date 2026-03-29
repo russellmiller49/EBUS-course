@@ -1,7 +1,7 @@
-# Product spec — SoCal EBUS Prep mobile app (v1)
+# Product spec — SoCal EBUS Prep web app (v1)
 
 ## Product goal
-Build an offline-first mobile learning app for iOS and Android that prepares learners for the Southern California EBUS course.
+Build an offline-first web learning app that prepares learners for the Southern California EBUS course.
 
 ## Audience
 - Pulmonary fellows
@@ -11,7 +11,7 @@ Build an offline-first mobile learning app for iOS and Android that prepares lea
 ## Core product principles
 - Fast to open and usable in the bronchoscopy suite or the day before course
 - Image-first and interactive, not a slide dump
-- Single mobile codebase for iOS and Android
+- Single web codebase
 - Offline-first for all teaching modules in v1
 - Educational only; not a medical device; no patient-specific guidance
 
@@ -102,13 +102,13 @@ Store locally in v1:
 
 ## Accessibility and UX requirements
 - Large tap targets
-- Dynamic type support where practical
-- VoiceOver / TalkBack labels
+- Responsive layouts for desktop and tablet down to mobile widths
+- Keyboard and screen-reader labels on interactive controls
 - Color should not be the sole carrier of information
-- Support dark mode if low effort; otherwise build clean light mode first
+- Support a polished default light mode first; add dark mode only when it does not slow core delivery
 
 ## Definition of done
-- App builds and runs on iOS and Android
+- App builds and runs in the browser
 - All three modules are reachable from the home screen
 - Content is loaded from local files
 - Progress persists across app restarts

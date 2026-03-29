@@ -8,6 +8,7 @@ export interface CaseViewerState {
   crosshairVoxel: Vector3Tuple;
   planeVisibility: Record<CasePlane, boolean>;
   threeDOrthogonalPlanesVisible: boolean;
+  orthogonalPlaneOpacity: number;
   sliceSegmentationVisible: boolean;
   overlayOpacity: number;
   hiddenSegmentIds: string[];
@@ -34,6 +35,7 @@ export type CaseViewerAction =
   | { type: 'set-plane-axis-index'; plane: CasePlane; axisIndex: number; manifest: RuntimeCaseManifest }
   | { type: 'set-plane-visibility'; plane: CasePlane; visible: boolean }
   | { type: 'set-three-d-plane-visibility'; visible: boolean }
+  | { type: 'set-three-d-plane-opacity'; value: number }
   | { type: 'set-slice-segmentation-visibility'; visible: boolean }
   | { type: 'set-overlay-opacity'; value: number }
   | { type: 'set-overlay-group'; key: keyof CaseViewerState['overlayGroups']; value: boolean }
@@ -47,6 +49,10 @@ const DEFAULT_CUT_NORMAL: Vector3Tuple = [0.82, -0.18, 0.54];
 
 function clampOverlay(value: number) {
   return Math.max(0.05, Math.min(1, value));
+}
+
+function clampPlaneOpacity(value: number) {
+  return Math.max(0, Math.min(1, value));
 }
 
 function worldToCaseVoxel(manifest: RuntimeCaseManifest, world: Vector3Tuple): Vector3Tuple {
@@ -79,15 +85,16 @@ export function createInitialViewerState(manifest: RuntimeCaseManifest): CaseVie
       sagittal: true,
     },
     threeDOrthogonalPlanesVisible: false,
+    orthogonalPlaneOpacity: 0.2,
     sliceSegmentationVisible: false,
-    overlayOpacity: 0.36,
+    overlayOpacity: 0.68,
     hiddenSegmentIds: [],
     overlayGroups: {
       allAnatomy: false,
       airway: true,
       vessels: true,
       nodes: true,
-      glb: false,
+      glb: true,
     },
     cutPlane: {
       opacity: 0.48,
@@ -141,6 +148,11 @@ export function caseViewerReducer(state: CaseViewerState, action: CaseViewerActi
       return {
         ...state,
         threeDOrthogonalPlanesVisible: action.visible,
+      };
+    case 'set-three-d-plane-opacity':
+      return {
+        ...state,
+        orthogonalPlaneOpacity: clampPlaneOpacity(action.value),
       };
     case 'set-slice-segmentation-visibility':
       return {

@@ -81,6 +81,7 @@ interface ThreeDViewportProps extends CommonViewportProps {
   planeIndices: SliceIndex;
   planeVisibility: Record<CasePlane, boolean>;
   crosshairWorld: Vector3Tuple;
+  orthogonalPlaneOpacity: number;
   overlayOpacity: number;
   visibleSegments: SegmentationSegment[];
   selectedSegments: SegmentationSegment[];
@@ -129,8 +130,6 @@ type ThreeDPipeline = {
 };
 
 const EMPTY_SEGMENTS: SegmentationSegment[] = [];
-const THREE_D_ORTHOGONAL_PLANE_OPACITY = 0.2;
-const THREE_D_GLB_OPACITY = 1;
 
 const SEGMENT_GROUP_COLORS: Record<string, [number, number, number]> = {
   airway: [0.55, 0.93, 0.95],
@@ -171,7 +170,7 @@ function ensureMapperClipping(
   }
 }
 
-function styleGlbActor(actor: any) {
+function styleGlbActor(actor: any, opacity: number) {
   const property = actor.getProperty?.();
 
   if (!property) {
@@ -182,11 +181,11 @@ function styleGlbActor(actor: any) {
   const hasVisibleColor = diffuseColor.some((channel: number) => channel > 0.02);
   const color = hasVisibleColor ? diffuseColor : [0.82, 0.84, 0.88];
 
-  actor.setForceOpaque?.(true);
-  actor.setForceTranslucent?.(false);
+  actor.setForceOpaque?.(opacity >= 0.999);
+  actor.setForceTranslucent?.(opacity < 0.999);
   property.setLighting?.(true);
   property.setColor?.(color);
-  property.setOpacity(THREE_D_GLB_OPACITY);
+  property.setOpacity(opacity);
   property.setAmbient?.(0.32);
   property.setDiffuse?.(0.9);
   property.setSpecular?.(0.08);
@@ -483,7 +482,7 @@ export function VtkViewport(props: VtkViewportProps) {
       ];
 
       Object.values(planeActors).forEach(({ actor }) => {
-        actor.getProperty().setOpacity(THREE_D_ORTHOGONAL_PLANE_OPACITY);
+        actor.getProperty().setOpacity(props.orthogonalPlaneOpacity);
         renderer.addActor(actor);
       });
       cutSlice.actor.getProperty().setOpacity(props.cutPlaneOpacity);
@@ -692,7 +691,7 @@ export function VtkViewport(props: VtkViewportProps) {
             const mapper = actor.getMapper?.();
             namedVisibleActors.add(actor);
             actor.setVisibility(actorVisible);
-            styleGlbActor(actor);
+            styleGlbActor(actor, props.overlayOpacity);
 
             if (mapper) {
               ensureMapperClipping(mapper, pipeline.cutSlice.plane, actorVisible && props.cutPlaneVisible);
@@ -719,7 +718,7 @@ export function VtkViewport(props: VtkViewportProps) {
       allActors.forEach((actor) => {
         const mapper = actor.getMapper?.();
         actor.setVisibility(allowedKeys.size > 0);
-        styleGlbActor(actor);
+        styleGlbActor(actor, props.overlayOpacity);
 
         if (mapper) {
           ensureMapperClipping(mapper, pipeline.cutSlice.plane, allowedKeys.size > 0 && props.cutPlaneVisible);
@@ -733,9 +732,9 @@ export function VtkViewport(props: VtkViewportProps) {
     pipeline.planeActors.axial.actor.setVisibility(props.planeVisibility.axial);
     pipeline.planeActors.coronal.actor.setVisibility(props.planeVisibility.coronal);
     pipeline.planeActors.sagittal.actor.setVisibility(props.planeVisibility.sagittal);
-    pipeline.planeActors.axial.actor.getProperty().setOpacity(THREE_D_ORTHOGONAL_PLANE_OPACITY);
-    pipeline.planeActors.coronal.actor.getProperty().setOpacity(THREE_D_ORTHOGONAL_PLANE_OPACITY);
-    pipeline.planeActors.sagittal.actor.getProperty().setOpacity(THREE_D_ORTHOGONAL_PLANE_OPACITY);
+    pipeline.planeActors.axial.actor.getProperty().setOpacity(props.orthogonalPlaneOpacity);
+    pipeline.planeActors.coronal.actor.getProperty().setOpacity(props.orthogonalPlaneOpacity);
+    pipeline.planeActors.sagittal.actor.getProperty().setOpacity(props.orthogonalPlaneOpacity);
     updateCrosshairActors(pipeline.crosshair, props.crosshairWorld, 18);
     pipeline.cutSlice.plane.setOrigin(props.cutPlaneOrigin);
     pipeline.cutSlice.plane.setNormal(props.cutPlaneNormal);
@@ -909,6 +908,7 @@ export function VtkViewport(props: VtkViewportProps) {
     props.mode === 'cut' ? props.opacity : null,
     props.mode === 'cut' ? props.visible : null,
     props.mode === 'three-d' ? props.crosshairWorld : null,
+    props.mode === 'three-d' ? props.orthogonalPlaneOpacity : null,
     props.mode === 'three-d' ? props.overlayOpacity : null,
     props.mode === 'three-d' ? props.selectedSegments : null,
     props.mode === 'three-d' ? props.visibleSegments : null,

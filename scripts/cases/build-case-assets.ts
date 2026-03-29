@@ -9,7 +9,6 @@ export function buildCase001Assets(rootDir = process.cwd()) {
     [
       `Wrote ${path.relative(rootDir, outputs.runtimeManifestPath)}`,
       `Wrote ${path.relative(rootDir, outputs.enrichedManifestPath)}`,
-      `Wrote ${path.relative(rootDir, outputs.assetIndexPath)}`,
       ...outputs.runtimeManifest.warnings.map((warning) => `Warning: ${warning}`),
     ].join('\n') + '\n',
   );

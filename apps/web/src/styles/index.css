@@ -1677,6 +1677,36 @@ iframe {
   min-height: 460px;
 }
 
+.case3d-hero {
+  display: grid;
+  gap: 16px;
+}
+
+.case3d-hero__controls {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.case3d-hero__control-group {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(123, 163, 200, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.case3d-hero__control-title {
+  margin: 4px 0 0;
+  font-size: 1rem;
+}
+
+.case3d-toggle-list {
+  display: grid;
+  gap: 10px;
+}
+
 .case3d-panel__placeholder {
   min-height: 280px;
   display: grid;
@@ -1795,6 +1825,11 @@ iframe {
 
   .case3d-layout {
     grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .case3d-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
     align-items: start;
   }
 
