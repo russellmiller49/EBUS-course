@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useReducer, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useReducer, useState } from 'react';
 
+import { EducationSectionCard } from '@/components/education/EducationModuleRenderer';
+import { knobologyAdvancedContent } from '@/content/education';
 import { knobologyContent, knobologyControlMeta, knobologyReferenceCards } from '@/content/knobology';
 import { getKnobologyMedia } from '@/content/media';
 import type { KnobologyControlId } from '@/content/types';
 import { getDepthFieldClipPath } from '@/features/knobology/depthField';
+import { getKnobologyLearnMoreSections } from '@/features/knobology/learnMore';
 import euMe2LayoutData from '@/features/knobology/processor/eu-me2-layout.json';
 import { EuMe2Keyboard, type EuMe2Layout } from '@/features/knobology/processor/EuMe2Keyboard';
 import {
@@ -74,6 +77,7 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
     progressState.lastUsedKnobologyControl ?? 'depth',
   );
   const [referenceFilter, setReferenceFilter] = useState('');
+  const [showLearnMore, setShowLearnMore] = useState(true);
   const [selectedPathId, setSelectedPathId] = useState<string | null>(null);
   const activeExercise =
     knobologyContent.controlLabExercises.find((exercise) => exercise.id === activeExerciseId) ??
@@ -110,12 +114,14 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
   const controlLabImage = depthFrames[depthFrameIndex];
   const depthFieldClipPath = getDepthFieldClipPath(depthFrameIndex);
   const dopplerMedia = getKnobologyMedia('color-doppler');
+  const deferredReferenceFilter = useDeferredValue(referenceFilter);
   const dopplerClip =
     dopplerEnabled
       ? dopplerMedia.clips?.[1] ?? dopplerMedia.clips?.[0]
       : dopplerMedia.clips?.[0];
+  const learnMoreSections = getKnobologyLearnMoreSections(activeControl, knobologyAdvancedContent.sections);
   const filteredReferenceCards = knobologyReferenceCards.filter((card) => {
-    const query = referenceFilter.trim().toLowerCase();
+    const query = deferredReferenceFilter.trim().toLowerCase();
 
     if (!query) {
       return true;
@@ -459,6 +465,30 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
             </div>
           </div>
         </div>
+
+        <div className="learn-more-drawer">
+          <div className="learn-more-drawer__header">
+            <div>
+              <div className="eyebrow">Learn More</div>
+              <h3>{knobologyControlMeta[activeControl].shortLabel} in context</h3>
+              <p>Reference content now follows the control you are actively adjusting instead of sitting above the simulator.</p>
+            </div>
+            <button
+              className="button button--ghost"
+              onClick={() => setShowLearnMore((current) => !current)}
+              type="button"
+            >
+              {showLearnMore ? 'Hide reference' : 'Show reference'}
+            </button>
+          </div>
+          {showLearnMore ? (
+            <div className="learn-more-drawer__content">
+              {learnMoreSections.map((section) => (
+                <EducationSectionCard key={section.id} section={section} />
+              ))}
+            </div>
+          ) : null}
+        </div>
       </section>
 
       <section className="section-card">
@@ -550,7 +580,7 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
             aria-label="Filter quick reference cards"
             className="input"
             onChange={(event) => setReferenceFilter(event.target.value)}
-            placeholder="Filter by control or scenario"
+            placeholder="Filter by control or scenario…"
             type="search"
             value={referenceFilter}
           />

@@ -1,10 +1,14 @@
 import { useEffect } from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import { AppShell } from '@/components/AppShell';
 import type { AppRouteId, NavigationItem } from '@/content/types';
 import { HomePage } from '@/app/routes/HomePage';
 import { StationsPage } from '@/app/routes/StationsPage';
+import { StationsExplorePage } from '@/app/routes/stations/ExplorePage';
+import { StationsFlashcardsPage } from '@/app/routes/stations/FlashcardsPage';
+import { StationsHandbookPage } from '@/app/routes/stations/HandbookPage';
+import { StationsQuizPage } from '@/app/routes/stations/StationsQuizPage';
 import { KnobologyPage } from '@/app/routes/KnobologyPage';
 import { LecturesPage } from '@/app/routes/LecturesPage';
 import { QuizPage } from '@/app/routes/QuizPage';
@@ -14,10 +18,10 @@ import { useLearnerProgress } from '@/lib/progress';
 
 const navItems: NavigationItem[] = [
   { id: 'home', label: 'Home', icon: '⌂', path: '/' },
-  { id: 'stations', label: 'Stations', icon: '◎', path: '/stations' },
-  { id: 'case-001', label: 'Case 3D', icon: '◫', path: '/cases/case-001' },
-  { id: 'knobology', label: 'Knobology', icon: '◐', path: '/knobology' },
   { id: 'lectures', label: 'Lectures', icon: '▶', path: '/lectures' },
+  { id: 'knobology', label: 'Knobology', icon: '◐', path: '/knobology' },
+  { id: 'stations', label: 'Stations', icon: '◎', path: '/stations' },
+  { id: 'case-001', label: 'Case', icon: '◫', path: '/cases/case-001' },
   { id: 'quiz', label: 'Quiz', icon: '✎', path: '/quiz' },
 ];
 
@@ -65,7 +69,13 @@ export function App() {
     <AppShell navItems={navItems}>
       <Routes>
         <Route element={<HomePage />} path="/" />
-        <Route element={<StationsPage />} path="/stations" />
+        <Route element={<StationsPage />} path="/stations">
+          <Route element={<Navigate replace to="explore" />} index />
+          <Route element={<StationsExplorePage />} path="explore" />
+          <Route element={<StationsFlashcardsPage />} path="flashcards" />
+          <Route element={<StationsQuizPage />} path="quiz" />
+          <Route element={<StationsHandbookPage />} path="handbook" />
+        </Route>
         <Route element={<KnobologyPage />} path="/knobology" />
         <Route element={<LecturesPage />} path="/lectures" />
         <Route element={<QuizPage />} path="/quiz" />

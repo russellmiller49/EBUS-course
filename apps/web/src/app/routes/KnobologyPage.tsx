@@ -1,5 +1,3 @@
-import { EducationModuleRenderer } from '@/components/education/EducationModuleRenderer';
-import { knobologyAdvancedContent } from '@/content/education';
 import { KnobologyPanel } from '@/features/knobology/KnobologyPanel';
 import { QuizCard } from '@/features/quiz/QuizCard';
 import { getKnobologyQuizQuestions } from '@/content/knobology';
@@ -22,11 +20,10 @@ export function KnobologyPage() {
         <div className="tag-row">
           <span className="tag">Last used control: {lastControl}</span>
           <span className="tag">Progress: {state.moduleProgress.knobology.percentComplete}%</span>
+          <span className="tag">Reference follows the active control</span>
           <span className="tag">Educational approximation only</span>
         </div>
       </section>
-
-      <EducationModuleRenderer module={knobologyAdvancedContent} />
 
       <KnobologyPanel />
 

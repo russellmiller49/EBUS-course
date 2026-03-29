@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { Accordion, AccordionPanel } from '@/components/Accordion';
 import {
   LandmarkChecklist,
   RelatedImagesStrip,
@@ -246,112 +247,143 @@ export function StationDetail({
         </button>
       </div>
 
-      <div className="detail-card__grid">
-        <div className="detail-card__column">
-          <div className="stack-card">
-            <div className="eyebrow">Access and window</div>
-            <p>
-              <strong>Access:</strong> {station.accessProfile}
-            </p>
-            <p>
-              <strong>Best EBUS window:</strong> {station.bestEbusWindow}
-            </p>
-            <p>{station.accessNotes}</p>
-          </div>
-          <StationBoundaryCard boundary={station.boundaryDefinition} notes={station.boundaryNotes} />
-          <StationStagingSummary accessProfile={station.accessProfile} staging={station.nStageImplication} />
-          <LandmarkChecklist items={station.landmarkChecklist} />
-          <div className="education-card">
-            <div className="eyebrow">Why this station matters</div>
-            <p>{station.clinicalImportance}</p>
-            <p>
-              <strong>Staging impact:</strong> {station.stagingChangeFinding}
-            </p>
-          </div>
-          <div className="education-card">
-            <div className="eyebrow">Landmark vessels</div>
-            <div className="tag-row">
-              {station.landmarkVessels.map((vessel) => (
-                <span key={vessel} className="tag">
-                  {vessel}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="education-card">
-            <div className="eyebrow">Memory cues</div>
-            <ul className="plain-list education-list">
-              {station.memoryCues.map((cue) => (
-                <li key={cue}>{cue}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="education-card">
-            <div className="eyebrow">Common confusion pairs</div>
-            <p>
-              <strong>Most common:</strong> {station.commonConfusionPair}
-            </p>
-            <div className="tag-row">
-              {station.confusionPairs.map((pair) => (
-                <span key={pair} className="tag">
-                  {pair}
-                </span>
-              ))}
-            </div>
-          </div>
+      <div className="detail-card__hero">
+        <div className="media-grid media-grid--hero">
+          <MediaSlot station={station} viewId="ct" />
+          <MediaSlot station={station} viewId="bronchoscopy" />
+          <MediaSlot station={station} viewId="ultrasound" />
         </div>
-
-        <div className="detail-card__column detail-card__column--media">
-          <div className="media-grid">
-            <MediaSlot station={station} viewId="ct" />
-            <MediaSlot station={station} viewId="bronchoscopy" />
-            <MediaSlot station={station} viewId="ultrasound" />
-          </div>
-          <RelatedImagesStrip items={relatedImages} />
-          <div className="education-card">
-            <div className="eyebrow">What you should see on CT</div>
-            <ul className="plain-list education-list">
-              {station.whatYouSee.ct.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="education-card">
-            <div className="eyebrow">What you should see bronchoscopically</div>
-            <ul className="plain-list education-list">
-              {station.whatYouSee.bronchoscopy.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="education-card">
-            <div className="eyebrow">What you should see on EBUS</div>
-            <ul className="plain-list education-list">
-              {station.whatYouSee.ultrasound.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="education-card">
-            <div className="eyebrow">Safe puncture considerations</div>
-            <ul className="plain-list education-list">
-              {station.safePunctureConsiderations.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="stack-card">
-            <div className="eyebrow">Aliases</div>
-            <div className="tag-row">
-              {station.aliases.map((alias) => (
-                <span key={alias} className="tag">
-                  {alias}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
+        <RelatedImagesStrip items={relatedImages} />
       </div>
+
+      <Accordion>
+        <AccordionPanel defaultOpen id="glance" title="At a Glance">
+          <div className="detail-card__panel-grid">
+            <div className="stack-card reference-card">
+              <div className="eyebrow">Access & EBUS window</div>
+              <p>
+                <strong>Access:</strong> {station.accessProfile}
+              </p>
+              <p>
+                <strong>Best EBUS window:</strong> {station.bestEbusWindow}
+              </p>
+              <p>{station.accessNotes}</p>
+            </div>
+            <div className="stack-card reference-card">
+              <div className="eyebrow">Quick facts</div>
+              <div className="tag-row">
+                <span className="tag">{theme.label}</span>
+                <span className="tag">{station.laterality}</span>
+                <span className="tag">{station.iaslcName}</span>
+                {station.aliases.map((alias) => (
+                  <span key={alias} className="tag">
+                    {alias}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </AccordionPanel>
+
+        <AccordionPanel id="boundaries" title="Anatomic Boundaries">
+          <StationBoundaryCard boundary={station.boundaryDefinition} notes={station.boundaryNotes} />
+        </AccordionPanel>
+
+        <AccordionPanel id="what-you-see" title="What You Should See">
+          <div className="detail-card__panel-grid">
+            <div className="education-card reference-card">
+              <div className="eyebrow">CT</div>
+              <ul className="plain-list education-list">
+                {station.whatYouSee.ct.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="education-card reference-card">
+              <div className="eyebrow">Bronchoscopy</div>
+              <ul className="plain-list education-list">
+                {station.whatYouSee.bronchoscopy.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="education-card reference-card">
+              <div className="eyebrow">EBUS</div>
+              <ul className="plain-list education-list">
+                {station.whatYouSee.ultrasound.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </AccordionPanel>
+
+        <AccordionPanel id="staging" title="Staging & Clinical Impact">
+          <div className="detail-card__panel-grid">
+            <div className="education-card reference-card">
+              <div className="eyebrow">Staging summary</div>
+              <StationStagingSummary accessProfile={station.accessProfile} staging={station.nStageImplication} />
+            </div>
+            <div className="education-card reference-card">
+              <div className="eyebrow">Why this station matters</div>
+              <p>{station.clinicalImportance}</p>
+              <p>
+                <strong>Staging impact:</strong> {station.stagingChangeFinding}
+              </p>
+            </div>
+          </div>
+        </AccordionPanel>
+
+        <AccordionPanel id="memory-aids" title="Memory Aids">
+          <div className="detail-card__panel-grid">
+            <div className="education-card reference-card">
+              <div className="eyebrow">Memory cues</div>
+              <ul className="plain-list education-list">
+                {station.memoryCues.map((cue) => (
+                  <li key={cue}>{cue}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="education-card reference-card">
+              <div className="eyebrow">Common confusion pairs</div>
+              <p>
+                <strong>Most common:</strong> {station.commonConfusionPair}
+              </p>
+              <div className="tag-row">
+                {station.confusionPairs.map((pair) => (
+                  <span key={pair} className="tag">
+                    {pair}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </AccordionPanel>
+
+        <AccordionPanel id="landmarks-safety" title="Landmarks & Safety">
+          <div className="detail-card__panel-grid">
+            <LandmarkChecklist items={station.landmarkChecklist} />
+            <div className="education-card reference-card">
+              <div className="eyebrow">Landmark vessels</div>
+              <div className="tag-row">
+                {station.landmarkVessels.map((vessel) => (
+                  <span key={vessel} className="tag">
+                    {vessel}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="education-card reference-card">
+              <div className="eyebrow">Safe puncture considerations</div>
+              <ul className="plain-list education-list">
+                {station.safePunctureConsiderations.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </AccordionPanel>
+      </Accordion>
     </section>
   );
 }

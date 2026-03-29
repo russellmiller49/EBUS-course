@@ -228,7 +228,7 @@ iframe {
 
 .page-stack {
   display: grid;
-  gap: 18px;
+  gap: 24px;
 }
 
 .hero-card,
@@ -249,6 +249,13 @@ iframe {
 .detail-card,
 .quiz-card {
   padding: 20px;
+}
+
+.page-title {
+  font-size: clamp(1.6rem, 1.3rem + 1.2vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 
 .hero-card {
@@ -274,6 +281,26 @@ iframe {
   gap: 18px;
   align-items: flex-start;
   margin-bottom: 18px;
+}
+
+.interactive-card {
+  border-left: 3px solid var(--accent-cyan);
+}
+
+.reference-card {
+  border-left: 3px solid var(--text-muted);
+}
+
+.sub-tab-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0;
+}
+
+.sub-tab-row__link {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .stats-grid,
@@ -347,6 +374,102 @@ iframe {
 .flashcard h3 {
   margin: 0 0 6px;
   font-size: 1.1rem;
+}
+
+.learning-path,
+.progress-list,
+.detail-card__hero,
+.detail-card__panel-grid,
+.learn-more-drawer,
+.learn-more-drawer__content {
+  display: grid;
+  gap: 14px;
+}
+
+.learning-path__step,
+.resume-card,
+.progress-row {
+  display: grid;
+  gap: 12px;
+  color: var(--text);
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.learning-path__step,
+.progress-row {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.learning-path__body,
+.resume-card__body {
+  display: grid;
+  gap: 8px;
+}
+
+.learning-path__marker {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(127, 189, 242, 0.24);
+  background: rgba(255, 255, 255, 0.04);
+  font-family: 'Space Mono', monospace;
+}
+
+.learning-path__marker--done {
+  color: #d7ffe9;
+  background: rgba(20, 63, 48, 0.48);
+  border-color: rgba(143, 224, 192, 0.34);
+}
+
+.resume-card,
+.progress-row {
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(123, 163, 200, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.learning-path__step:hover,
+.resume-card:hover,
+.progress-row:hover {
+  border-color: rgba(127, 189, 242, 0.28);
+  transform: translateY(-1px);
+}
+
+.resume-card {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.progress-row {
+  grid-template-columns: minmax(0, 160px) 1fr auto;
+}
+
+.progress-row__label {
+  font-family: 'Space Mono', monospace;
+  color: var(--text-soft);
+}
+
+.progress-meter {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(123, 163, 200, 0.14);
+}
+
+.progress-meter__bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent-cyan), #d0ebff);
 }
 
 .module-card__body p,
@@ -583,6 +706,10 @@ iframe {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
+.media-grid--hero {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
 .media-slot {
   display: grid;
   gap: 8px;
@@ -780,6 +907,26 @@ iframe {
 .knobology-console__touch-panel {
   display: grid;
   gap: 14px;
+}
+
+.learn-more-drawer {
+  padding: 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(123, 163, 200, 0.16);
+  border-left: 3px solid var(--text-muted);
+  background: rgba(10, 18, 32, 0.48);
+}
+
+.learn-more-drawer__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.learn-more-drawer__header h3 {
+  margin: 0;
+  font-size: 1.05rem;
 }
 
 .knobology-frame__screen {
@@ -1253,6 +1400,10 @@ iframe {
   background: rgba(255, 255, 255, 0.03);
   text-align: left;
   color: var(--text);
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
 }
 
 .choice-card--selected {
@@ -1354,6 +1505,68 @@ iframe {
   border: 1px solid rgba(123, 163, 200, 0.18);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text);
+}
+
+.accordion {
+  display: grid;
+  gap: 2px;
+}
+
+.accordion__panel {
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.accordion__trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.accordion__trigger:hover,
+.accordion__trigger:focus-visible {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.accordion__content {
+  padding: 16px;
+  animation: accordion-slide 200ms ease;
+}
+
+@keyframes accordion-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.accordion__trigger:focus-visible,
+.button:focus-visible,
+.button--ghost:focus-visible,
+.control-pill:focus-visible,
+.sub-tab-row__link:focus-visible,
+.choice-card:focus-visible,
+.progress-row:focus-visible,
+.resume-card:focus-visible,
+.learning-path__step:focus-visible {
+  outline: 2px solid rgba(127, 189, 242, 0.72);
+  outline-offset: 2px;
 }
 
 .sr-only {
@@ -1525,6 +1738,10 @@ iframe {
     grid-template-columns: 360px 1fr;
   }
 
+  .detail-card__panel-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .knobology-lab {
     grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
   }
@@ -1587,6 +1804,7 @@ iframe {
   .lecture-card__header,
   .lecture-card__actions,
   .section-card__heading,
+  .learn-more-drawer__header,
   .detail-card__header,
   .quiz-card__header {
     width: 100%;
@@ -1600,6 +1818,11 @@ iframe {
   }
 
   .slider-field {
+    grid-template-columns: 1fr;
+  }
+
+  .resume-card,
+  .progress-row {
     grid-template-columns: 1fr;
   }
 }

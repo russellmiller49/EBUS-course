@@ -20,6 +20,7 @@ import {
   boundsToExtent,
   getBoundsCenter,
   getBoundsRadius,
+  getPlaneCameraDistanceSign,
   getPlaneCameraPosition,
   getPlaneCenterWorld,
   getPlaneNormalWorld,
@@ -124,11 +125,12 @@ type ThreeDPipeline = {
   segmentationActors: Map<string, SegmentationSurfaceBundle>;
   selectedActor: Exclude<ReturnType<typeof createSegmentationSurfaceActor>, null> | null;
   glbImporter: Awaited<ReturnType<typeof loadGlbOverlay>> | null;
+  glbHighlightImporter: Awaited<ReturnType<typeof loadGlbOverlay>> | null;
 };
 
 const EMPTY_SEGMENTS: SegmentationSegment[] = [];
 const THREE_D_ORTHOGONAL_PLANE_OPACITY = 0.2;
-const THREE_D_GLB_OPACITY = 0.68;
+const THREE_D_GLB_OPACITY = 1;
 
 const SEGMENT_GROUP_COLORS: Record<string, [number, number, number]> = {
   airway: [0.55, 0.93, 0.95],
@@ -169,6 +171,31 @@ function ensureMapperClipping(
   }
 }
 
+function styleGlbActor(actor: any) {
+  const property = actor.getProperty?.();
+
+  if (!property) {
+    return;
+  }
+
+  const diffuseColor = property.getDiffuseColor?.() ?? property.getColor?.() ?? [1, 1, 1];
+  const hasVisibleColor = diffuseColor.some((channel: number) => channel > 0.02);
+  const color = hasVisibleColor ? diffuseColor : [0.82, 0.84, 0.88];
+
+  actor.setForceOpaque?.(true);
+  actor.setForceTranslucent?.(false);
+  property.setLighting?.(true);
+  property.setColor?.(color);
+  property.setOpacity(THREE_D_GLB_OPACITY);
+  property.setAmbient?.(0.32);
+  property.setDiffuse?.(0.9);
+  property.setSpecular?.(0.08);
+  property.setSpecularPower?.(16);
+  property.setMetallic?.(0);
+  property.setRoughness?.(1);
+  property.setInterpolationToPhong?.();
+}
+
 function configureSliceCamera(
   genericRenderWindow: vtkGenericRenderWindow,
   manifest: RuntimeCaseManifest,
@@ -185,7 +212,7 @@ function configureSliceCamera(
 
   camera.setParallelProjection(true);
   camera.setFocalPoint(center[0], center[1], center[2]);
-  camera.setPosition(...getPlaneCameraPosition(center, normal, radius * 1.7));
+  camera.setPosition(...getPlaneCameraPosition(center, normal, radius * 1.7 * getPlaneCameraDistanceSign(plane)));
   camera.setViewUp(viewUp[0], viewUp[1], viewUp[2]);
   camera.setParallelScale(radius * 0.78);
   renderer.resetCameraClippingRange(bounds);
@@ -230,6 +257,9 @@ export function VtkViewport(props: VtkViewportProps) {
   const genericRenderWindowRef = useRef<vtkGenericRenderWindow | null>(null);
   const pipelineRef = useRef<SlicePipeline | CutPipeline | ThreeDPipeline | null>(null);
   const lastResetCameraTokenRef = useRef(0);
+  const showGlbRef = useRef(props.mode === 'three-d' ? props.showGlb : false);
+  const baseVisibleStructureKeysRef = useRef<Set<string>>(new Set());
+  const selectedNodeStructureKeysRef = useRef<Set<string>>(new Set());
   const cutPlaneRef = useRef<{ normal: Vector3Tuple; origin: Vector3Tuple }>(
     props.mode === 'three-d'
       ? { origin: props.cutPlaneOrigin, normal: props.cutPlaneNormal }
@@ -263,9 +293,34 @@ export function VtkViewport(props: VtkViewportProps) {
       ),
     );
   }, [props.mode, threeDVisibleSegments]);
-  const visibleStructureSignature = useMemo(
-    () => [...visibleStructureKeys].sort().join('|'),
-    [visibleStructureKeys],
+  const threeDSelectedSegments = props.mode === 'three-d' ? props.selectedSegments : EMPTY_SEGMENTS;
+  const selectedNodeStructureKeys = useMemo(() => {
+    if (props.mode !== 'three-d') {
+      return new Set<string>();
+    }
+
+    return new Set(
+      threeDSelectedSegments
+        .filter((segment) => segment.groupId === 'nodes')
+        .map((segment) => normalizeStructureKey(segment.meshNameResolved ?? segment.name)),
+    );
+  }, [props.mode, threeDSelectedSegments]);
+  const baseVisibleStructureKeys = useMemo(() => {
+    if (props.mode !== 'three-d') {
+      return new Set<string>();
+    }
+
+    const next = new Set(visibleStructureKeys);
+    selectedNodeStructureKeys.forEach((key) => next.delete(key));
+    return next;
+  }, [props.mode, selectedNodeStructureKeys, visibleStructureKeys]);
+  const baseVisibleStructureSignature = useMemo(
+    () => [...baseVisibleStructureKeys].sort().join('|'),
+    [baseVisibleStructureKeys],
+  );
+  const selectedNodeStructureSignature = useMemo(
+    () => [...selectedNodeStructureKeys].sort().join('|'),
+    [selectedNodeStructureKeys],
   );
 
   useEffect(() => {
@@ -273,11 +328,21 @@ export function VtkViewport(props: VtkViewportProps) {
       return;
     }
 
+    showGlbRef.current = props.showGlb;
+    baseVisibleStructureKeysRef.current = new Set(baseVisibleStructureKeys);
+    selectedNodeStructureKeysRef.current = new Set(selectedNodeStructureKeys);
     cutPlaneRef.current = {
       origin: props.cutPlaneOrigin,
       normal: props.cutPlaneNormal,
     };
-  }, [props.mode, props.mode === 'three-d' ? props.cutPlaneOrigin : null, props.mode === 'three-d' ? props.cutPlaneNormal : null]);
+  }, [
+    props.mode,
+    props.mode === 'three-d' ? props.showGlb : null,
+    props.mode === 'three-d' ? baseVisibleStructureSignature : null,
+    props.mode === 'three-d' ? selectedNodeStructureSignature : null,
+    props.mode === 'three-d' ? props.cutPlaneOrigin : null,
+    props.mode === 'three-d' ? props.cutPlaneNormal : null,
+  ]);
 
   useEffect(() => {
     if (!containerRef.current || genericRenderWindowRef.current) {
@@ -439,6 +504,7 @@ export function VtkViewport(props: VtkViewportProps) {
         segmentationActors: new Map(),
         selectedActor: null,
         glbImporter: null,
+        glbHighlightImporter: null,
       };
       resetThreeDCamera(genericRenderWindow, props.manifest);
       genericRenderWindow.getRenderWindow().render();
@@ -594,6 +660,73 @@ export function VtkViewport(props: VtkViewportProps) {
     }
 
     const renderer = genericRenderWindow.getRenderer();
+    const glbReady = Boolean(pipeline.glbImporter?.importer.getActors?.().size);
+    const useGlbAsPrimary = props.showGlb && glbReady;
+    const syncGlbActors = (
+      loaded: NonNullable<ThreeDPipeline['glbImporter']>,
+      visible: boolean,
+      allowedKeys: Set<string>,
+    ) => {
+      const allActors = Array.from(loaded.importer.getActors().values());
+
+      if (!visible) {
+        allActors.forEach((actor) => {
+          const mapper = actor.getMapper?.();
+          actor.setVisibility(false);
+
+          if (mapper) {
+            ensureMapperClipping(mapper, pipeline.cutSlice.plane, false);
+          }
+        });
+        return;
+      }
+
+      if (loaded.namedActors.size > 0) {
+        const namedVisibleActors = new Set<any>();
+
+        allActors.forEach((actor) => actor.setVisibility(false));
+        loaded.namedActors.forEach((actors, key) => {
+          const actorVisible = allowedKeys.has(key);
+
+          actors.forEach((actor) => {
+            const mapper = actor.getMapper?.();
+            namedVisibleActors.add(actor);
+            actor.setVisibility(actorVisible);
+            styleGlbActor(actor);
+
+            if (mapper) {
+              ensureMapperClipping(mapper, pipeline.cutSlice.plane, actorVisible && props.cutPlaneVisible);
+            }
+          });
+        });
+
+        allActors.forEach((actor) => {
+          if (namedVisibleActors.has(actor)) {
+            return;
+          }
+
+          const mapper = actor.getMapper?.();
+          actor.setVisibility(false);
+
+          if (mapper) {
+            ensureMapperClipping(mapper, pipeline.cutSlice.plane, false);
+          }
+        });
+
+        return;
+      }
+
+      allActors.forEach((actor) => {
+        const mapper = actor.getMapper?.();
+        actor.setVisibility(allowedKeys.size > 0);
+        styleGlbActor(actor);
+
+        if (mapper) {
+          ensureMapperClipping(mapper, pipeline.cutSlice.plane, allowedKeys.size > 0 && props.cutPlaneVisible);
+        }
+      });
+    };
+
     pipeline.planeActors.axial.mapper.setSlice(props.planeIndices.axial);
     pipeline.planeActors.coronal.mapper.setSlice(props.planeIndices.coronal);
     pipeline.planeActors.sagittal.mapper.setSlice(props.planeIndices.sagittal);
@@ -625,6 +758,13 @@ export function VtkViewport(props: VtkViewportProps) {
       const segments = visibleGroupMap.get(groupKey) ?? [];
       const signature = buildSegmentSignature(segments);
       const existing = pipeline.segmentationActors.get(groupKey);
+
+      if (useGlbAsPrimary) {
+        if (existing) {
+          existing.actor.setVisibility(false);
+        }
+        return;
+      }
 
       if (!segments.length) {
         if (existing) {
@@ -672,15 +812,20 @@ export function VtkViewport(props: VtkViewportProps) {
 
       ensureMapperClipping(bundle.mapper, pipeline.cutSlice.plane, props.cutPlaneVisible);
       bundle.actor.setVisibility(true);
-      bundle.actor.getProperty().setOpacity(props.overlayOpacity * (props.showGlb ? 0.76 : 1));
+      bundle.actor.getProperty().setOpacity(props.overlayOpacity);
     });
 
-    if (pipeline.selectedActor) {
+    if (pipeline.selectedActor && (useGlbAsPrimary || !props.selectedSegments.length || !segmentation)) {
       renderer.removeActor(pipeline.selectedActor.actor);
       pipeline.selectedActor = null;
     }
 
-    if (props.selectedSegments.length > 0 && segmentation) {
+    if (!useGlbAsPrimary && props.selectedSegments.length > 0 && segmentation) {
+      if (pipeline.selectedActor) {
+        renderer.removeActor(pipeline.selectedActor.actor);
+        pipeline.selectedActor = null;
+      }
+
       pipeline.selectedActor = createSegmentationSurfaceActor(
         props.manifest,
         segmentation,
@@ -699,6 +844,17 @@ export function VtkViewport(props: VtkViewportProps) {
       loadGlbOverlay(renderer, props.manifest, case001AssetUrls.glb)
         .then((importer) => {
           pipeline.glbImporter = importer;
+
+          if (showGlbRef.current) {
+            pipeline.segmentationActors.forEach((bundle) => bundle.actor.setVisibility(false));
+
+            if (pipeline.selectedActor) {
+              renderer.removeActor(pipeline.selectedActor.actor);
+              pipeline.selectedActor = null;
+            }
+          }
+
+          syncGlbActors(importer, showGlbRef.current, baseVisibleStructureKeysRef.current);
           genericRenderWindow.getRenderWindow().render();
         })
         .catch(() => {
@@ -706,23 +862,28 @@ export function VtkViewport(props: VtkViewportProps) {
         });
     }
 
-    if (pipeline.glbImporter) {
-      if (pipeline.glbImporter.namedActors.size > 0) {
-        pipeline.glbImporter.importer.getActors().forEach((actor) => actor.setVisibility(false));
-        pipeline.glbImporter.namedActors.forEach((actors, key) => {
-          const visible = props.showGlb && visibleStructureKeys.has(key);
+    if (props.showGlb && selectedNodeStructureKeys.size > 0 && !pipeline.glbHighlightImporter) {
+      loadGlbOverlay(renderer, props.manifest, case001AssetUrls.glbHighlight)
+        .then((importer) => {
+          pipeline.glbHighlightImporter = importer;
+          syncGlbActors(importer, showGlbRef.current, selectedNodeStructureKeysRef.current);
+          genericRenderWindow.getRenderWindow().render();
+        })
+        .catch(() => {
+          pipeline.glbHighlightImporter = null;
+        });
+    }
 
-          actors.forEach((actor) => {
-            actor.setVisibility(visible);
-            actor.getProperty().setOpacity(THREE_D_GLB_OPACITY);
-          });
-        });
-      } else {
-        pipeline.glbImporter.importer.getActors().forEach((actor) => {
-          actor.setVisibility(props.showGlb);
-          actor.getProperty().setOpacity(THREE_D_GLB_OPACITY);
-        });
-      }
+    if (pipeline.glbImporter) {
+      syncGlbActors(pipeline.glbImporter, props.showGlb, baseVisibleStructureKeys);
+    }
+
+    if (pipeline.glbHighlightImporter) {
+      syncGlbActors(
+        pipeline.glbHighlightImporter,
+        props.showGlb && selectedNodeStructureKeys.size > 0,
+        selectedNodeStructureKeys,
+      );
     }
 
     if (props.resetCameraToken > lastResetCameraTokenRef.current) {
@@ -751,13 +912,14 @@ export function VtkViewport(props: VtkViewportProps) {
     props.mode === 'three-d' ? props.overlayOpacity : null,
     props.mode === 'three-d' ? props.selectedSegments : null,
     props.mode === 'three-d' ? props.visibleSegments : null,
+    props.mode === 'three-d' ? baseVisibleStructureSignature : null,
+    props.mode === 'three-d' ? selectedNodeStructureSignature : null,
     props.mode === 'three-d' ? props.cutPlaneOrigin : null,
     props.mode === 'three-d' ? props.cutPlaneNormal : null,
     props.mode === 'three-d' ? props.cutPlaneOpacity : null,
     props.mode === 'three-d' ? props.cutPlaneVisible : null,
     props.mode === 'three-d' ? props.showGlb : null,
     props.mode === 'three-d' ? props.resetCameraToken : null,
-    props.mode === 'three-d' ? visibleStructureSignature : null,
     props.mode === 'three-d' ? props.planeIndices.axial : null,
     props.mode === 'three-d' ? props.planeIndices.coronal : null,
     props.mode === 'three-d' ? props.planeIndices.sagittal : null,

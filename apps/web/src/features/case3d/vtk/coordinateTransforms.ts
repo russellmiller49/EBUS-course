@@ -118,6 +118,10 @@ export function getPlaneCameraPosition(center: Vector3Tuple, normal: Vector3Tupl
   return addVectors(center, scaleVector(normal, distance));
 }
 
+export function getPlaneCameraDistanceSign(plane: CasePlane) {
+  return plane === 'coronal' ? 1 : -1;
+}
+
 export function getPlaneViewUp(geometry: VolumeGeometry, plane: CasePlane) {
   const { v } = getPlaneBasisWorld(geometry, plane);
 

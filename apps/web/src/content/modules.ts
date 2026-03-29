@@ -6,12 +6,12 @@ export const moduleContent = modulesData as ModuleContent[];
 
 export const homeModuleCards: AppModuleCard[] = [
   {
-    id: 'stations',
-    title: 'Mediastinal Stations',
-    description: 'IASLC map, detail cards, flashcards, and correlated CT/bronchoscopy/EBUS views.',
-    accent: 'var(--accent-cyan)',
-    icon: '◎',
-    path: '/stations',
+    id: 'lectures',
+    title: 'Pre-Course Lectures',
+    description: 'Manifest-driven lecture cards with poster and video slots ready for local media.',
+    accent: 'var(--accent-gold)',
+    icon: '▶',
+    path: '/lectures',
   },
   {
     id: 'knobology',
@@ -22,6 +22,14 @@ export const homeModuleCards: AppModuleCard[] = [
     path: '/knobology',
   },
   {
+    id: 'stations',
+    title: 'Mediastinal Stations',
+    description: 'IASLC map, focused sub-tabs, flashcards, quizzes, and correlated CT/bronchoscopy/EBUS views.',
+    accent: 'var(--accent-cyan)',
+    icon: '◎',
+    path: '/stations/explore',
+  },
+  {
     id: 'case-001',
     title: 'Case 001 3D Viewer',
     description:
@@ -29,14 +37,6 @@ export const homeModuleCards: AppModuleCard[] = [
     accent: 'var(--accent-cyan)',
     icon: '◫',
     path: '/cases/case-001',
-  },
-  {
-    id: 'lectures',
-    title: 'Pre-Course Lectures',
-    description: 'Manifest-driven lecture cards with poster and video slots ready for local media.',
-    accent: 'var(--accent-gold)',
-    icon: '▶',
-    path: '/lectures',
   },
   {
     id: 'quiz',

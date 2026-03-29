@@ -311,20 +311,20 @@
       {
         "id": "axial",
         "label": "Axial",
-        "image": "/media/stations/11R/ct/axial-marked.jpg",
-        "note": "Only a marked axial CT source was provided for the 11Ri set."
+        "image": "/media/stations/11Ri/ct/axial.jpg",
+        "revealImage": "/media/stations/11Ri/ct/axial-marked.jpg"
       },
       {
         "id": "coronal",
         "label": "Coronal",
-        "image": "/media/stations/11R/ct/coronal-marked.jpg",
-        "note": "Only a marked coronal CT source was provided for the 11Ri set."
+        "image": "/media/stations/11Ri/ct/coronal.jpg",
+        "revealImage": "/media/stations/11Ri/ct/coronal-marked.jpg"
       },
       {
         "id": "sagittal",
         "label": "Sagittal",
-        "image": "/media/stations/11R/ct/sagittal-marked.jpg",
-        "note": "Only a marked sagittal CT source was provided for the 11Ri set."
+        "image": "/media/stations/11Ri/ct/sagittal.jpg",
+        "revealImage": "/media/stations/11Ri/ct/sagittal-marked.jpg"
       }
     ],
     "bronchoscopyVariants": [

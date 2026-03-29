@@ -17,6 +17,22 @@ export interface LoadedGlbOverlay {
   namedActors: Map<string, any[]>;
 }
 
+function multiplyColumnMajorMatrices(left: ArrayLike<number>, right: ArrayLike<number>) {
+  const output = new Float32Array(16);
+
+  for (let column = 0; column < 4; column += 1) {
+    for (let row = 0; row < 4; row += 1) {
+      output[column * 4 + row] =
+        left[0 * 4 + row] * right[column * 4 + 0] +
+        left[1 * 4 + row] * right[column * 4 + 1] +
+        left[2 * 4 + row] * right[column * 4 + 2] +
+        left[3 * 4 + row] * right[column * 4 + 3];
+    }
+  }
+
+  return output;
+}
+
 function collectNamedActors(importer: vtkGLTFImporter) {
   const namedActors = new Map<string, any[]>();
   const actorMap = importer.getActors();
@@ -70,7 +86,8 @@ export async function loadGlbOverlay(
   const matrix = rowMajorToColumnMajor(manifest.patientToScene.inverseMatrix);
 
   importer.getActors().forEach((actor) => {
-    actor.setUserMatrix(matrix);
+    const actorMatrix = actor.getUserMatrix?.();
+    actor.setUserMatrix(actorMatrix ? multiplyColumnMajorMatrices(matrix, actorMatrix) : matrix);
   });
 
   return {

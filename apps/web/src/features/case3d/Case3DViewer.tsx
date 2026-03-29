@@ -195,7 +195,8 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
         </div>
         <p>
           CT geometry is the runtime truth, segmentation is the anatomy alignment truth, and markups drive the target
-          list and crosshair. The GLB remains optional polish on top of that shared patient-space scene.
+          list and crosshair. The smooth GLB can also replace the rough segmentation surfaces in the 3D view when you
+          want a cleaner anatomy render.
         </p>
         <div className="mini-card-grid">
           <article className="mini-card">
@@ -339,7 +340,7 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
                 onChange={(event) => dispatch({ type: 'set-overlay-group', key: 'glb', value: event.target.checked })}
                 type="checkbox"
               />
-              <span>Optional GLB polish</span>
+              <span>Use smooth GLB surfaces in 3D</span>
             </label>
             <label className="case3d-toggle">
               <input

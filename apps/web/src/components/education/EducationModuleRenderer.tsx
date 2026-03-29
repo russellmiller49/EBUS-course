@@ -150,7 +150,7 @@ export function RelatedImagesStrip({ items }: { items: RelatedImageAsset[] }) {
     <div className="related-images-strip">
       {items.map((item) => (
         <figure key={item.id} className="related-images-strip__item">
-          <img alt={item.label} src={item.src} />
+          <img alt={item.label} loading="lazy" src={item.src} />
           <figcaption>
             <strong>{item.label}</strong>
             {item.note ? <span>{item.note}</span> : null}
@@ -251,7 +251,7 @@ export function QuizExplanationPanel({
   );
 }
 
-function EducationSectionCard({ section }: { section: LessonSection }) {
+export function EducationSectionCard({ section }: { section: LessonSection }) {
   const images = resolveEducationImages(section.imageIds);
 
   if (section.kind === 'artifact') {
@@ -287,10 +287,10 @@ export function EducationModuleRenderer({
   compact?: boolean;
 }) {
   return (
-    <section className="section-card">
+    <section className="section-card reference-card">
       <div className="section-card__heading">
         <div>
-          <div className="eyebrow">Handbook layer</div>
+          <div className="eyebrow">Handbook</div>
           <h2>{module.title}</h2>
           <p>{module.summary}</p>
         </div>
