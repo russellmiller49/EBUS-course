@@ -5,7 +5,7 @@ import type { AppRouteId, KnobologyControlId } from '@/content/types';
 
 const STORAGE_KEY = 'socal-ebus-prep.web.learner-progress';
 
-type ModuleProgressId = 'knobology' | 'station-map' | 'station-explorer' | 'lectures' | 'quiz' | 'case-001';
+type ModuleProgressId = 'pretest' | 'knobology' | 'station-map' | 'station-explorer' | 'lectures' | 'quiz' | 'case-001';
 
 export interface ModuleProgress {
   visitedAt: string | null;
@@ -29,13 +29,24 @@ export interface QuizHistoryEntry {
   completedAt: string;
 }
 
+export interface PretestProgress {
+  answers: Record<string, string>;
+  currentQuestionIndex: number;
+  submittedAt: string | null;
+  score: number | null;
+  answeredCount: number;
+  totalQuestions: number;
+  attemptCount: number;
+}
+
 export interface LearnerProgressState {
-  version: 1;
+  version: 2;
   moduleProgress: Record<ModuleProgressId, ModuleProgress>;
   bookmarkedStations: string[];
   stationRecognitionStats: Record<string, { attempts: number; correct: number }>;
   lectureWatchStatus: Record<string, LectureWatchState>;
   quizScoreHistory: QuizHistoryEntry[];
+  pretest: PretestProgress;
   lastViewedStationId: string | null;
   lastUsedKnobologyControl: KnobologyControlId | null;
 }
@@ -48,6 +59,9 @@ type Action =
   | { type: 'setLectureState'; lectureId: string; watchedSeconds?: number; completed?: boolean }
   | { type: 'recordQuizResult'; entry: QuizHistoryEntry }
   | { type: 'recordRecognitionAttempt'; stationId: string; correct: boolean }
+  | { type: 'setPretestAnswer'; questionId: string; optionId: string }
+  | { type: 'setPretestQuestionIndex'; index: number }
+  | { type: 'submitPretest'; score: number; answeredCount: number; totalQuestions: number }
   | { type: 'setLastViewedStation'; stationId: string }
   | { type: 'setLastUsedKnobologyControl'; controlId: KnobologyControlId }
   | { type: 'reset' };
@@ -61,6 +75,9 @@ interface LearnerProgressContextValue {
   setLectureState: (lectureId: string, update: { watchedSeconds?: number; completed?: boolean }) => void;
   recordQuizResult: (entry: Omit<QuizHistoryEntry, 'completedAt'>) => void;
   recordRecognitionAttempt: (stationId: string, correct: boolean) => void;
+  setPretestAnswer: (questionId: string, optionId: string) => void;
+  setPretestQuestionIndex: (index: number) => void;
+  submitPretest: (summary: { score: number; answeredCount: number; totalQuestions: number }) => void;
   setLastViewedStation: (stationId: string) => void;
   setLastUsedKnobologyControl: (controlId: KnobologyControlId) => void;
   reset: () => void;
@@ -76,10 +93,23 @@ function createModuleProgress(): ModuleProgress {
   };
 }
 
+function createPretestProgress(): PretestProgress {
+  return {
+    answers: {},
+    currentQuestionIndex: 0,
+    submittedAt: null,
+    score: null,
+    answeredCount: 0,
+    totalQuestions: 0,
+    attemptCount: 0,
+  };
+}
+
 export function createInitialLearnerProgress(): LearnerProgressState {
   return {
-    version: 1,
+    version: 2,
     moduleProgress: {
+      pretest: createModuleProgress(),
       knobology: createModuleProgress(),
       'station-map': createModuleProgress(),
       'station-explorer': createModuleProgress(),
@@ -91,6 +121,7 @@ export function createInitialLearnerProgress(): LearnerProgressState {
     stationRecognitionStats: {},
     lectureWatchStatus: {},
     quizScoreHistory: [],
+    pretest: createPretestProgress(),
     lastViewedStationId: null,
     lastUsedKnobologyControl: null,
   };
@@ -124,7 +155,7 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
   }
 
   return {
-    version: 1,
+    version: 2,
     moduleProgress: nextModuleProgress,
     bookmarkedStations: Array.isArray(raw.bookmarkedStations)
       ? raw.bookmarkedStations.filter((stationId): stationId is string => typeof stationId === 'string')
@@ -178,6 +209,31 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
           );
         })
       : [],
+    pretest:
+      raw.pretest && typeof raw.pretest === 'object'
+        ? {
+            answers:
+              raw.pretest.answers && typeof raw.pretest.answers === 'object'
+                ? Object.fromEntries(
+                    Object.entries(raw.pretest.answers).flatMap(([questionId, optionId]) =>
+                      typeof optionId === 'string' ? [[questionId, optionId]] : [],
+                    ),
+                  )
+                : {},
+            currentQuestionIndex:
+              typeof raw.pretest.currentQuestionIndex === 'number'
+                ? Math.max(0, Math.floor(raw.pretest.currentQuestionIndex))
+                : 0,
+            submittedAt: typeof raw.pretest.submittedAt === 'string' ? raw.pretest.submittedAt : null,
+            score: typeof raw.pretest.score === 'number' ? Math.max(0, raw.pretest.score) : null,
+            answeredCount:
+              typeof raw.pretest.answeredCount === 'number' ? Math.max(0, Math.floor(raw.pretest.answeredCount)) : 0,
+            totalQuestions:
+              typeof raw.pretest.totalQuestions === 'number' ? Math.max(0, Math.floor(raw.pretest.totalQuestions)) : 0,
+            attemptCount:
+              typeof raw.pretest.attemptCount === 'number' ? Math.max(0, Math.floor(raw.pretest.attemptCount)) : 0,
+          }
+        : createPretestProgress(),
     lastViewedStationId: typeof raw.lastViewedStationId === 'string' ? raw.lastViewedStationId : null,
     lastUsedKnobologyControl:
       raw.lastUsedKnobologyControl &&
@@ -312,6 +368,48 @@ export function learnerProgressReducer(state: LearnerProgressState, action: Acti
         },
       };
     }
+    case 'setPretestAnswer':
+      if (state.pretest.answers[action.questionId] === action.optionId) {
+        return state;
+      }
+
+      return {
+        ...state,
+        pretest: {
+          ...state.pretest,
+          answers: {
+            ...state.pretest.answers,
+            [action.questionId]: action.optionId,
+          },
+        },
+      };
+    case 'setPretestQuestionIndex': {
+      const nextIndex = Math.max(0, Math.floor(action.index));
+
+      if (state.pretest.currentQuestionIndex === nextIndex) {
+        return state;
+      }
+
+      return {
+        ...state,
+        pretest: {
+          ...state.pretest,
+          currentQuestionIndex: nextIndex,
+        },
+      };
+    }
+    case 'submitPretest':
+      return {
+        ...state,
+        pretest: {
+          ...state.pretest,
+          submittedAt: new Date().toISOString(),
+          score: Math.max(0, action.score),
+          answeredCount: Math.max(0, action.answeredCount),
+          totalQuestions: Math.max(0, action.totalQuestions),
+          attemptCount: state.pretest.attemptCount + 1,
+        },
+      };
     case 'setLastViewedStation':
       if (state.lastViewedStationId === action.stationId) {
         return state;
@@ -412,6 +510,18 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'recordRecognitionAttempt', stationId, correct });
   }, []);
 
+  const setPretestAnswer = useCallback((questionId: string, optionId: string) => {
+    dispatch({ type: 'setPretestAnswer', questionId, optionId });
+  }, []);
+
+  const setPretestQuestionIndex = useCallback((index: number) => {
+    dispatch({ type: 'setPretestQuestionIndex', index });
+  }, []);
+
+  const submitPretest = useCallback((summary: { score: number; answeredCount: number; totalQuestions: number }) => {
+    dispatch({ type: 'submitPretest', ...summary });
+  }, []);
+
   const setLastViewedStation = useCallback((stationId: string) => {
     dispatch({ type: 'setLastViewedStation', stationId });
   }, []);
@@ -434,6 +544,9 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
       setLectureState,
       recordQuizResult,
       recordRecognitionAttempt,
+      setPretestAnswer,
+      setPretestQuestionIndex,
+      submitPretest,
       setLastViewedStation,
       setLastUsedKnobologyControl,
       reset,
@@ -447,6 +560,9 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
       setLastViewedStation,
       setLectureState,
       setModuleProgress,
+      setPretestAnswer,
+      setPretestQuestionIndex,
+      submitPretest,
       state,
       toggleStationBookmark,
       visitRoute,

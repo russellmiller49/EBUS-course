@@ -1,5 +1,47 @@
 [
   {
+    "id": "pretest",
+    "slug": "pretest",
+    "shortTitle": "Pretest",
+    "title": "EBUS Course Pretest",
+    "summary": "Baseline course assessment with hidden answers and demo-only local score logging.",
+    "overview": "This module captures a pre-course score, keeps correct answers hidden, and stores the latest demo submission locally until authenticated logging is added.",
+    "estimatedMinutes": 25,
+    "featureFolder": "features/pretest",
+    "route": "/modules/pretest",
+    "goals": [
+      "Collect a pre-course baseline without revealing correct answers.",
+      "Persist in-progress responses and the latest saved score locally for the demo.",
+      "Keep the submission flow ready for future login-backed score logging."
+    ],
+    "plannedExperiences": [
+      "Briefing",
+      "42-question assessment",
+      "Demo submission summary"
+    ],
+    "assetPlaceholders": [
+      {
+        "key": "pretest-q2-figure",
+        "label": "Question 2 figure",
+        "folder": "assets/pretest",
+        "note": "Extracted from the provided pretest document for the demo assessment flow."
+      },
+      {
+        "key": "pretest-q8-figure",
+        "label": "Question 8 figure",
+        "folder": "assets/pretest",
+        "note": "Extracted from the provided pretest document for the demo assessment flow."
+      },
+      {
+        "key": "pretest-q22-figure",
+        "label": "Question 22 figure",
+        "folder": "assets/pretest",
+        "note": "Extracted from the provided pretest document for the demo assessment flow."
+      }
+    ],
+    "relatedStationIds": []
+  },
+  {
     "id": "knobology",
     "slug": "knobology",
     "shortTitle": "Knobology",

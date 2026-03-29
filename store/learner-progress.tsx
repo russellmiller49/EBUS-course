@@ -13,6 +13,7 @@ import {
   type ViewerOpacity,
   type ViewerVisibility,
 } from '@/features/case3d/types';
+import type { PretestProgress } from '@/features/pretest/types';
 import { MODULE_IDS } from '@/lib/constants';
 import type { BookmarkedItem, LearnerProgressState, ModuleId, ModuleProgress } from '@/lib/types';
 
@@ -27,6 +28,9 @@ type Action =
   | { type: 'setLastViewedStation'; stationId: string }
   | { type: 'setQuizScore'; moduleId: ModuleId; quizScore: number }
   | { type: 'recordRecognitionAttempt'; moduleId: ModuleId; stationId: string; wasCorrect: boolean }
+  | { type: 'setPretestAnswer'; questionId: string; optionId: string }
+  | { type: 'setPretestQuestionIndex'; index: number }
+  | { type: 'submitPretest'; score: number; answeredCount: number; totalQuestions: number }
   | { type: 'updateCase3DExplorer'; update: Partial<Case3DExplorerProgress> }
   | { type: 'markCase3DTargetVisited'; targetId: string }
   | { type: 'setCase3DReviewScore'; reviewScore: number }
@@ -42,6 +46,9 @@ interface LearnerProgressContextValue {
   setLastViewedStation: (stationId: string) => void;
   setQuizScore: (moduleId: ModuleId, quizScore: number) => void;
   recordRecognitionAttempt: (moduleId: ModuleId, stationId: string, wasCorrect: boolean) => void;
+  setPretestAnswer: (questionId: string, optionId: string) => void;
+  setPretestQuestionIndex: (index: number) => void;
+  submitPretest: (summary: { score: number; answeredCount: number; totalQuestions: number }) => void;
   updateCase3DExplorer: (update: Partial<Case3DExplorerProgress>) => void;
   markCase3DTargetVisited: (targetId: string) => void;
   setCase3DReviewScore: (reviewScore: number) => void;
@@ -71,6 +78,46 @@ function createInitialCase3DExplorerProgress(): Case3DExplorerProgress {
     viewerOpacity: { ...DEFAULT_CASE3D_VIEWER_OPACITY },
     visitedTargetIds: [],
     reviewScore: null,
+  };
+}
+
+function createInitialPretestProgress(): PretestProgress {
+  return {
+    answers: {},
+    currentQuestionIndex: 0,
+    submittedAt: null,
+    score: null,
+    answeredCount: 0,
+    totalQuestions: 0,
+    attemptCount: 0,
+  };
+}
+
+function normalizePretestProgress(candidate: unknown): PretestProgress {
+  const initialState = createInitialPretestProgress();
+
+  if (!candidate || typeof candidate !== 'object') {
+    return initialState;
+  }
+
+  const raw = candidate as Partial<PretestProgress>;
+
+  return {
+    answers:
+      raw.answers && typeof raw.answers === 'object'
+        ? Object.fromEntries(
+            Object.entries(raw.answers).flatMap(([questionId, optionId]) =>
+              typeof optionId === 'string' ? [[questionId, optionId]] : [],
+            ),
+          )
+        : {},
+    currentQuestionIndex:
+      typeof raw.currentQuestionIndex === 'number' ? Math.max(0, Math.floor(raw.currentQuestionIndex)) : 0,
+    submittedAt: typeof raw.submittedAt === 'string' ? raw.submittedAt : null,
+    score: typeof raw.score === 'number' ? Math.max(0, raw.score) : null,
+    answeredCount: typeof raw.answeredCount === 'number' ? Math.max(0, Math.floor(raw.answeredCount)) : 0,
+    totalQuestions: typeof raw.totalQuestions === 'number' ? Math.max(0, Math.floor(raw.totalQuestions)) : 0,
+    attemptCount: typeof raw.attemptCount === 'number' ? Math.max(0, Math.floor(raw.attemptCount)) : 0,
   };
 }
 
@@ -159,8 +206,9 @@ function areStringArraysEqual(left: string[], right: string[]) {
 
 export function createInitialLearnerProgress(): LearnerProgressState {
   return {
-    version: 3,
+    version: 4,
     moduleProgress: {
+      pretest: createEmptyModuleProgress(),
       knobology: createEmptyModuleProgress(),
       'station-map': createEmptyModuleProgress(),
       'station-explorer': createEmptyModuleProgress(),
@@ -168,6 +216,7 @@ export function createInitialLearnerProgress(): LearnerProgressState {
     },
     bookmarks: [],
     lastViewedStationId: null,
+    pretest: createInitialPretestProgress(),
     case3dExplorer: createInitialCase3DExplorerProgress(),
   };
 }
@@ -217,7 +266,7 @@ export function normalizeProgressState(candidate: unknown): LearnerProgressState
   }
 
   return {
-    version: 3,
+    version: 4,
     moduleProgress,
     bookmarks: Array.isArray(raw.bookmarks)
       ? raw.bookmarks.filter((bookmark): bookmark is BookmarkedItem => {
@@ -230,6 +279,7 @@ export function normalizeProgressState(candidate: unknown): LearnerProgressState
         })
       : [],
     lastViewedStationId: typeof raw.lastViewedStationId === 'string' ? raw.lastViewedStationId : null,
+    pretest: normalizePretestProgress(raw.pretest),
     case3dExplorer: normalizeCase3DExplorerProgress(raw.case3dExplorer),
   };
 }
@@ -382,6 +432,48 @@ export function learnerProgressReducer(
         },
       };
     }
+    case 'setPretestAnswer':
+      if (state.pretest.answers[action.questionId] === action.optionId) {
+        return state;
+      }
+
+      return {
+        ...state,
+        pretest: {
+          ...state.pretest,
+          answers: {
+            ...state.pretest.answers,
+            [action.questionId]: action.optionId,
+          },
+        },
+      };
+    case 'setPretestQuestionIndex': {
+      const nextIndex = Math.max(0, Math.floor(action.index));
+
+      if (state.pretest.currentQuestionIndex === nextIndex) {
+        return state;
+      }
+
+      return {
+        ...state,
+        pretest: {
+          ...state.pretest,
+          currentQuestionIndex: nextIndex,
+        },
+      };
+    }
+    case 'submitPretest':
+      return {
+        ...state,
+        pretest: {
+          ...state.pretest,
+          submittedAt: new Date().toISOString(),
+          score: Math.max(0, action.score),
+          answeredCount: Math.max(0, action.answeredCount),
+          totalQuestions: Math.max(0, action.totalQuestions),
+          attemptCount: state.pretest.attemptCount + 1,
+        },
+      };
     case 'updateCase3DExplorer': {
       const nextSelectedPlane = normalizeSelectedPlane(
         action.update.selectedPlane ?? state.case3dExplorer.selectedPlane,
@@ -534,6 +626,10 @@ export function LearnerProgressProvider({ children }: { children: React.ReactNod
       setQuizScore: (moduleId, quizScore) => dispatch({ type: 'setQuizScore', moduleId, quizScore }),
       recordRecognitionAttempt: (moduleId, stationId, wasCorrect) =>
         dispatch({ type: 'recordRecognitionAttempt', moduleId, stationId, wasCorrect }),
+      setPretestAnswer: (questionId, optionId) => dispatch({ type: 'setPretestAnswer', questionId, optionId }),
+      setPretestQuestionIndex: (index) => dispatch({ type: 'setPretestQuestionIndex', index }),
+      submitPretest: ({ score, answeredCount, totalQuestions }) =>
+        dispatch({ type: 'submitPretest', score, answeredCount, totalQuestions }),
       updateCase3DExplorer: (update) => dispatch({ type: 'updateCase3DExplorer', update }),
       markCase3DTargetVisited: (targetId) => dispatch({ type: 'markCase3DTargetVisited', targetId }),
       setCase3DReviewScore: (reviewScore) => dispatch({ type: 'setCase3DReviewScore', reviewScore }),

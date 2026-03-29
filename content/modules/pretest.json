@@ -1,0 +1,1063 @@
+{
+  "id": "pretest",
+  "title": "EBUS Course Pretest",
+  "summary": "Baseline 42-question assessment for attendees before the live course.",
+  "instructions": [
+    "Complete the full pretest before the course when possible.",
+    "Correct answers are intentionally hidden during the pretest experience.",
+    "Demo mode stores the latest score only on this device until login-backed logging is available."
+  ],
+  "demoPolicy": "This demo records a local score and submission timestamp without collecting login details.",
+  "questions": [
+    {
+      "id": "pretest-01",
+      "prompt": "For a patient with a peripheral clinical stage IA tumor and negative nodal involvement on both CT and PET scans, what is the recommended approach to invasive mediastinal staging?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Invasive staging should always be performed using EBUS."
+        },
+        {
+          "id": "b",
+          "label": "It is suggested that invasive pre-operative evaluation of the mediastinal nodes is not required."
+        },
+        {
+          "id": "c",
+          "label": "Mediastinoscopy must be performed before any surgical resection."
+        },
+        {
+          "id": "d",
+          "label": "Invasive staging is only required if the patient has a history of smoking."
+        }
+      ],
+      "correctOptionId": "b"
+    },
+    {
+      "id": "pretest-02",
+      "prompt": "The patient with the nodule below has a radiographically normal mediastinum (by CT and PET) what is the recommended best practice?",
+      "type": "image-interpretation",
+      "imageAssetKey": "pretest-q2-figure",
+      "options": [
+        {
+          "id": "a",
+          "label": "Staging by imaging alone."
+        },
+        {
+          "id": "b",
+          "label": "Proceeding directly to surgery with intra-operative node dissection."
+        },
+        {
+          "id": "c",
+          "label": "Invasive staging of the mediastinum."
+        },
+        {
+          "id": "d",
+          "label": "Radiation therapy before any staging."
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-03",
+      "prompt": "Which lymph node station corresponds to the subcarinal nodes?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Station 2R"
+        },
+        {
+          "id": "b",
+          "label": "Station 4L"
+        },
+        {
+          "id": "c",
+          "label": "Station 7"
+        },
+        {
+          "id": "d",
+          "label": "Station 10R"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-04",
+      "prompt": "Which of the following lymph node stations is classified as an N1 node?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Station 4"
+        },
+        {
+          "id": "b",
+          "label": "Station 7"
+        },
+        {
+          "id": "c",
+          "label": "Station 9"
+        },
+        {
+          "id": "d",
+          "label": "Station 10"
+        }
+      ],
+      "correctOptionId": "d"
+    },
+    {
+      "id": "pretest-05",
+      "prompt": "Station 5 lymph nodes are anatomically described as:",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Subcarinal nodes"
+        },
+        {
+          "id": "b",
+          "label": "Subaortic (A-P window) nodes"
+        },
+        {
+          "id": "c",
+          "label": "Para-aortic nodes"
+        },
+        {
+          "id": "d",
+          "label": "Paraesophageal nodes"
+        }
+      ],
+      "correctOptionId": "b"
+    },
+    {
+      "id": "pretest-06",
+      "prompt": "Which station represents the pre-vascular and retrotracheal nodes?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Station 2"
+        },
+        {
+          "id": "b",
+          "label": "Station 3"
+        },
+        {
+          "id": "c",
+          "label": "Station 6"
+        },
+        {
+          "id": "d",
+          "label": "Station 8"
+        }
+      ],
+      "correctOptionId": "b"
+    },
+    {
+      "id": "pretest-07",
+      "prompt": "What is the anatomical definition of Station 8 nodes?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Paraesophageal (below carina)"
+        },
+        {
+          "id": "b",
+          "label": "Pulmonary Ligament"
+        },
+        {
+          "id": "c",
+          "label": "Para-aortic"
+        },
+        {
+          "id": "d",
+          "label": "Upper Paratracheal"
+        }
+      ],
+      "correctOptionId": "a"
+    },
+    {
+      "id": "pretest-08",
+      "prompt": "Which lymph node station is represented in this image?",
+      "type": "image-interpretation",
+      "imageAssetKey": "pretest-q8-figure",
+      "options": [
+        {
+          "id": "a",
+          "label": "4R"
+        },
+        {
+          "id": "b",
+          "label": "4L"
+        },
+        {
+          "id": "c",
+          "label": "10R"
+        },
+        {
+          "id": "d",
+          "label": "10L"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-09",
+      "prompt": "Based on the IASLC borders, which nodal station is situated along the ascending aorta or phrenic nerve?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Station 3a"
+        },
+        {
+          "id": "b",
+          "label": "Station 5"
+        },
+        {
+          "id": "c",
+          "label": "Station 6"
+        },
+        {
+          "id": "d",
+          "label": "Station 9"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-10",
+      "prompt": "When preparing a slide for ROSE, which of the following is a recommended practice?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Touch the needle tip directly to the slide to ensure sample transfer."
+        },
+        {
+          "id": "b",
+          "label": "Apply vigorous compression between the two slides to spread the sample."
+        },
+        {
+          "id": "c",
+          "label": "Use a shield slide to prevent spraying and wasting the material."
+        },
+        {
+          "id": "d",
+          "label": "Discard any blood clots obtained during aspiration."
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-11",
+      "prompt": "Which of the following is considered a classic cytohistologic feature of the granuloma 'core' in sarcoidosis?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Abundant caseating necrosis"
+        },
+        {
+          "id": "b",
+          "label": "Epithelioid histiocytes and scattered lymphocytes"
+        },
+        {
+          "id": "c",
+          "label": "Reed-Sternberg cells"
+        },
+        {
+          "id": "d",
+          "label": "Predominantly malignant squamous cells"
+        }
+      ],
+      "correctOptionId": "b"
+    },
+    {
+      "id": "pretest-12",
+      "prompt": "When evaluating the diagnostic yield for sarcoidosis, how does EBUS-TBNA compare to conventional (\"blind\") TBNA (CTBNA)?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Conventional TBNA has a significantly higher diagnostic yield."
+        },
+        {
+          "id": "b",
+          "label": "Both modalities have equal diagnostic yields."
+        },
+        {
+          "id": "c",
+          "label": "EBUS-TBNA provides a significantly superior diagnostic yield."
+        },
+        {
+          "id": "d",
+          "label": "EBUS-TBNA is superior only when evaluating extrathoracic nodes."
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-13",
+      "prompt": "Which medium should be used to collect cells specifically intended for flow cytometry when lymphoma is suspected?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Formalin"
+        },
+        {
+          "id": "b",
+          "label": "Saline"
+        },
+        {
+          "id": "c",
+          "label": "Ethanol"
+        },
+        {
+          "id": "d",
+          "label": "RPMI"
+        }
+      ],
+      "correctOptionId": "d"
+    },
+    {
+      "id": "pretest-14",
+      "prompt": "Which of the following endemic mycoses is associated with a low frequency of thoracic lymphadenopathy, distinguishing it from the others listed?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Coccidioides"
+        },
+        {
+          "id": "b",
+          "label": "Histoplasma"
+        },
+        {
+          "id": "c",
+          "label": "Blastomyces"
+        },
+        {
+          "id": "d",
+          "label": "Cryptococcus"
+        }
+      ],
+      "correctOptionId": "d"
+    },
+    {
+      "id": "pretest-15",
+      "prompt": "What does the prefix \"y\" indicate in the context of staging assessments?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Stage as determined by autopsy"
+        },
+        {
+          "id": "b",
+          "label": "After resection, made on the basis of pathologic assessment"
+        },
+        {
+          "id": "c",
+          "label": "After part or all of the treatment has been given"
+        },
+        {
+          "id": "d",
+          "label": "Stage at the time of a recurrence"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-16",
+      "prompt": "According to the IASLC 9th Edition TNM Staging, a tumor that is 6 cm in size and does not invade other structures is classified as:",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "T2a"
+        },
+        {
+          "id": "b",
+          "label": "T2b"
+        },
+        {
+          "id": "c",
+          "label": "T3"
+        },
+        {
+          "id": "d",
+          "label": "T4"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-17",
+      "prompt": "A primary tumor of any size that invades the mediastinum, heart, or great vessels is classified as:",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "T2"
+        },
+        {
+          "id": "b",
+          "label": "T3"
+        },
+        {
+          "id": "c",
+          "label": "T4"
+        },
+        {
+          "id": "d",
+          "label": "M1a"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-18",
+      "prompt": "How is lymph node involvement (N) classified if there is metastasis in contralateral mediastinal or supraclavicular nodes?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "N0"
+        },
+        {
+          "id": "b",
+          "label": "N1"
+        },
+        {
+          "id": "c",
+          "label": "N2"
+        },
+        {
+          "id": "d",
+          "label": "N3"
+        }
+      ],
+      "correctOptionId": "d"
+    },
+    {
+      "id": "pretest-19",
+      "prompt": "How is the T classification determined for a patient with multifocal ground glass or part-solid nodules?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Distinct separate cTNM and pTNM stages are assigned for each cancer."
+        },
+        {
+          "id": "b",
+          "label": "The T stage is based on the highest T lesion, with an indicator for multiplicity."
+        },
+        {
+          "id": "c",
+          "label": "It is automatically classified as T4 due to multiple nodules."
+        },
+        {
+          "id": "d",
+          "label": "The T stage is based on the total combined size of all nodules."
+        }
+      ],
+      "correctOptionId": "b"
+    },
+    {
+      "id": "pretest-20",
+      "prompt": "Which of the following lymph node stations is accessible via Endobronchial Ultrasound (EBUS)?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Station 5 (Subaortic)"
+        },
+        {
+          "id": "b",
+          "label": "Station 8 (Paraesophageal)"
+        },
+        {
+          "id": "c",
+          "label": "Station 7 (Subcarinal)"
+        },
+        {
+          "id": "d",
+          "label": "Station 9 (Pulmonary ligament)"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-21",
+      "prompt": "When standard EBUS and EUS-B are combined for nodal staging, which lymph node station is still not routinely accessible?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Station 3p"
+        },
+        {
+          "id": "b",
+          "label": "Station 5"
+        },
+        {
+          "id": "c",
+          "label": "Station 6"
+        },
+        {
+          "id": "d",
+          "label": "Station 7"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-22",
+      "prompt": "Which lymph node station is represented in this image?",
+      "type": "image-interpretation",
+      "imageAssetKey": "pretest-q22-figure",
+      "options": [
+        {
+          "id": "a",
+          "label": "4R"
+        },
+        {
+          "id": "b",
+          "label": "4L"
+        },
+        {
+          "id": "c",
+          "label": "10R"
+        },
+        {
+          "id": "d",
+          "label": "10L"
+        }
+      ],
+      "correctOptionId": "b"
+    },
+    {
+      "id": "pretest-23",
+      "prompt": "When evaluating a cytology sample from an EBUS TBNA, which of the following accurately describes the differences between Wright-Giemsa (WG) and Papanicolaou (Pap) stains?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "WG is alcohol-based and better for evaluating nuclear features, while Pap is water-based."
+        },
+        {
+          "id": "b",
+          "label": "WG is water-based and better for evaluating cytoplasmic features, while Pap is alcohol-based and better for evaluating nuclear features."
+        },
+        {
+          "id": "c",
+          "label": "WG requires 15 steps and takes 3 minutes to perform."
+        },
+        {
+          "id": "d",
+          "label": "Both stains are equally fast, taking roughly 45 seconds to perform."
+        }
+      ],
+      "correctOptionId": "b"
+    },
+    {
+      "id": "pretest-24",
+      "prompt": "According to current lung tumor pathology classification, which terms should be minimized or avoided when possible in small diagnostic specimens?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Adenocarcinoma in situ (AIS)"
+        },
+        {
+          "id": "b",
+          "label": "Minimally invasive adenocarcinoma (MIA)"
+        },
+        {
+          "id": "c",
+          "label": "Non-small cell lung cancer - not otherwise specified (NSCLC - NOS) and bronchoalveolar carcinoma (BAC)"
+        },
+        {
+          "id": "d",
+          "label": "Squamous cell carcinoma"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-25",
+      "prompt": "According to current best practice for small lung biopsies or cytology, what constitutes a sufficient limited initial immunohistochemistry (IHC) panel to distinguish adenocarcinoma from squamous cell carcinoma?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "A large panel of 5-10 markers to ensure accuracy."
+        },
+        {
+          "id": "b",
+          "label": "One squamous cell carcinoma marker (e.g., p63, p40) and one adenocarcinoma marker (e.g., TTF-1, napsin A)."
+        },
+        {
+          "id": "c",
+          "label": "Only neuroendocrine markers like synaptophysin and chromogranin."
+        },
+        {
+          "id": "d",
+          "label": "Testing for EGFR and KRAS mutations directly without IHC."
+        }
+      ],
+      "correctOptionId": "b"
+    },
+    {
+      "id": "pretest-26",
+      "prompt": "A patient's lung tumor biopsy shows an immunohistochemical (IHC) profile of TTF-1 positive (90%+) and positive for neuroendocrine markers such as Synaptophysin. Based on common IHC markers for lung cancers, this profile is most characteristic of:",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Non-mucinous adenocarcinoma"
+        },
+        {
+          "id": "b",
+          "label": "Squamous cell carcinoma"
+        },
+        {
+          "id": "c",
+          "label": "Small cell carcinoma"
+        },
+        {
+          "id": "d",
+          "label": "Mesothelioma"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-27",
+      "prompt": "When preparing an EBUS TBNA specimen for molecular marker testing, which fixative should be strictly avoided due to its incompatibility with molecular assays?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "10% neutral-buffered formalin"
+        },
+        {
+          "id": "b",
+          "label": "70% ethanol (Alcohol)"
+        },
+        {
+          "id": "c",
+          "label": "Heavy metal fixatives (e.g., Zenker, acid zinc formalin)"
+        },
+        {
+          "id": "d",
+          "label": "Saline"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-28",
+      "prompt": "Does applying suction during an EBUS-TBNA pass improve the diagnostic results compared to not using suction?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Yes, suction significantly improves sample quality."
+        },
+        {
+          "id": "b",
+          "label": "No, using suction versus no suction results in no significant difference."
+        },
+        {
+          "id": "c",
+          "label": "Yes, suction is required to diagnose adenocarcinoma."
+        },
+        {
+          "id": "d",
+          "label": "No, suction actually ruins the cellular architecture."
+        }
+      ],
+      "correctOptionId": "b"
+    },
+    {
+      "id": "pretest-29",
+      "prompt": "What is the current overall diagnostic performance of EBUS-TBNA for lymphoma?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "It is the gold standard with near-100% sensitivity."
+        },
+        {
+          "id": "b",
+          "label": "It is more sensitive for de novo lymphoma than for recurrent disease."
+        },
+        {
+          "id": "c",
+          "label": "It has a moderate pooled sensitivity of about 66% overall and tends to perform better for suspected recurrence than for de novo disease."
+        },
+        {
+          "id": "d",
+          "label": "It is useful only when paired with ROSE."
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-30",
+      "prompt": "What happens to the diagnostic yield when Endoscopic Ultrasound (EUS) is combined with EBUS?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "The diagnostic yield slightly decreases due to procedural complications."
+        },
+        {
+          "id": "b",
+          "label": "The diagnostic yield is exactly the same as using EBUS alone."
+        },
+        {
+          "id": "c",
+          "label": "The diagnostic yield is slightly higher."
+        },
+        {
+          "id": "d",
+          "label": "The combination is only used for gastrointestinal tumors."
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-31",
+      "prompt": "You perform a linear EBUS-TBNA on a patient. During the procedure, you sample lymph nodes at stations 4L, 7, 4R, and 11R. Which CPT code should be used as the primary code for this procedure?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "31652"
+        },
+        {
+          "id": "b",
+          "label": "31653"
+        },
+        {
+          "id": "c",
+          "label": "31654"
+        },
+        {
+          "id": "d",
+          "label": "31629"
+        }
+      ],
+      "correctOptionId": "b"
+    },
+    {
+      "id": "pretest-32",
+      "prompt": "A physician provides moderate sedation during a bronchoscopy, with a total continuous face-to-face sedation time of 49 minutes. How should this sedation be billed?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "99152 x 1, 99153 x 2"
+        },
+        {
+          "id": "b",
+          "label": "99152 x 1, 99153 x 3"
+        },
+        {
+          "id": "c",
+          "label": "99152 x 3"
+        },
+        {
+          "id": "d",
+          "label": "99152 x 1, 99153 x 1"
+        }
+      ],
+      "correctOptionId": "a"
+    },
+    {
+      "id": "pretest-33",
+      "prompt": "What is a primary consequence of a false positive result when relying on imaging alone for mediastinal staging?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "It guarantees extensive mediastinal infiltration."
+        },
+        {
+          "id": "b",
+          "label": "It confirms distant metastases."
+        },
+        {
+          "id": "c",
+          "label": "It subjects the patient to unnecessary surgical risk."
+        },
+        {
+          "id": "d",
+          "label": "It may deny the patient the benefit of curative surgical resection."
+        }
+      ],
+      "correctOptionId": "d"
+    },
+    {
+      "id": "pretest-34",
+      "prompt": "Which lymph node station is accessible by Endoscopic Ultrasound (EUS) but NOT typically by Endobronchial Ultrasound (EBUS)? (Refer to the anatomical diagram on Page 7)",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Station 4"
+        },
+        {
+          "id": "b",
+          "label": "Station 7"
+        },
+        {
+          "id": "c",
+          "label": "Station 8"
+        },
+        {
+          "id": "d",
+          "label": "Station 10R"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-35",
+      "prompt": "For patients presenting with a high clinical suspicion of N2 or N3 involvement, what is recommended as the \"best first test\" for invasive staging?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "PET scan evaluation only"
+        },
+        {
+          "id": "b",
+          "label": "Cervical Mediastinoscopy"
+        },
+        {
+          "id": "c",
+          "label": "A needle technique (EBUS, EUS, or combined EBUS/EUS)"
+        },
+        {
+          "id": "d",
+          "label": "Chamberlain procedure"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-36",
+      "prompt": "What is a key clinical benefit of surveying and biopsying radiographically \"negative\" lymph nodes using EBUS?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "It helps to identify and upstage patients to N2/N3 disease that CT and PET scans missed."
+        },
+        {
+          "id": "b",
+          "label": "It confirms that radiographically negative nodes never harbor malignancies."
+        },
+        {
+          "id": "c",
+          "label": "It prevents the need for any pre-operative imaging."
+        },
+        {
+          "id": "d",
+          "label": "It exclusively isolates squamous cell carcinomas."
+        }
+      ],
+      "correctOptionId": "a"
+    },
+    {
+      "id": "pretest-37",
+      "prompt": "According to current CHEST guidance for suspected malignant disease, how many EBUS-TBNA needle passes are recommended per target lesion?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "1 pass"
+        },
+        {
+          "id": "b",
+          "label": "2 passes"
+        },
+        {
+          "id": "c",
+          "label": "3 or fewer passes"
+        },
+        {
+          "id": "d",
+          "label": "4 or more passes"
+        }
+      ],
+      "correctOptionId": "d"
+    },
+    {
+      "id": "pretest-38",
+      "prompt": "What is the primary proven benefit of utilizing Rapid On-Site Evaluation (ROSE) during an EBUS procedure?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "It significantly increases the overall diagnostic yield."
+        },
+        {
+          "id": "b",
+          "label": "It decreases overall procedural time."
+        },
+        {
+          "id": "c",
+          "label": "It decreases the need for further biopsies/additional procedures."
+        },
+        {
+          "id": "d",
+          "label": "It eliminates the need for any standard pathological evaluation."
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-39",
+      "prompt": "How does the diagnostic performance of EBUS-TBNA compare to standard surgical mediastinoscopy?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Mediastinoscopy has a significantly higher sensitivity than EBUS-TBNA."
+        },
+        {
+          "id": "b",
+          "label": "EBUS-TBNA has similar or slightly better sensitivity and accuracy compared to mediastinoscopy."
+        },
+        {
+          "id": "c",
+          "label": "Mediastinoscopy has a 100% negative predictive value, making EBUS obsolete."
+        },
+        {
+          "id": "d",
+          "label": "EBUS-TBNA can only sample the subcarinal nodes, unlike mediastinoscopy."
+        }
+      ],
+      "correctOptionId": "b"
+    },
+    {
+      "id": "pretest-40",
+      "prompt": "According to the AQUIRE Data Registry, how does the use of a 21-gauge needle compare to a 22-gauge needle during EBUS?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "21G has a significantly higher diagnostic yield for malignancy."
+        },
+        {
+          "id": "b",
+          "label": "22G is much less effective for cytology specimens."
+        },
+        {
+          "id": "c",
+          "label": "There is no difference in sample adequacy or diagnostic yield."
+        },
+        {
+          "id": "d",
+          "label": "21G guarantees a specific diagnosis in 88% of cases."
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-41",
+      "prompt": "Which of the following sets of ultrasound characteristics are considered \"high risk\" features for a malignant lymph node?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Oval, distinct border, homogeneous, presence of central hilar structure."
+        },
+        {
+          "id": "b",
+          "label": "Round, indistinct border, heterogeneous, absence of central hilar structure."
+        },
+        {
+          "id": "c",
+          "label": "Round, heterogeneous, distinct border, coagulation necrosis sign."
+        },
+        {
+          "id": "d",
+          "label": "Oval, distinct border, homogeneous, absence of coagulation necrosis."
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-42",
+      "prompt": "In EBUS elastography, how is a Type 3 (hard) lymph node typically characterized, and what does it suggest?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "It deforms easily under compression and is 96.3% benign."
+        },
+        {
+          "id": "b",
+          "label": "It deforms less than softer tissues and is 87.1% malignant."
+        },
+        {
+          "id": "c",
+          "label": "It shows a predominantly green/red color and indicates a central hilar structure."
+        },
+        {
+          "id": "d",
+          "label": "It deforms less than softer tissues and is 75.0% benign."
+        }
+      ],
+      "correctOptionId": "b"
+    }
+  ]
+}

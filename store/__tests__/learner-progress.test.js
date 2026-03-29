@@ -87,6 +87,34 @@ describe('learnerProgressReducer', () => {
     });
   });
 
+  it('stores pretest answers and the latest demo submission summary locally', () => {
+    const initialState = createInitialLearnerProgress();
+
+    const answeredState = learnerProgressReducer(initialState, {
+      type: 'setPretestAnswer',
+      questionId: 'pretest-01',
+      optionId: 'b',
+    });
+    const indexedState = learnerProgressReducer(answeredState, {
+      type: 'setPretestQuestionIndex',
+      index: 7,
+    });
+    const submittedState = learnerProgressReducer(indexedState, {
+      type: 'submitPretest',
+      score: 31,
+      answeredCount: 42,
+      totalQuestions: 42,
+    });
+
+    expect(submittedState.pretest.answers['pretest-01']).toBe('b');
+    expect(submittedState.pretest.currentQuestionIndex).toBe(7);
+    expect(submittedState.pretest.score).toBe(31);
+    expect(submittedState.pretest.answeredCount).toBe(42);
+    expect(submittedState.pretest.totalQuestions).toBe(42);
+    expect(submittedState.pretest.attemptCount).toBe(1);
+    expect(submittedState.pretest.submittedAt).toEqual(expect.any(String));
+  });
+
   it('restores missing modules to the default progress shape', () => {
     const restored = normalizeProgressState({
       version: 1,
@@ -114,8 +142,18 @@ describe('learnerProgressReducer', () => {
       attempts: 3,
       correct: 2,
     });
+    expect(restored.moduleProgress.pretest.percentComplete).toBe(0);
     expect(restored.moduleProgress['station-map'].percentComplete).toBe(0);
     expect(restored.moduleProgress['station-explorer'].percentComplete).toBe(0);
     expect(restored.lastViewedStationId).toBe('4R');
+    expect(restored.pretest).toEqual({
+      answers: {},
+      currentQuestionIndex: 0,
+      submittedAt: null,
+      score: null,
+      answeredCount: 0,
+      totalQuestions: 0,
+      attemptCount: 0,
+    });
   });
 });

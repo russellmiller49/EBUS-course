@@ -7,6 +7,7 @@ import { SectionCard } from '@/components/SectionCard';
 import { Case3DExplorerModule } from '@/features/case3d/Case3DExplorerModule';
 import { ExplorerModule } from '@/features/explorer/ExplorerModule';
 import { KnobologyModule } from '@/features/knobology/KnobologyModule';
+import { PretestModule } from '@/features/pretest/PretestModule';
 import { StationMapModule } from '@/features/stations/StationMapModule';
 import { getModuleBySlug } from '@/lib/content';
 
@@ -68,6 +69,15 @@ export default function ModuleDetailScreen() {
       <>
         <Stack.Screen options={screenOptions} />
         <Case3DExplorerModule module={module} />
+      </>
+    );
+  }
+
+  if (module.id === 'pretest') {
+    return (
+      <>
+        <Stack.Screen options={screenOptions} />
+        <PretestModule module={module} />
       </>
     );
   }

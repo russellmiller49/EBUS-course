@@ -1411,6 +1411,53 @@ iframe {
   background: rgba(45, 108, 163, 0.14);
 }
 
+.pretest-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
+  gap: 10px;
+}
+
+.pretest-chip {
+  width: 100%;
+  min-height: 46px;
+  justify-content: center;
+}
+
+.pretest-chip--answered {
+  color: var(--accent-green);
+  border-color: rgba(143, 224, 192, 0.28);
+  background: rgba(20, 63, 48, 0.24);
+}
+
+.pretest-chip--active {
+  color: var(--text);
+  border-color: rgba(127, 189, 242, 0.34);
+  background: rgba(45, 108, 163, 0.24);
+}
+
+.pretest-figure {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 20px;
+}
+
+.pretest-figure img {
+  border-radius: 20px;
+  border: 1px solid rgba(123, 163, 200, 0.14);
+  background:
+    radial-gradient(circle at center, rgba(127, 189, 242, 0.12), transparent 24%),
+    linear-gradient(180deg, #08111d, #111b2b);
+  max-height: 420px;
+  object-fit: contain;
+}
+
+.pretest-figure figcaption {
+  color: var(--text-muted);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
 .choice-card--correct {
   border-color: rgba(143, 224, 192, 0.26);
   background: rgba(20, 63, 48, 0.3);

@@ -369,7 +369,7 @@ export function getPlanePoseAtAxisIndex(
   const normalIndex = axisNameToIndex(axes.normalAxis);
   const uIndex = axisNameToIndex(axes.uAxis);
   const vIndex = axisNameToIndex(axes.vAxis);
-  const uDirection = geometry.spaceDirections[uIndex];
+  const uDirection = scaleVector(geometry.spaceDirections[uIndex], -1);
   const vDirection = geometry.spaceDirections[vIndex];
   const normalDirection = geometry.spaceDirections[normalIndex];
   const center = addVectors(

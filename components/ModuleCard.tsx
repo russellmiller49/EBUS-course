@@ -32,7 +32,7 @@ export function ModuleCard({ module, progress, onPress }: ModuleCardProps) {
       <View style={styles.metaRow}>
         <StatusPill label={`${module.plannedExperiences.length} experiences`} tone="teal" />
         <StatusPill
-          label={isComplete ? 'Placeholder checked' : `${module.estimatedMinutes} min`}
+          label={isComplete ? 'Completed locally' : `${module.estimatedMinutes} min`}
           tone={isComplete ? 'gold' : 'neutral'}
         />
       </View>
@@ -40,7 +40,7 @@ export function ModuleCard({ module, progress, onPress }: ModuleCardProps) {
       <ProgressBar value={progress.percentComplete} />
 
       <Text style={styles.footer}>
-        {isComplete ? 'Scaffold complete in local progress.' : 'Open the placeholder flow and wire the next feature on top.'}
+        {isComplete ? 'Saved on this device and ready to revisit.' : 'Open the module and pick up where you left off.'}
       </Text>
     </Pressable>
   );

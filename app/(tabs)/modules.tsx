@@ -15,12 +15,12 @@ export default function ModulesScreen() {
 
   return (
     <Screen
-      eyebrow="Module shell"
+      eyebrow="Course library"
       title="Modules"
-      subtitle="Each module is reachable, backed by local content, and ready for feature-specific implementation.">
+      subtitle="Each module is reachable, backed by local content, and saves progress on this device.">
       <SectionCard
         title="V1 sequence"
-        subtitle="Prompt order and feature folders align so future work lands cleanly without routing churn.">
+        subtitle="The pretest now leads into the core learning modules so attendees can establish a baseline first.">
         {modules.map((module) => (
           <ModuleCard
             key={module.id}
@@ -32,8 +32,8 @@ export default function ModulesScreen() {
       </SectionCard>
 
       <SectionCard
-        title="Placeholder asset policy"
-        subtitle="Only local app-owned placeholder keys are wired in. Existing unreviewed screenshots or course slides are intentionally not loaded into the UI.">
+        title="Local asset policy"
+        subtitle="The demo uses local assets only. Most modules still rely on app-owned placeholders, and the pretest figures come from the provided course document.">
         {modules.map((module) => (
           <SectionCard key={module.id} title={module.shortTitle} subtitle={module.featureFolder} tone="teal">
             {module.assetPlaceholders.map((asset) => (

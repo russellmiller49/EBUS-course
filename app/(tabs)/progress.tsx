@@ -2,6 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
+import { MetricTile } from '@/components/MetricTile';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Screen } from '@/components/Screen';
 import { SectionCard } from '@/components/SectionCard';
@@ -16,6 +17,10 @@ const stations = getStations();
 export default function ProgressScreen() {
   const { state, setLastViewedStation, toggleBookmark } = useLearnerProgress();
   const completedModules = getCompletedModuleCount(state);
+  const savedPretestPercent =
+    state.pretest.score !== null && state.pretest.totalQuestions > 0
+      ? Math.round((state.pretest.score / state.pretest.totalQuestions) * 100)
+      : null;
 
   return (
     <Screen
@@ -24,7 +29,7 @@ export default function ProgressScreen() {
       subtitle="Everything on this screen is local-first and survives app restart through AsyncStorage.">
       <SectionCard
         title="Completion overview"
-        subtitle="The module cards reflect live persisted state rather than hardcoded placeholders.">
+        subtitle="The module cards reflect live persisted state from the local learner profile.">
         <Text style={styles.summaryText}>
           {completedModules} of {modules.length} modules marked complete, {state.bookmarks.length} bookmarks saved.
         </Text>
@@ -41,6 +46,19 @@ export default function ProgressScreen() {
           </View>
         ))}
       </SectionCard>
+
+      {state.pretest.submittedAt ? (
+        <SectionCard
+          title="Pretest demo log"
+          subtitle="The latest pretest result is stored on this device until login-backed syncing is added.">
+          <View style={styles.metricRow}>
+            <MetricTile label="Saved score" tone="accent" value={`${state.pretest.score ?? 0}/${state.pretest.totalQuestions}`} />
+            <MetricTile label="Percent" tone="teal" value={`${savedPretestPercent ?? 0}%`} />
+            <MetricTile label="Attempts" tone="gold" value={`${state.pretest.attemptCount}`} />
+          </View>
+          <Text style={styles.summaryText}>Latest submission: {new Date(state.pretest.submittedAt).toLocaleString()}.</Text>
+        </SectionCard>
+      ) : null}
 
       <SectionCard
         title="Quick review"
@@ -84,6 +102,11 @@ export default function ProgressScreen() {
 }
 
 const styles = StyleSheet.create({
+  metricRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
   progressHeader: {
     alignItems: 'center',
     flexDirection: 'row',

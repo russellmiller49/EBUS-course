@@ -6,6 +6,14 @@ export const moduleContent = modulesData as ModuleContent[];
 
 export const homeModuleCards: AppModuleCard[] = [
   {
+    id: 'pretest',
+    title: 'Course Pretest',
+    description: '42-question baseline assessment with hidden answers and demo-only local score logging.',
+    accent: 'var(--accent-rose)',
+    icon: '◇',
+    path: '/pretest',
+  },
+  {
     id: 'lectures',
     title: 'Pre-Course Lectures',
     description: 'Manifest-driven lecture cards with poster and video slots ready for local media.',

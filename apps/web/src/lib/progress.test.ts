@@ -39,4 +39,31 @@ describe('learnerProgressReducer', () => {
     expect(normalized.moduleProgress.knobology.visitedAt).toBeNull();
     expect(normalized.bookmarkedStations).toEqual(['4R']);
   });
+
+  it('stores and submits the web pretest locally', () => {
+    const initial = createInitialLearnerProgress();
+    const answered = learnerProgressReducer(initial, {
+      type: 'setPretestAnswer',
+      questionId: 'pretest-01',
+      optionId: 'b',
+    });
+    const indexed = learnerProgressReducer(answered, {
+      type: 'setPretestQuestionIndex',
+      index: 9,
+    });
+    const submitted = learnerProgressReducer(indexed, {
+      type: 'submitPretest',
+      score: 31,
+      answeredCount: 42,
+      totalQuestions: 42,
+    });
+
+    expect(submitted.pretest.answers['pretest-01']).toBe('b');
+    expect(submitted.pretest.currentQuestionIndex).toBe(9);
+    expect(submitted.pretest.score).toBe(31);
+    expect(submitted.pretest.answeredCount).toBe(42);
+    expect(submitted.pretest.totalQuestions).toBe(42);
+    expect(submitted.pretest.attemptCount).toBe(1);
+    expect(submitted.pretest.submittedAt).toEqual(expect.any(String));
+  });
 });

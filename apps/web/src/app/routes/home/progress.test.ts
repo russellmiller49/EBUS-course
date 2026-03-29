@@ -4,6 +4,15 @@ import { createInitialLearnerProgress } from '@/lib/progress';
 import { buildHomeProgressModel } from '@/app/routes/home/progress';
 
 describe('buildHomeProgressModel', () => {
+  it('starts the recommended path with the pretest', () => {
+    const state = createInitialLearnerProgress();
+
+    const { learningSteps, resumeModule } = buildHomeProgressModel(state);
+
+    expect(learningSteps[0]?.id).toBe('pretest');
+    expect(resumeModule?.id).toBe('pretest');
+  });
+
   it('combines station map and explorer progress into one stations step', () => {
     const state = createInitialLearnerProgress();
     state.moduleProgress['station-map'].percentComplete = 40;

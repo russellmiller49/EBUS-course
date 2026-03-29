@@ -1,5 +1,5 @@
-export type RootModuleId = 'knobology' | 'station-map' | 'station-explorer' | 'case-3d-explorer';
-export type AppRouteId = 'home' | 'stations' | 'knobology' | 'lectures' | 'quiz' | 'case-001';
+export type RootModuleId = 'pretest' | 'knobology' | 'station-map' | 'station-explorer' | 'case-3d-explorer';
+export type AppRouteId = 'home' | 'pretest' | 'stations' | 'knobology' | 'lectures' | 'quiz' | 'case-001';
 export type StationZoneKey = 'upper' | 'subcarinal' | 'hilar';
 export type ExplorerViewId = 'ct' | 'bronchoscopy' | 'ultrasound';
 export type LessonSectionKind =
@@ -49,6 +49,32 @@ export interface QuizQuestionOption {
   id: string;
   label: string;
   rationale: string;
+}
+
+export type PretestQuestionType = 'single-best-answer' | 'scenario' | 'image-interpretation';
+export type PretestImageAssetKey = 'pretest-q2-figure' | 'pretest-q8-figure' | 'pretest-q22-figure';
+
+export interface PretestQuestionOption {
+  id: string;
+  label: string;
+}
+
+export interface PretestQuestionContent {
+  id: string;
+  prompt: string;
+  type: PretestQuestionType;
+  imageAssetKey: PretestImageAssetKey | null;
+  options: PretestQuestionOption[];
+  correctOptionId: string;
+}
+
+export interface PretestContent {
+  id: 'pretest';
+  title: string;
+  summary: string;
+  instructions: string[];
+  demoPolicy: string;
+  questions: PretestQuestionContent[];
 }
 
 export interface QuizQuestionContent {

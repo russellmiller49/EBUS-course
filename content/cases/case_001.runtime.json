@@ -4,7 +4,8 @@
   "title": "Curated EBUS case 001",
   "description": "Segmented airway, vascular landmarks, and lymph nodes for a linked 3D + slice explorer.",
   "assets": {
-    "glbFile": "Model/case_001.glb",
+    "glbFile": "Model/CT_segmentation_1.glb",
+    "glbHighlightFile": "Model/CT_segmentation_2.glb",
     "ctVolumeFile": "Model/case_001_ct.nrrd",
     "segmentationFile": "Model/case_001_segmentation.nrrd"
   },
@@ -4884,7 +4885,7 @@
     "stationMeshes": "Station 6 spelling has been normalized to match the corrected GLB mesh name. Each nodal target within a station points to the corresponding station mesh.",
     "uniqueLandmarks": "Aorta, brachiocephalic trunk, brachiocephalic veins, SVC, IVC, subclavian arteries, carotids, atria, ventricles, esophagus, and left atrial appendage each map to their own GLB mesh when present."
   },
-  "generatedAt": "2026-03-28T20:00:10.851Z",
+  "generatedAt": "2026-03-29T04:51:53.761Z",
   "runtimeSchemaVersion": 1,
   "volumeGeometry": {
     "coordinateSystem": "LPS",

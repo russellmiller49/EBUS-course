@@ -76,6 +76,7 @@ export interface SliceSeries {
 
 export interface CaseAssets {
   glbFile: string;
+  glbHighlightFile?: string;
   ctVolumeFile: string;
   segmentationFile?: string;
 }

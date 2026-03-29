@@ -9,18 +9,19 @@ import { Screen } from '@/components/Screen';
 import { SectionCard } from '@/components/SectionCard';
 import { StatusPill } from '@/components/StatusPill';
 import { colors } from '@/constants/theme';
+import { getPretestContent } from '@/features/pretest/content';
 import { getCourseInfo, getModuleById, getModules, getQuizQuestions, getStationById, getStations } from '@/lib/content';
 import { getCompletedModuleCount, useLearnerProgress } from '@/store/learner-progress';
 
 const courseInfo = getCourseInfo();
 const modules = getModules();
 const stations = getStations();
+const totalPromptCount = getQuizQuestions().length + getPretestContent().questions.length;
 
 export default function HomeScreen() {
   const { state, hydrated } = useLearnerProgress();
   const completedModules = getCompletedModuleCount(state);
-  const nextModule =
-    modules.find((module) => !state.moduleProgress[module.id].completedAt) ?? getModuleById('knobology');
+  const nextModule = modules.find((module) => !state.moduleProgress[module.id].completedAt) ?? getModuleById('pretest');
   const lastStation = state.lastViewedStationId ? getStationById(state.lastViewedStationId) : null;
 
   return (
@@ -36,10 +37,10 @@ export default function HomeScreen() {
         tone="navy">
         <View style={styles.heroTopRow}>
           <StatusPill label={hydrated ? 'Progress restored' : 'Restoring progress'} tone="teal" />
-          <StatusPill label={`${getQuizQuestions().length} practice prompts loaded`} tone="gold" />
+          <StatusPill label={`${totalPromptCount} study prompts loaded`} tone="gold" />
         </View>
         <View style={styles.metricRow}>
-          <MetricTile label="Modules scaffolded" tone="accent" value={`${modules.length}`} />
+          <MetricTile label="Modules loaded" tone="accent" value={`${modules.length}`} />
           <MetricTile label="Core stations loaded" tone="teal" value={`${stations.length}`} />
           <MetricTile label="Bookmarks saved" tone="gold" value={`${state.bookmarks.length}`} />
         </View>
@@ -69,7 +70,7 @@ export default function HomeScreen() {
             Last station viewed: {lastStation ? `${lastStation.displayName} (${lastStation.shortLabel})` : 'Not set yet'}.
           </Text>
           <Text style={styles.listItem}>
-            Study bank loaded: {getQuizQuestions().length} prompts across {modules.length} modules, with quick review ready to expand as course content grows.
+            Study bank loaded: {totalPromptCount} prompts across {modules.length} modules, including the course pretest and mixed review.
           </Text>
         </View>
       </SectionCard>

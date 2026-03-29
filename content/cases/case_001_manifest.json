@@ -4,7 +4,8 @@
   "title": "Curated EBUS case 001",
   "description": "Segmented airway, vascular landmarks, and lymph nodes for a linked 3D + slice explorer.",
   "assets": {
-    "glbFile": "Model/case_001.glb",
+    "glbFile": "Model/CT_segmentation_1.glb",
+    "glbHighlightFile": "Model/CT_segmentation_2.glb",
     "ctVolumeFile": "Model/case_001_ct.nrrd",
     "segmentationFile": "Model/case_001_segmentation.nrrd"
   },

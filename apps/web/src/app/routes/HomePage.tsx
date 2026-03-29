@@ -19,6 +19,10 @@ export function HomePage() {
   const { learningSteps, resumeModule } = buildHomeProgressModel(state);
   const reviewedLectures = Object.values(state.lectureWatchStatus).filter((lecture) => lecture.completed).length;
   const lastQuiz = state.quizScoreHistory[0];
+  const pretestTag =
+    state.pretest.submittedAt && state.pretest.totalQuestions > 0
+      ? `Pretest ${Math.round(((state.pretest.score ?? 0) / state.pretest.totalQuestions) * 100)}%`
+      : 'Pretest not submitted';
 
   return (
     <div className="page-stack">
@@ -85,6 +89,7 @@ export function HomePage() {
           ))}
         </div>
         <div className="tag-row">
+          <span className="tag">{pretestTag}</span>
           <span className="tag">{state.bookmarkedStations.length} bookmarked stations</span>
           <span className="tag">{reviewedLectures} reviewed lectures</span>
           <span className="tag">{lastQuiz ? `Latest quiz ${lastQuiz.percent}%` : 'No quiz saved yet'}</span>
