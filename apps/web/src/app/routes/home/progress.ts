@@ -13,7 +13,7 @@ const learningStepDefinitions: Array<Pick<HomeLearningStep, 'id' | 'path' | 'tit
   { id: 'lectures', title: 'Lectures', path: '/lectures' },
   { id: 'knobology', title: 'Knobology', path: '/knobology' },
   { id: 'stations', title: 'Stations', path: '/stations/explore' },
-  { id: 'case-001', title: 'Case 001', path: '/cases/case-001' },
+  { id: 'case-001', title: '3D Anatomy', path: '/cases/case-001' },
   { id: 'quiz', title: 'Quiz', path: '/quiz' },
 ];
 

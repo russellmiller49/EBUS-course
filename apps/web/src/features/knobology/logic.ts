@@ -129,6 +129,12 @@ const DEFAULT_DEPTH_FRAME_LEVELS = [20, 40, 60, 80, 100] as const;
 const FOCUS_MARKER_LEVELS = [26, 42, 58, 74] as const;
 export const FREQUENCY_LABELS = ['5.0 MHz', '6.5 MHz', '7.5 MHz'] as const;
 const CINE_FRAME_COUNT = 7;
+const CONTRAST_STEP = 8;
+const CONTRAST_PRESETS = {
+  off: 24,
+  p: 52,
+  r: 72,
+} as const;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -143,6 +149,18 @@ function cycleDepth(depth: number): number {
   const nextIndex = currentIndex >= 0 ? cycleIndex(currentIndex, DEFAULT_DEPTH_FRAME_LEVELS.length) : 0;
 
   return DEFAULT_DEPTH_FRAME_LEVELS[nextIndex];
+}
+
+function getHarmonicModeForContrast(contrast: number): KnobologyHarmonicMode {
+  if (contrast < 40) {
+    return 'off';
+  }
+
+  if (contrast < 64) {
+    return 'p';
+  }
+
+  return 'r';
 }
 
 function withAction(
@@ -353,22 +371,53 @@ function applyProcessorAction(
     case 'TOGGLE_ENHANCE':
       return withAction(state, actionId, {
         enhanceEnabled: !state.enhanceEnabled,
-        statusMessage: state.enhanceEnabled ? 'Enhance off.' : 'Enhance on.',
+        statusMessage: state.enhanceEnabled ? 'Image enhance off.' : 'Image enhance on.',
       });
     case 'THE_OFF':
+      if (state.menu === 'image-adjust') {
+        const contrast = clamp(state.contrast - CONTRAST_STEP, 0, 100);
+
+        return withAction(state, actionId, {
+          contrast,
+          harmonicMode: getHarmonicModeForContrast(contrast),
+          statusMessage: 'Contrast decreased.',
+        });
+      }
+
       return withAction(state, actionId, {
         harmonicMode: 'off',
-        statusMessage: 'T.H.E. off.',
+        contrast: CONTRAST_PRESETS.off,
+        statusMessage: 'Contrast set low.',
       });
     case 'THE_P':
+      if (state.menu === 'image-adjust') {
+        return withAction(state, actionId, {
+          contrast: CONTRAST_PRESETS.p,
+          harmonicMode: 'p',
+          statusMessage: 'Contrast balanced.',
+        });
+      }
+
       return withAction(state, actionId, {
         harmonicMode: 'p',
-        statusMessage: 'T.H.E. P selected.',
+        contrast: CONTRAST_PRESETS.p,
+        statusMessage: 'Contrast set mid.',
       });
     case 'THE_R':
+      if (state.menu === 'image-adjust') {
+        const contrast = clamp(state.contrast + CONTRAST_STEP, 0, 100);
+
+        return withAction(state, actionId, {
+          contrast,
+          harmonicMode: getHarmonicModeForContrast(contrast),
+          statusMessage: 'Contrast increased.',
+        });
+      }
+
       return withAction(state, actionId, {
         harmonicMode: 'r',
-        statusMessage: 'T.H.E. R selected.',
+        contrast: CONTRAST_PRESETS.r,
+        statusMessage: 'Contrast set high.',
       });
     case 'FREQUENCY_DOWN':
       return withAction(state, actionId, {

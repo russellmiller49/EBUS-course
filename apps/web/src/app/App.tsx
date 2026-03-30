@@ -23,7 +23,7 @@ const navItems: NavigationItem[] = [
   { id: 'lectures', label: 'Lectures', icon: '▶', path: '/lectures' },
   { id: 'knobology', label: 'Knobology', icon: '◐', path: '/knobology' },
   { id: 'stations', label: 'Stations', icon: '◎', path: '/stations' },
-  { id: 'case-001', label: 'Case', icon: '◫', path: '/cases/case-001' },
+  { id: 'case-001', label: '3D Anatomy', icon: '◫', path: '/cases/case-001' },
   { id: 'quiz', label: 'Quiz', icon: '✎', path: '/quiz' },
 ];
 

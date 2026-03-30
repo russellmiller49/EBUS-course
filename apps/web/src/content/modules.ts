@@ -39,7 +39,7 @@ export const homeModuleCards: AppModuleCard[] = [
   },
   {
     id: 'case-001',
-    title: 'Case 001 3D Viewer',
+    title: '3D Anatomy',
     description:
       'Repo-native tri-planar CT, segmentation, markups, and shared patient-space targeting for case exploration.',
     accent: 'var(--accent-cyan)',

@@ -1,9 +1,23 @@
 {
   "image": {
-    "src": "/media/knobology/eu-me2/EU-ME2.jpg",
-    "width": 2048,
-    "height": 1098,
-    "notes": "Starter hotspot layout using normalized coordinates. Values are approximate and should be tuned visually in-browser."
+    "src": "/media/knobology/eu-me2/eu-me2_main.jpg",
+    "width": 2836,
+    "height": 1504,
+    "notes": "Cleaner EU-ME2 main screen art with the original hotspot map."
+  },
+  "imageAdjustPanel": {
+    "image": {
+      "src": "/media/knobology/eu-me2/eu-me2_image_enhance.jpg",
+      "width": 2754,
+      "height": 1536,
+      "notes": "Image Adjust view active on the processor touch panel."
+    },
+    "sourceRegion": {
+      "x": 0.6601,
+      "y": 0.14360000000000006,
+      "w": 0.2889,
+      "h": 0.3832999999999999
+    }
   },
   "trackball": {
     "cx": 0.469,
@@ -12,10 +26,10 @@
   },
   "regions": {
     "touchPanel": {
-      "x": 0.659,
-      "y": 0.043,
-      "w": 0.281,
-      "h": 0.432
+      "x": 0.6607371382852838,
+      "y": 0.07879025543257778,
+      "w": 0.29971772805507757,
+      "h": 0.4327226532785638
     },
     "imageControlCluster": {
       "x": 0.718,
@@ -35,8 +49,8 @@
       "id": "save_rec",
       "label": "SAVE/REC",
       "shape": "rect",
-      "x": 0.03,
-      "y": 0.682,
+      "x": 0.0343,
+      "y": 0.6233,
       "w": 0.093,
       "h": 0.114,
       "action": "SAVE_REC"
@@ -45,8 +59,8 @@
       "id": "release",
       "label": "RELEASE",
       "shape": "rect",
-      "x": 0.03,
-      "y": 0.845,
+      "x": 0.0275,
+      "y": 0.8154,
       "w": 0.093,
       "h": 0.11,
       "action": "RELEASE"
@@ -54,272 +68,328 @@
     {
       "id": "pip",
       "label": "PIP",
-      "shape": "circle",
-      "cx": 0.183,
-      "cy": 0.777,
-      "r": 0.023,
-      "action": "TOGGLE_PIP"
+      "shape": "ellipse",
+      "cx": 0.1948,
+      "cy": 0.784,
+      "r": 0.0179,
+      "action": "TOGGLE_PIP",
+      "rx": 0.0179,
+      "ry": 0.028
     },
     {
       "id": "pw",
       "label": "PW",
-      "shape": "circle",
-      "cx": 0.264,
-      "cy": 0.777,
-      "r": 0.023,
-      "action": "PW_MODE"
+      "shape": "ellipse",
+      "cx": 0.2698,
+      "cy": 0.6778,
+      "r": 0.0179,
+      "action": "PW_MODE",
+      "rx": 0.0179,
+      "ry": 0.028
     },
     {
       "id": "flow",
       "label": "FLOW",
-      "shape": "circle",
-      "cx": 0.264,
-      "cy": 0.859,
-      "r": 0.023,
-      "action": "FLOW_MODE"
+      "shape": "ellipse",
+      "cx": 0.2681,
+      "cy": 0.7798,
+      "r": 0.0179,
+      "action": "FLOW_MODE",
+      "rx": 0.0179,
+      "ry": 0.028
     },
     {
       "id": "b_mode",
       "label": "B",
-      "shape": "circle",
-      "cx": 0.264,
-      "cy": 0.944,
-      "r": 0.023,
-      "action": "B_MODE"
+      "shape": "ellipse",
+      "cx": 0.2696,
+      "cy": 0.8798,
+      "r": 0.0293,
+      "action": "B_MODE",
+      "rx": 0.0179,
+      "ry": 0.0318
     },
     {
       "id": "clear",
       "label": "CLEAR",
-      "shape": "circle",
-      "cx": 0.346,
-      "cy": 0.777,
+      "shape": "ellipse",
+      "cx": 0.3443,
+      "cy": 0.6768,
       "r": 0.023,
-      "action": "CLEAR"
+      "action": "CLEAR",
+      "rx": 0.0179,
+      "ry": 0.028
     },
     {
       "id": "trace",
       "label": "TRACE",
-      "shape": "circle",
-      "cx": 0.346,
-      "cy": 0.859,
+      "shape": "ellipse",
+      "cx": 0.344,
+      "cy": 0.7768,
       "r": 0.023,
-      "action": "TRACE_MODE"
+      "action": "TRACE_MODE",
+      "rx": 0.0179,
+      "ry": 0.0306
     },
     {
       "id": "caliper",
       "label": "CALIPER",
-      "shape": "circle",
-      "cx": 0.346,
-      "cy": 0.944,
+      "shape": "ellipse",
+      "cx": 0.3424,
+      "cy": 0.8795,
       "r": 0.023,
-      "action": "MEASURE_MODE"
+      "action": "MEASURE_MODE",
+      "rx": 0.0179,
+      "ry": 0.0293
     },
     {
       "id": "cursor",
       "label": "CURSOR",
-      "shape": "circle",
-      "cx": 0.424,
-      "cy": 0.777,
+      "shape": "ellipse",
+      "cx": 0.417,
+      "cy": 0.6763,
       "r": 0.023,
-      "action": "CURSOR_MODE"
+      "action": "CURSOR_MODE",
+      "rx": 0.0179,
+      "ry": 0.0293
     },
     {
       "id": "comment_add",
       "label": "COMMENT ADD",
-      "shape": "circle",
-      "cx": 0.47,
-      "cy": 0.762,
+      "shape": "ellipse",
+      "cx": 0.462,
+      "cy": 0.6441,
       "r": 0.022,
-      "action": "COMMENT_ADD"
+      "action": "COMMENT_ADD",
+      "rx": 0.0181,
+      "ry": 0.027
     },
     {
       "id": "comment_clear",
       "label": "COMMENT CLEAR",
-      "shape": "circle",
-      "cx": 0.52,
-      "cy": 0.762,
+      "shape": "ellipse",
+      "cx": 0.5179,
+      "cy": 0.6453,
       "r": 0.022,
-      "action": "COMMENT_CLEAR"
+      "action": "COMMENT_CLEAR",
+      "rx": 0.0181,
+      "ry": 0.0295
     },
     {
       "id": "set",
       "label": "SET",
-      "shape": "circle",
-      "cx": 0.426,
-      "cy": 0.944,
+      "shape": "ellipse",
+      "cx": 0.4144,
+      "cy": 0.8797,
       "r": 0.023,
-      "action": "MEASURE_SET"
+      "action": "MEASURE_SET",
+      "rx": 0.0179,
+      "ry": 0.0318
     },
     {
       "id": "pg_up",
       "label": "PgUp",
-      "shape": "circle",
-      "cx": 0.598,
-      "cy": 0.692,
+      "shape": "ellipse",
+      "cx": 0.6089,
+      "cy": 0.6245,
       "r": 0.024,
-      "action": "PAGE_UP"
+      "action": "PAGE_UP",
+      "rx": 0.0176,
+      "ry": 0.029
     },
     {
       "id": "home",
       "label": "Home",
-      "shape": "circle",
-      "cx": 0.566,
-      "cy": 0.735,
+      "shape": "ellipse",
+      "cx": 0.5786,
+      "cy": 0.6781,
       "r": 0.024,
-      "action": "HOME"
+      "action": "HOME",
+      "rx": 0.0163,
+      "ry": 0.0303
     },
     {
       "id": "end",
       "label": "End",
-      "shape": "circle",
-      "cx": 0.629,
-      "cy": 0.735,
+      "shape": "ellipse",
+      "cx": 0.6386,
+      "cy": 0.6765,
       "r": 0.024,
-      "action": "END"
+      "action": "END",
+      "rx": 0.0176,
+      "ry": 0.029
     },
     {
       "id": "pg_dn",
       "label": "PgDn",
-      "shape": "circle",
-      "cx": 0.598,
-      "cy": 0.78,
+      "shape": "ellipse",
+      "cx": 0.609,
+      "cy": 0.7311,
       "r": 0.024,
-      "action": "PAGE_DOWN"
+      "action": "PAGE_DOWN",
+      "rx": 0.0189,
+      "ry": 0.0278
     },
     {
       "id": "lr",
       "label": "L.R.",
-      "shape": "circle",
-      "cx": 0.57,
-      "cy": 0.901,
+      "shape": "ellipse",
+      "cx": 0.5743,
+      "cy": 0.8833,
       "r": 0.025,
-      "action": "IR_MODE"
+      "action": "IR_MODE",
+      "rx": 0.02,
+      "ry": 0.0289
     },
     {
       "id": "scroll",
       "label": "SCROLL",
-      "shape": "circle",
-      "cx": 0.62,
-      "cy": 0.901,
+      "shape": "ellipse",
+      "cx": 0.6266,
+      "cy": 0.8837,
       "r": 0.025,
-      "action": "SCROLL_MODE"
+      "action": "SCROLL_MODE",
+      "rx": 0.0175,
+      "ry": 0.0289
     },
     {
       "id": "cine_review_mode",
       "label": "CINE REVIEW",
-      "shape": "circle",
-      "cx": 0.675,
-      "cy": 0.901,
+      "shape": "ellipse",
+      "cx": 0.6796,
+      "cy": 0.8829,
       "r": 0.025,
-      "action": "CINE_REVIEW_MODE"
+      "action": "CINE_REVIEW_MODE",
+      "rx": 0.0175,
+      "ry": 0.0289
     },
     {
       "id": "acoustic_output_minus",
       "label": "ACOUSTIC OUTPUT -",
-      "shape": "circle",
-      "cx": 0.742,
-      "cy": 0.719,
+      "shape": "ellipse",
+      "cx": 0.7608,
+      "cy": 0.6792,
       "r": 0.027,
-      "action": "POWER_DOWN"
+      "action": "POWER_DOWN",
+      "rx": 0.0169,
+      "ry": 0.027
     },
     {
       "id": "acoustic_output_plus",
       "label": "ACOUSTIC OUTPUT +",
-      "shape": "circle",
-      "cx": 0.822,
-      "cy": 0.719,
+      "shape": "ellipse",
+      "cx": 0.8248,
+      "cy": 0.6833,
       "r": 0.027,
-      "action": "POWER_UP"
+      "action": "POWER_UP",
+      "rx": 0.0169,
+      "ry": 0.027
     },
     {
       "id": "gain_minus",
       "label": "GAIN -",
-      "shape": "circle",
-      "cx": 0.742,
-      "cy": 0.808,
+      "shape": "ellipse",
+      "cx": 0.7625,
+      "cy": 0.7805,
       "r": 0.027,
-      "action": "GAIN_DOWN"
+      "action": "GAIN_DOWN",
+      "rx": 0.0181,
+      "ry": 0.027
     },
     {
       "id": "gain_plus",
       "label": "GAIN +",
-      "shape": "circle",
-      "cx": 0.822,
-      "cy": 0.808,
+      "shape": "ellipse",
+      "cx": 0.8267,
+      "cy": 0.7798,
       "r": 0.027,
-      "action": "GAIN_UP"
+      "action": "GAIN_UP",
+      "rx": 0.0181,
+      "ry": 0.0295
     },
     {
       "id": "depth_range_ir",
       "label": "DEPTH/RANGE I.R.",
-      "shape": "circle",
-      "cx": 0.737,
-      "cy": 0.892,
+      "shape": "ellipse",
+      "cx": 0.7608,
+      "cy": 0.8823,
       "r": 0.028,
-      "action": "IR_MODE"
+      "action": "IR_MODE",
+      "rx": 0.0192,
+      "ry": 0.028
     },
     {
       "id": "depth_range_focus",
       "label": "DEPTH/RANGE FOCUS",
-      "shape": "circle",
-      "cx": 0.782,
-      "cy": 0.892,
-      "r": 0.028,
-      "action": "FOCUS_CYCLE"
+      "shape": "ellipse",
+      "cx": 0.7953,
+      "cy": 0.8809,
+      "r": 0.0192,
+      "action": "FOCUS_CYCLE",
+      "rx": 0.0166,
+      "ry": 0.0192
     },
     {
       "id": "depth_range_range",
       "label": "DEPTH/RANGE +/-",
-      "shape": "circle",
-      "cx": 0.828,
-      "cy": 0.892,
-      "r": 0.028,
-      "action": "DEPTH_UP"
+      "shape": "ellipse",
+      "cx": 0.8274,
+      "cy": 0.8808,
+      "r": 0.0236,
+      "action": "DEPTH_UP",
+      "rx": 0.0186,
+      "ry": 0.0261
     },
     {
       "id": "cine_left",
       "label": "CINE LEFT",
-      "shape": "circle",
-      "cx": 0.888,
-      "cy": 0.766,
+      "shape": "ellipse",
+      "cx": 0.8869,
+      "cy": 0.7273,
       "r": 0.028,
-      "action": "CINE_STEP_BACK"
+      "action": "CINE_STEP_BACK",
+      "rx": 0.0167,
+      "ry": 0.028
     },
     {
       "id": "cine_center",
       "label": "CINE CENTER",
-      "shape": "circle",
-      "cx": 0.927,
-      "cy": 0.766,
+      "shape": "ellipse",
+      "cx": 0.9204,
+      "cy": 0.7349,
       "r": 0.028,
-      "action": "CINE_PLAY_PAUSE"
+      "action": "CINE_PLAY_PAUSE",
+      "rx": 0.0142,
+      "ry": 0.028
     },
     {
       "id": "cine_right",
       "label": "CINE RIGHT",
-      "shape": "circle",
-      "cx": 0.966,
-      "cy": 0.766,
+      "shape": "ellipse",
+      "cx": 0.951,
+      "cy": 0.7299,
       "r": 0.028,
-      "action": "CINE_STEP_FORWARD"
+      "action": "CINE_STEP_FORWARD",
+      "rx": 0.0179,
+      "ry": 0.028
     },
     {
       "id": "freeze",
       "label": "FREEZE",
       "shape": "rect",
-      "x": 0.915,
-      "y": 0.841,
+      "x": 0.8961,
+      "y": 0.8237,
       "w": 0.074,
-      "h": 0.104,
+      "h": 0.089,
       "action": "TOGGLE_FREEZE"
     },
     {
       "id": "touch_main_menu",
       "label": "MAIN MENU",
       "shape": "rect",
-      "x": 0.68,
-      "y": 0.045,
-      "w": 0.06,
+      "x": 0.6696,
+      "y": 0.0873,
+      "w": 0.045,
       "h": 0.065,
       "action": "OPEN_MAIN_MENU"
     },
@@ -327,164 +397,229 @@
       "id": "touch_image_adjust",
       "label": "IMAGE ADJUST",
       "shape": "rect",
-      "x": 0.742,
-      "y": 0.045,
-      "w": 0.062,
+      "x": 0.7169,
+      "y": 0.0864,
+      "w": 0.047,
       "h": 0.065,
       "action": "OPEN_IMAGE_ADJUST"
     },
     {
+      "id": "touch_image_adjust_contrast_low",
+      "label": "CONTRAST -",
+      "shape": "ellipse",
+      "cx": 0.6884999999999999,
+      "cy": 0.4585,
+      "r": 0.0205,
+      "action": "THE_OFF",
+      "visibleInMenus": ["image-adjust"],
+      "rx": 0.018,
+      "ry": 0.032
+    },
+    {
+      "id": "touch_image_adjust_contrast_mid",
+      "label": "CONTRAST MID",
+      "shape": "rect",
+      "x": 0.7075,
+      "y": 0.4285,
+      "w": 0.031,
+      "h": 0.059,
+      "action": "THE_P",
+      "visibleInMenus": ["image-adjust"]
+    },
+    {
+      "id": "touch_image_adjust_contrast_high",
+      "label": "CONTRAST +",
+      "shape": "ellipse",
+      "cx": 0.756,
+      "cy": 0.4585,
+      "r": 0.0205,
+      "action": "THE_R",
+      "visibleInMenus": ["image-adjust"],
+      "rx": 0.018,
+      "ry": 0.032
+    },
+    {
       "id": "touch_dir",
       "label": "DIR",
-      "shape": "circle",
-      "cx": 0.705,
-      "cy": 0.195,
-      "r": 0.022,
-      "action": "IR_MODE"
+      "shape": "ellipse",
+      "cx": 0.6952,
+      "cy": 0.2195,
+      "r": 0.0169,
+      "action": "IR_MODE",
+      "visibleInMenus": ["none", "main"],
+      "rx": 0.0169,
+      "ry": 0.0283
     },
     {
       "id": "touch_display_left",
       "label": "DISPLAY AREA LEFT",
       "shape": "rect",
-      "x": 0.749,
-      "y": 0.173,
+      "x": 0.7427,
+      "y": 0.1901,
       "w": 0.047,
-      "h": 0.05,
-      "action": "DISPLAY_LEFT"
+      "h": 0.058,
+      "action": "DISPLAY_LEFT",
+      "visibleInMenus": ["none", "main"]
     },
     {
       "id": "touch_display_center",
       "label": "DISPLAY AREA CENTER",
       "shape": "rect",
-      "x": 0.798,
-      "y": 0.173,
+      "x": 0.7887,
+      "y": 0.1904,
       "w": 0.047,
-      "h": 0.05,
-      "action": "DISPLAY_CENTER"
+      "h": 0.058,
+      "action": "DISPLAY_CENTER",
+      "visibleInMenus": ["none", "main"]
     },
     {
       "id": "touch_display_right",
       "label": "DISPLAY AREA RIGHT",
       "shape": "rect",
-      "x": 0.847,
-      "y": 0.173,
+      "x": 0.835,
+      "y": 0.1888,
       "w": 0.047,
-      "h": 0.05,
-      "action": "DISPLAY_RIGHT"
+      "h": 0.058,
+      "action": "DISPLAY_RIGHT",
+      "visibleInMenus": ["none", "main"]
     },
     {
       "id": "touch_enhance",
       "label": "ENHANCE",
-      "shape": "circle",
-      "cx": 0.705,
-      "cy": 0.338,
+      "shape": "ellipse",
+      "cx": 0.6971,
+      "cy": 0.3337,
       "r": 0.022,
-      "action": "TOGGLE_ENHANCE"
+      "action": "TOGGLE_ENHANCE",
+      "visibleInMenus": ["none", "main"],
+      "rx": 0.0169,
+      "ry": 0.0283
     },
     {
       "id": "touch_the_off",
       "label": "THE OFF",
       "shape": "rect",
-      "x": 0.752,
-      "y": 0.316,
+      "x": 0.7397,
+      "y": 0.3056,
       "w": 0.047,
       "h": 0.055,
-      "action": "THE_OFF"
+      "action": "THE_OFF",
+      "visibleInMenus": ["none", "main"]
     },
     {
       "id": "touch_the_p",
       "label": "THE P",
       "shape": "rect",
-      "x": 0.8,
-      "y": 0.316,
+      "x": 0.7873,
+      "y": 0.3059,
       "w": 0.047,
       "h": 0.055,
-      "action": "THE_P"
+      "action": "THE_P",
+      "visibleInMenus": ["none", "main"]
     },
     {
       "id": "touch_the_r",
       "label": "THE R",
       "shape": "rect",
-      "x": 0.849,
-      "y": 0.316,
+      "x": 0.8354,
+      "y": 0.3105,
       "w": 0.047,
       "h": 0.055,
-      "action": "THE_R"
+      "action": "THE_R",
+      "visibleInMenus": ["none", "main"]
     },
     {
       "id": "touch_elst",
       "label": "ELST",
-      "shape": "circle",
-      "cx": 0.904,
-      "cy": 0.336,
+      "shape": "ellipse",
+      "cx": 0.9253,
+      "cy": 0.3321,
       "r": 0.021,
-      "action": "ELST"
+      "action": "ELST",
+      "visibleInMenus": ["none", "main"],
+      "rx": 0.0173,
+      "ry": 0.03
     },
     {
       "id": "touch_freq_minus",
       "label": "FREQUENCY -",
-      "shape": "circle",
-      "cx": 0.704,
-      "cy": 0.469,
-      "r": 0.024,
-      "action": "FREQUENCY_DOWN"
+      "shape": "ellipse",
+      "cx": 0.6855,
+      "cy": 0.4567,
+      "r": 0.0202,
+      "action": "FREQUENCY_DOWN",
+      "visibleInMenus": ["none", "main"],
+      "rx": 0.0202,
+      "ry": 0.0329
     },
     {
       "id": "touch_freq_plus",
       "label": "FREQUENCY +",
-      "shape": "circle",
-      "cx": 0.772,
-      "cy": 0.469,
-      "r": 0.024,
-      "action": "FREQUENCY_UP"
+      "shape": "ellipse",
+      "cx": 0.7543,
+      "cy": 0.4547,
+      "r": 0.0202,
+      "action": "FREQUENCY_UP",
+      "visibleInMenus": ["none", "main"],
+      "rx": 0.0202,
+      "ry": 0.0329
     },
     {
       "id": "touch_focus_down",
       "label": "FOCUS DEPTH DOWN",
-      "shape": "circle",
-      "cx": 0.836,
-      "cy": 0.469,
-      "r": 0.024,
-      "action": "FOCUS_DOWN"
+      "shape": "ellipse",
+      "cx": 0.8021,
+      "cy": 0.4565,
+      "r": 0.0202,
+      "action": "FOCUS_DOWN",
+      "visibleInMenus": ["none", "main"],
+      "rx": 0.0202,
+      "ry": 0.0329
     },
     {
       "id": "touch_focus_up",
       "label": "FOCUS DEPTH UP",
-      "shape": "circle",
-      "cx": 0.895,
-      "cy": 0.469,
+      "shape": "ellipse",
+      "cx": 0.8678,
+      "cy": 0.4543,
       "r": 0.024,
-      "action": "FOCUS_UP"
+      "action": "FOCUS_UP",
+      "visibleInMenus": ["none", "main"],
+      "rx": 0.0202,
+      "ry": 0.0329
     },
     {
       "id": "touch_observation_gi",
       "label": "GI",
       "shape": "rect",
-      "x": 0.887,
-      "y": 0.408,
-      "w": 0.045,
+      "x": 0.9106,
+      "y": 0.42,
+      "w": 0.0325,
       "h": 0.023,
-      "action": "OBS_GI"
+      "action": "OBS_GI",
+      "visibleInMenus": ["none", "main"]
     },
     {
       "id": "touch_observation_pb",
       "label": "PB",
       "shape": "rect",
-      "x": 0.887,
-      "y": 0.433,
-      "w": 0.045,
+      "x": 0.9119,
+      "y": 0.4456,
+      "w": 0.0325,
       "h": 0.023,
-      "action": "OBS_PB"
+      "action": "OBS_PB",
+      "visibleInMenus": ["none", "main"]
     },
     {
       "id": "touch_observation_rsp",
       "label": "RSP",
       "shape": "rect",
-      "x": 0.887,
-      "y": 0.458,
-      "w": 0.045,
+      "x": 0.9118,
+      "y": 0.4665,
+      "w": 0.0325,
       "h": 0.023,
-      "action": "OBS_RSP"
+      "action": "OBS_RSP",
+      "visibleInMenus": ["none", "main"]
     }
   ]
 }

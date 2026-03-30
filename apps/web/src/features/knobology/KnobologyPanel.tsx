@@ -8,7 +8,8 @@ import type { KnobologyControlId } from '@/content/types';
 import { getDepthFieldClipPath } from '@/features/knobology/depthField';
 import { getKnobologyLearnMoreSections } from '@/features/knobology/learnMore';
 import euMe2LayoutData from '@/features/knobology/processor/eu-me2-layout.json';
-import { EuMe2Keyboard, type EuMe2Layout } from '@/features/knobology/processor/EuMe2Keyboard';
+import { EuMe2Keyboard } from '@/features/knobology/processor/EuMe2Keyboard';
+import type { EuMe2Hotspot, EuMe2Layout } from '@/features/knobology/processor/types';
 import {
   buildFrameMetrics,
   createKnobologyFrameState,
@@ -16,33 +17,30 @@ import {
   FREQUENCY_LABELS,
   getDepthFrameIndex,
   reduceKnobologyFrameState,
+  type KnobologyMenuMode,
   type KnobologyProcessorActionId,
 } from '@/features/knobology/logic';
 import { useLearnerProgress } from '@/lib/progress';
 
 const euMe2Layout = euMe2LayoutData as EuMe2Layout;
 
-const ACCESSIBILITY_TOUCH_ACTIONS: KnobologyProcessorActionId[] = [
-  'OPEN_MAIN_MENU',
-  'OPEN_IMAGE_ADJUST',
-  'TOGGLE_ENHANCE',
-  'THE_OFF',
-  'THE_P',
-  'THE_R',
-  'FREQUENCY_DOWN',
-  'FREQUENCY_UP',
-  'FOCUS_DOWN',
-  'FOCUS_UP',
-  'OBS_GI',
-  'OBS_PB',
-  'OBS_RSP',
-];
+const KEYBOARD_FEEDBACK_CONTROLS = ['depth', 'gain', 'contrast'] as const;
+
+function isHotspotVisibleForMenu(hotspot: EuMe2Hotspot, menuMode: KnobologyMenuMode) {
+  return hotspot.visibleInMenus ? hotspot.visibleInMenus.includes(menuMode) : true;
+}
 
 function getControlForAction(actionId: KnobologyProcessorActionId): KnobologyControlId | null {
   switch (actionId) {
     case 'GAIN_DOWN':
     case 'GAIN_UP':
       return 'gain';
+    case 'OPEN_IMAGE_ADJUST':
+    case 'TOGGLE_ENHANCE':
+    case 'THE_OFF':
+    case 'THE_P':
+    case 'THE_R':
+      return 'contrast';
     case 'DEPTH_UP':
     case 'FOCUS_CYCLE':
     case 'FOCUS_DOWN':
@@ -86,6 +84,7 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
 
   useEffect(() => {
     dispatchFrame({ type: 'RESET_FOR_EXERCISE', exercise: activeExercise });
+    setActiveControl(activeExercise.focusControl);
   }, [activeExercise]);
 
   useEffect(() => {
@@ -133,14 +132,104 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
       card.whatChanges.toLowerCase().includes(query)
     );
   });
+  const visibleProcessorHotspots = useMemo(
+    () => euMe2Layout.hotspots.filter((hotspot) => isHotspotVisibleForMenu(hotspot, frameState.menu)),
+    [frameState.menu],
+  );
+  const processorLayout = useMemo(
+    () => ({
+      ...euMe2Layout,
+      hotspots: visibleProcessorHotspots,
+    }),
+    [visibleProcessorHotspots],
+  );
   const compactTouchButtons = useMemo(
     () =>
-      ACCESSIBILITY_TOUCH_ACTIONS.map((actionId) => ({
-        actionId,
-        label: euMe2Layout.hotspots.find((hotspot) => hotspot.action === actionId)?.label ?? actionId,
-      })),
-    [],
+      visibleProcessorHotspots
+        .filter((hotspot) => hotspot.id.startsWith('touch_'))
+        .map((hotspot) => ({
+          actionId: hotspot.action,
+          label: hotspot.label,
+        })),
+    [visibleProcessorHotspots],
   );
+  const lastKeyboardControl = frameState.lastActionId ? getControlForAction(frameState.lastActionId) : null;
+  const keyboardFeedbackCards = KEYBOARD_FEEDBACK_CONTROLS.map((controlId) => {
+    const currentValue = frameState[controlId];
+    const targetValue = activeExercise.target[controlId];
+    const delta = currentValue - targetValue;
+    const absDelta = Math.abs(delta);
+    const isExerciseFocus = activeExercise.focusControl === controlId;
+    const isKeyboardActive = activeControl === controlId;
+    const hasRecentKeyboardChange = lastKeyboardControl === controlId;
+
+    if (controlId === 'depth') {
+      return {
+        controlId,
+        currentValue,
+        targetValue,
+        isExerciseFocus,
+        isKeyboardActive,
+        hasRecentKeyboardChange,
+        status:
+          absDelta <= 8
+            ? 'Framing is close to target.'
+            : delta < 0
+              ? 'Need more depth.'
+              : 'Depth is running long.',
+        guidance:
+          absDelta <= 8
+            ? 'The node is sitting in a more usable part of the frame.'
+            : delta < 0
+              ? 'Use DEPTH/RANGE +/- on the processor until more tissue opens below the node.'
+              : 'Cycle depth back once the target starts dropping into unused space.',
+      };
+    }
+
+    if (controlId === 'gain') {
+      return {
+        controlId,
+        currentValue,
+        targetValue,
+        isExerciseFocus,
+        isKeyboardActive,
+        hasRecentKeyboardChange,
+        status:
+          absDelta <= 8
+            ? 'Brightness is close to target.'
+            : delta < 0
+              ? 'Frame still looks undergained.'
+              : 'The image is washing out.',
+        guidance:
+          absDelta <= 8
+            ? 'Target borders are readable without flooding the screen.'
+            : delta < 0
+              ? 'Use GAIN + until the target border separates from the background.'
+              : 'Tap GAIN - to recover detail and keep the frame from looking chalky.',
+      };
+    }
+
+    return {
+      controlId,
+      currentValue,
+      targetValue,
+      isExerciseFocus,
+      isKeyboardActive,
+      hasRecentKeyboardChange,
+      status:
+        absDelta <= 8
+          ? 'Edge definition is close to target.'
+          : delta < 0
+            ? 'Contrast is still too flat.'
+            : 'Contrast is too aggressive.',
+      guidance:
+        absDelta <= 8
+          ? 'The target is separating from the haze more cleanly now.'
+          : delta < 0
+            ? 'Open IMAGE ADJUST and tap contrast + until the border definition starts to recover.'
+            : 'Tap contrast - in IMAGE ADJUST if the border starts to look overly harsh.',
+    };
+  });
 
   function markExerciseSolved() {
     if (evaluation.solved) {
@@ -167,26 +256,6 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
 
     if (actionId === 'MEASURE_MODE' || actionId === 'MEASURE_SET' || actionId === 'TRACE_MODE') {
       setModuleProgress('knobology', 60);
-    }
-  }
-
-  function handleControlSelect(controlId: KnobologyControlId) {
-    setActiveControl(controlId);
-
-    if (controlId === 'color-doppler') {
-      handleProcessorAction(dopplerEnabled ? 'B_MODE' : 'FLOW_MODE');
-    }
-
-    if (controlId === 'calipers') {
-      handleProcessorAction(frameState.measurementMode === 'measure' && frameState.calipers ? 'CLEAR' : 'MEASURE_MODE');
-    }
-
-    if (controlId === 'freeze') {
-      handleProcessorAction('TOGGLE_FREEZE');
-    }
-
-    if (controlId === 'save') {
-      handleProcessorAction('SAVE_REC');
     }
   }
 
@@ -237,8 +306,9 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
         </div>
 
         <div className="knobology-lab">
-          <div className="knobology-frame">
-            <div className="knobology-frame__screen">
+          <div className="knobology-workbench">
+            <div className="stack-card knobology-frame">
+              <div className="knobology-frame__screen">
               {controlLabImage ? (
                 <div className="knobology-frame__image-shell">
                   <img
@@ -342,14 +412,6 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                   ))}
                 </div>
               ) : null}
-              {frameState.menu !== 'none' ? (
-                <div className="knobology-frame__menu">
-                  <strong>{frameState.menu === 'main' ? 'Main Menu' : 'Image Adjust'}</strong>
-                  <span>Freq {FREQUENCY_LABELS[frameState.frequencyIndex]}</span>
-                  <span>T.H.E. {frameState.harmonicMode.toUpperCase()}</span>
-                  <span>{frameState.enhanceEnabled ? 'Enhance on' : 'Enhance off'}</span>
-                </div>
-              ) : null}
               {frameState.frozen || frameState.cineReviewMode ? (
                 <div className="knobology-frame__cine-strip">
                   <span>Cine {frameState.cineFrame + 1}/7</span>
@@ -362,88 +424,113 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                   <span>{frameState.cinePlaying ? 'Playing' : 'Paused'}</span>
                 </div>
               ) : null}
-              <div className="knobology-frame__status">
-                <span>D {frameState.depth}</span>
-                <span>G {frameState.gain}</span>
-                <span>C {frameState.contrast}</span>
-                <span>{frameState.mode.toUpperCase()}</span>
-                <span>F {FREQUENCY_LABELS[frameState.frequencyIndex]}</span>
-                {frameState.frozen ? <span>FRZ</span> : null}
-                {frameState.saved ? <span>SAV</span> : null}
-                {frameState.pipEnabled ? <span>PIP</span> : null}
+                <div className="knobology-frame__status">
+                  <span>D {frameState.depth}</span>
+                  <span>G {frameState.gain}</span>
+                  <span>C {frameState.contrast}</span>
+                  <span>{frameState.mode.toUpperCase()}</span>
+                  <span>F {FREQUENCY_LABELS[frameState.frequencyIndex]}</span>
+                  {frameState.frozen ? <span>FRZ</span> : null}
+                  {frameState.saved ? <span>SAV</span> : null}
+                  {frameState.pipEnabled ? <span>PIP</span> : null}
+                </div>
               </div>
             </div>
-            <div className="knobology-frame__caption">
+
+            <div className="stack-card knobology-console">
+              <div className="knobology-console__prompt">
+                <div className="eyebrow">Interactive processor</div>
+                <strong>Tap a glowing control on the processor to update the ultrasound image.</strong>
+              </div>
+
+              <EuMe2Keyboard
+                activeActionId={frameState.lastActionId}
+                debug={processorDebug}
+                layout={processorLayout}
+                menuMode={frameState.menu}
+                onAction={handleProcessorAction}
+                showHotspotHints
+              />
+
+              <div className="knobology-console__details">
+                <div className="knobology-console__hero">
+                  <div>
+                    <h3>Use the processor and touch panel together.</h3>
+                    <p>
+                      Every glowing hotspot is clickable, including the touch panel. Try depth, gain, freeze, Doppler,
+                      calipers, and save to see immediate feedback in the frame above. Tapping `IMAGE ADJUST` swaps the
+                      processor screen so the contrast controls change with it.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="tag-row">
+                  <span className="tag">Glowing overlays = tappable controls</span>
+                  <span className="tag">Touch panel hotspots change with the active screen</span>
+                </div>
+
+                <div className="knobology-console__touch-panel">
+                  <div className="eyebrow">Touch panel mirror</div>
+                  <div className="button-row button-row--wrap">
+                    {compactTouchButtons.map((button) => (
+                      <button
+                        key={button.actionId}
+                        className={`control-pill${frameState.lastActionId === button.actionId ? ' control-pill--active' : ''}`}
+                        onClick={() => handleProcessorAction(button.actionId)}
+                        type="button"
+                      >
+                        {button.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="stack-card knobology-controls">
+            <div className="knobology-rescue-card">
               <strong>{activeExercise.title}</strong>
               <p>{activeExercise.symptom}</p>
               <p className="knobology-frame__status-line">{frameState.statusMessage}</p>
               {controlLabImage && depthMedia.caption ? <p className="knobology-frame__media-note">{depthMedia.caption}</p> : null}
             </div>
-          </div>
-
-          <div className="stack-card knobology-console">
-            <div className="eyebrow">Processor</div>
-            <EuMe2Keyboard
-              activeActionId={frameState.lastActionId}
-              debug={processorDebug}
-              layout={euMe2Layout}
-              onAction={handleProcessorAction}
-            />
-
-            <div className="knobology-console__touch-panel">
-              <div className="eyebrow">Touch panel mirror</div>
-              <div className="button-row button-row--wrap">
-                {compactTouchButtons.map((button) => (
-                  <button
-                    key={button.actionId}
-                    className={`control-pill${frameState.lastActionId === button.actionId ? ' control-pill--active' : ''}`}
-                    onClick={() => handleProcessorAction(button.actionId)}
-                    type="button"
-                  >
-                    {button.label}
-                  </button>
-                ))}
-              </div>
-            </div>
 
             <div className="eyebrow">Instructions</div>
             <p>{activeExercise.instructions}</p>
-            <div className="button-row button-row--wrap">
-              {(Object.keys(knobologyControlMeta) as KnobologyControlId[]).map((controlId) => (
-                <button
-                  key={controlId}
-                  className={`control-pill${activeControl === controlId ? ' control-pill--active' : ''}`}
-                  onClick={() => handleControlSelect(controlId)}
-                  type="button"
-                >
-                  <span>{knobologyControlMeta[controlId].icon}</span>
-                  <span>{knobologyControlMeta[controlId].shortLabel}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="slider-stack">
-              {(['depth', 'gain', 'contrast'] as const).map((field) => (
-                <label key={field} className="slider-field">
-                  <span>{field}</span>
-                  <input
-                    aria-label={`${field} slider`}
-                    max={100}
-                    min={0}
-                    onChange={(event) => {
-                      dispatchFrame({
-                        type: 'SET_NUMERIC_FIELD',
-                        field,
-                        value: Number(event.target.value),
-                      });
-                      setActiveControl(field);
-                    }}
-                    type="range"
-                    value={frameState[field]}
-                  />
-                  <strong>{frameState[field]}</strong>
-                </label>
-              ))}
+            <div className="knobology-keyboard-feedback">
+              <div className="eyebrow">Keyboard feedback</div>
+              <p>
+                The processor is now the only control surface here. Depth, gain, and contrast highlight as you change
+                them from the keyboard.
+              </p>
+              <div className="knobology-keyboard-feedback__grid">
+                {keyboardFeedbackCards.map((card) => (
+                  <article
+                    key={card.controlId}
+                    className={`knobology-keyboard-feedback__card${card.isKeyboardActive ? ' knobology-keyboard-feedback__card--active' : ''}${card.isExerciseFocus ? ' knobology-keyboard-feedback__card--focus' : ''}`}
+                  >
+                    <div className="knobology-keyboard-feedback__header">
+                      <div className="mini-card__title">
+                        <span>{knobologyControlMeta[card.controlId].icon}</span>
+                        <strong>{knobologyControlMeta[card.controlId].shortLabel}</strong>
+                      </div>
+                      <div className="tag-row">
+                        {card.isExerciseFocus ? <span className="tag">Exercise focus</span> : null}
+                        {card.hasRecentKeyboardChange ? <span className="tag">Recent keyboard change</span> : null}
+                      </div>
+                    </div>
+                    <div className="knobology-keyboard-feedback__values">
+                      <span>Current {card.currentValue}</span>
+                      <span>Target {card.targetValue}</span>
+                    </div>
+                    <strong className="knobology-keyboard-feedback__status">
+                      {card.hasRecentKeyboardChange ? frameState.statusMessage : card.status}
+                    </strong>
+                    <p>{card.guidance}</p>
+                  </article>
+                ))}
+              </div>
             </div>
 
             <div className={`feedback-banner${evaluation.solved ? ' feedback-banner--success' : ''}`}>

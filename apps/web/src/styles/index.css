@@ -903,10 +903,122 @@ iframe {
   gap: 14px;
 }
 
+.knobology-workbench,
 .knobology-console,
-.knobology-console__touch-panel {
+.knobology-console__touch-panel,
+.knobology-controls,
+.knobology-frame {
   display: grid;
   gap: 14px;
+}
+
+.knobology-frame,
+.knobology-console,
+.knobology-controls {
+  padding: 18px;
+}
+
+.knobology-console__hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.knobology-console__prompt,
+.knobology-console__details {
+  display: grid;
+  gap: 12px;
+}
+
+.knobology-console__prompt {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(127, 189, 242, 0.2);
+  background: linear-gradient(180deg, rgba(20, 38, 60, 0.88), rgba(11, 22, 36, 0.76));
+}
+
+.knobology-console__prompt strong {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.knobology-console__hero h3 {
+  margin: 4px 0 0;
+  font-size: clamp(1.08rem, 0.98rem + 0.5vw, 1.35rem);
+}
+
+.knobology-console__hero p {
+  margin: 10px 0 0;
+  max-width: 62ch;
+}
+
+.knobology-console__touch-panel,
+.knobology-rescue-card {
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(123, 163, 200, 0.16);
+  background: rgba(10, 18, 32, 0.48);
+}
+
+.knobology-keyboard-feedback {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(123, 163, 200, 0.16);
+  background: rgba(10, 18, 32, 0.48);
+}
+
+.knobology-keyboard-feedback__grid {
+  display: grid;
+  gap: 12px;
+}
+
+.knobology-keyboard-feedback__card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(123, 163, 200, 0.12);
+  background: rgba(7, 17, 29, 0.48);
+}
+
+.knobology-keyboard-feedback__card--focus {
+  border-color: rgba(127, 189, 242, 0.26);
+}
+
+.knobology-keyboard-feedback__card--active {
+  border-color: rgba(143, 224, 192, 0.34);
+  background: rgba(20, 63, 48, 0.22);
+}
+
+.knobology-keyboard-feedback__header,
+.knobology-keyboard-feedback__values {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.knobology-keyboard-feedback__values {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.knobology-keyboard-feedback__status {
+  color: var(--text);
+  font-size: 0.94rem;
+}
+
+.knobology-rescue-card strong {
+  font-size: 1.08rem;
+}
+
+.knobology-rescue-card p {
+  margin: 0;
 }
 
 .learn-more-drawer {
@@ -1163,10 +1275,6 @@ iframe {
   align-items: center;
 }
 
-.knobology-frame__caption {
-  padding: 14px 6px 0;
-}
-
 .knobology-frame__status-line {
   margin: 10px 0 0;
   font-family: 'Space Mono', monospace;
@@ -1201,6 +1309,20 @@ iframe {
   object-fit: cover;
 }
 
+.eu-me2__panel-viewport {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 12px;
+}
+
+.eu-me2__panel-image {
+  position: absolute;
+  display: block;
+  max-width: none;
+  filter: brightness(1.01) contrast(1.03);
+}
+
 .eu-me2__overlay {
   position: absolute;
   inset: 0;
@@ -1222,6 +1344,13 @@ iframe {
     transform 140ms ease;
 }
 
+.eu-me2--hinted .eu-me2__hotspot {
+  border-color: rgba(127, 189, 242, 0.58);
+  background: rgba(127, 189, 242, 0.12);
+  box-shadow: 0 0 0 2px rgba(127, 189, 242, 0.14);
+  animation: hotspot-pulse 2.4s ease-in-out infinite;
+}
+
 .eu-me2__hotspot:hover,
 .eu-me2__hotspot:focus-visible,
 .eu-me2__hotspot--active,
@@ -1229,6 +1358,21 @@ iframe {
   border-color: rgba(91, 239, 171, 0.9);
   background: rgba(91, 239, 171, 0.15);
   box-shadow: 0 0 0 3px rgba(91, 239, 171, 0.12);
+}
+
+.eu-me2--editor .eu-me2__hotspot {
+  cursor: grab;
+  touch-action: none;
+}
+
+.eu-me2--editor .eu-me2__hotspot:active {
+  cursor: grabbing;
+}
+
+.eu-me2__hotspot--selected {
+  border-color: rgba(230, 189, 121, 0.96);
+  background: rgba(230, 189, 121, 0.16);
+  box-shadow: 0 0 0 4px rgba(230, 189, 121, 0.14);
 }
 
 .eu-me2__hotspot:focus-visible {
@@ -1273,6 +1417,17 @@ iframe {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.8rem;
+}
+
+@keyframes hotspot-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(127, 189, 242, 0.14);
+  }
+
+  50% {
+    box-shadow: 0 0 0 7px rgba(127, 189, 242, 0.08);
+  }
 }
 
 .slider-field {
@@ -2460,6 +2615,7 @@ iframe {
 
   .knobology-lab {
     grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+    align-items: start;
   }
 
   .case3d-layout {
@@ -2560,6 +2716,11 @@ iframe {
 
   .eu-me2__caption {
     font-size: 0.74rem;
+  }
+
+  .knobology-console__hero {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .top-header__meta,

@@ -4,20 +4,20 @@
       {
         "id": "axial",
         "label": "Axial",
-        "image": "/media/stations/2R/ct/axial-marked.jpg",
-        "note": "Only a marked axial CT source was provided for 2R."
+        "image": "/media/stations/2R/ct/axial.jpg",
+        "revealImage": "/media/stations/2R/ct/axial-marked.jpg"
       },
       {
         "id": "coronal",
         "label": "Coronal",
-        "image": "/media/stations/2R/ct/coronal-marked.jpg",
-        "note": "Only a marked coronal CT source was provided for 2R."
+        "image": "/media/stations/2R/ct/coronal.jpg",
+        "revealImage": "/media/stations/2R/ct/coronal-marked.jpg"
       },
       {
         "id": "sagittal",
         "label": "Sagittal",
-        "image": "/media/stations/2R/ct/sagittal-marked.jpg",
-        "note": "Only a marked sagittal CT source was provided for 2R."
+        "image": "/media/stations/2R/ct/sagittal.jpg",
+        "revealImage": "/media/stations/2R/ct/sagittal-marked.jpg"
       }
     ],
     "bronchoscopyVariants": [
@@ -80,20 +80,20 @@
       {
         "id": "axial",
         "label": "Axial",
-        "image": "/media/stations/4R/ct/axial-marked.jpg",
-        "note": "Only a marked axial CT source was provided for 4R."
+        "image": "/media/stations/4R/ct/axial.jpg",
+        "revealImage": "/media/stations/4R/ct/axial-marked.jpg"
       },
       {
         "id": "coronal",
         "label": "Coronal",
-        "image": "/media/stations/4R/ct/coronal-marked.jpg",
-        "note": "Only a marked coronal CT source was provided for 4R."
+        "image": "/media/stations/4R/ct/coronal.jpg",
+        "revealImage": "/media/stations/4R/ct/coronal-marked.jpg"
       },
       {
         "id": "sagittal",
         "label": "Sagittal",
-        "image": "/media/stations/4R/ct/sagittal-marked.jpg",
-        "note": "Only a marked sagittal CT source was provided for 4R."
+        "image": "/media/stations/4R/ct/sagittal.jpg",
+        "revealImage": "/media/stations/4R/ct/sagittal-marked.jpg"
       }
     ],
     "bronchoscopyVariants": [
@@ -270,20 +270,20 @@
       {
         "id": "axial",
         "label": "Axial",
-        "image": "/media/stations/11R/ct/axial-marked.jpg",
-        "note": "Only a marked axial CT source was provided for the 11Rs set."
+        "image": "/media/stations/11R/ct/axial.jpg",
+        "revealImage": "/media/stations/11R/ct/axial-marked.jpg"
       },
       {
         "id": "coronal",
         "label": "Coronal",
-        "image": "/media/stations/11R/ct/coronal-marked.jpg",
-        "note": "Only a marked coronal CT source was provided for the 11Rs set."
+        "image": "/media/stations/11R/ct/coronal.jpg",
+        "revealImage": "/media/stations/11R/ct/coronal-marked.jpg"
       },
       {
         "id": "sagittal",
         "label": "Sagittal",
-        "image": "/media/stations/11R/ct/sagittal-marked.jpg",
-        "note": "Only a marked sagittal CT source was provided for the 11Rs set."
+        "image": "/media/stations/11R/ct/sagittal.jpg",
+        "revealImage": "/media/stations/11R/ct/sagittal-marked.jpg"
       }
     ],
     "bronchoscopyVariants": [
@@ -376,8 +376,13 @@
         "revealImage": "/media/stations/11L/bronchoscopy/view-marked.png"
       }
     ],
-    "notes": [
-      "No EBUS image for 11L was present in the supplied ultrasound folder."
+    "ebusVariants": [
+      {
+        "id": "primary",
+        "label": "EBUS",
+        "image": "/media/stations/11L/ultrasound/view.jpg",
+        "annotationKey": "EBUS_11L.jpg"
+      }
     ]
   }
 }

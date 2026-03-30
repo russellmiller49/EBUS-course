@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<annotations>
+  <version>1.1</version>
+  <meta>
+    <job>
+      <id>1</id>
+      <size>1</size>
+      <mode>annotation</mode>
+      <overlap>0</overlap>
+      <bugtracker></bugtracker>
+      <created>2026-03-29 20:01:37.008218+00:00</created>
+      <updated>2026-03-29 20:04:02.119132+00:00</updated>
+      <subset>default</subset>
+      <start_frame>0</start_frame>
+      <stop_frame>0</stop_frame>
+      <frame_filter></frame_filter>
+      <segments>
+        <segment>
+          <id>1</id>
+          <start>0</start>
+          <stop>0</stop>
+          <url>http://localhost:8080/api/jobs/1/dataset/export/api/jobs/1</url>
+        </segment>
+      </segments>
+      <owner>
+        <username>russellmiller49</username>
+        <email>russellmiller49@gmail.com</email>
+      </owner>
+      <assignee></assignee>
+      <labels>
+        <label>
+          <name>US_field</name>
+          <color>#4b4750</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>depth_marker</name>
+          <color>#37ab7f</color>
+          <type>rectangle</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Vessel</name>
+          <color>#0d0448</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Lymph node</name>
+          <color>#b1a1bc</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Lung</name>
+          <color>#33a02c</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Aorta</name>
+          <color>#e41a1c</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Pulmonary Artery</name>
+          <color>#377eb8</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Brachiocephalic Trunk</name>
+          <color>#984ea3</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Azygous Vein</name>
+          <color>#ff7f00</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Brachiocephalic Vein</name>
+          <color>#a65628</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Superior Vena Cava</name>
+          <color>#f781bf</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Left Atrium</name>
+          <color>#999999</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Station 2R</name>
+          <color>#66c2a5</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Station 2L</name>
+          <color>#7fc97f</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Station 4R</name>
+          <color>#fc8d62</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Station 4L</name>
+          <color>#fdae61</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Station 5</name>
+          <color>#80b1d3</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Station 7</name>
+          <color>#8da0cb</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Station 10R</name>
+          <color>#e78ac3</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Station 10L</name>
+          <color>#f781bf</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Station 11Rs</name>
+          <color>#a6d854</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Station 11Ri</name>
+          <color>#b3de69</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>Station 11L</name>
+          <color>#ffd92f</color>
+          <type>polygon</type>
+          <attributes>
+          </attributes>
+        </label>
+      </labels>
+    </job>
+    <dumped>2026-03-29 20:05:41.448119+00:00</dumped>
+  </meta>
+  <image id="0" name="11L.jpg" width="1020" height="875">
+    <polygon label="Station 11L" source="manual" occluded="0" points="403.75,90.28;402.36,101.39;391.25,129.17;375.97,158.33;375.97,187.50;374.58,206.94;398.19,233.33;427.36,250.00;455.14,268.06;484.31,280.56;524.58,290.28;567.64,301.39;605.14,304.17;634.31,298.61;648.19,270.83;648.19,234.72;650.97,193.06;649.58,156.94;637.08,136.11;616.25,112.50;570.42,93.06;523.19,86.11;487.08,86.11;445.42,86.11;405.14,86.11" z_order="0">
+    </polygon>
+    <polygon label="Lung" source="manual" occluded="0" points="316.25,191.67;330.14,204.17;357.92,209.72;378.75,223.61;410.69,245.83;427.36,270.83;432.92,306.94;417.64,338.89;405.14,408.33;399.58,437.50;410.69,473.61;469.03,477.78;521.81,479.17;577.36,479.17;641.25,468.06;674.58,461.11;702.36,479.17;724.58,525.00;727.36,587.50;752.36,662.50;757.92,677.78;762.08,698.61;794.03,756.94;813.47,826.39;816.25,855.56;753.75,868.06;20.42,862.50;21.81,751.39;21.81,713.89;319.03,188.89" z_order="0">
+    </polygon>
+    <polygon label="Pulmonary Artery" source="manual" occluded="0" points="452.36,327.78;487.08,326.39;519.03,326.39;528.75,351.39;537.08,379.17;537.08,415.28;521.81,426.39;512.08,434.72;494.03,445.83;449.58,447.22;417.64,443.06;409.31,427.78;412.08,394.44;419.03,355.56;427.36,336.11;450.97,323.61" z_order="0">
+    </polygon>
+  </image>
+</annotations>
