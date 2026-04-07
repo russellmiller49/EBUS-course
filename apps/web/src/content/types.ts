@@ -1,5 +1,6 @@
 export type RootModuleId = 'pretest' | 'knobology' | 'station-map' | 'station-explorer' | 'case-3d-explorer';
 export type AppRouteId = 'home' | 'pretest' | 'stations' | 'knobology' | 'lectures' | 'quiz' | 'case-001';
+export type TrackedLearningRouteId = Exclude<AppRouteId, 'home'>;
 export type StationZoneKey = 'upper' | 'subcarinal' | 'hilar';
 export type ExplorerViewId = 'ct' | 'bronchoscopy' | 'ultrasound';
 export type LessonSectionKind =
@@ -441,6 +442,8 @@ export interface NavigationItem {
   label: string;
   icon: string;
   path: string;
+  locked?: boolean;
+  lockedReason?: string;
 }
 
 export interface AppModuleCard {

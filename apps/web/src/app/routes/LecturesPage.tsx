@@ -1,3 +1,5 @@
+import { useCallback } from 'react';
+
 import { courseInfo } from '@/content/course';
 import { lectureManifest } from '@/content/lectures';
 import { LectureCard } from '@/features/lectures/LectureCard';
@@ -7,17 +9,23 @@ export function LecturesPage() {
   const { state, setLectureState, setModuleProgress } = useLearnerProgress();
   const reviewedCount = Object.values(state.lectureWatchStatus).filter((lecture) => lecture.completed).length;
 
-  function handleMarkReviewed(lectureId: string) {
-    const nextReviewedCount =
-      reviewedCount + (state.lectureWatchStatus[lectureId]?.completed ? 0 : 1);
+  const handleLectureUpdate = useCallback(
+    (lectureId: string, update: { watchedSeconds?: number; completed?: boolean; opened?: boolean }) => {
+      const wasCompleted = state.lectureWatchStatus[lectureId]?.completed ?? false;
+      const nextReviewedCount = reviewedCount + (!wasCompleted && update.completed ? 1 : 0);
 
-    setLectureState(lectureId, { completed: true, watchedSeconds: 60 });
-    setModuleProgress(
-      'lectures',
-      Math.round((nextReviewedCount / lectureManifest.length) * 100),
-      nextReviewedCount >= lectureManifest.length,
-    );
-  }
+      setLectureState(lectureId, update);
+
+      if (update.completed) {
+        setModuleProgress(
+          'lectures',
+          Math.round((nextReviewedCount / lectureManifest.length) * 100),
+          nextReviewedCount >= lectureManifest.length,
+        );
+      }
+    },
+    [reviewedCount, setLectureState, setModuleProgress, state.lectureWatchStatus],
+  );
 
   return (
     <div className="page-stack">
@@ -49,7 +57,7 @@ export function LecturesPage() {
             <LectureCard
               key={lecture.id}
               lecture={lecture}
-              onMarkReviewed={handleMarkReviewed}
+              onUpdateWatchState={handleLectureUpdate}
               watchState={state.lectureWatchStatus[lecture.id]}
             />
           ))}

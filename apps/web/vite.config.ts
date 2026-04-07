@@ -6,6 +6,7 @@ import { defineConfig } from 'vite';
 const repoRoot = resolve(__dirname, '../..');
 
 export default defineConfig({
+  envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
   plugins: [react()],
   worker: {
     format: 'es',

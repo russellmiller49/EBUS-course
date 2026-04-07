@@ -20,11 +20,15 @@ export function AppShell({
           {navItems.map((item) => (
             <NavLink
               key={item.id}
-              className={({ isActive }) => `top-nav__link${isActive ? ' top-nav__link--active' : ''}`}
+              aria-disabled={item.locked || undefined}
+              className={({ isActive }) =>
+                `top-nav__link${isActive ? ' top-nav__link--active' : ''}${item.locked ? ' top-nav__link--locked' : ''}`
+              }
+              title={item.locked ? item.lockedReason : undefined}
               to={item.path}
               end={item.path === '/'}
             >
-              <span aria-hidden="true">{item.icon}</span>
+              <span aria-hidden="true">{item.locked ? '•' : item.icon}</span>
               <span>{item.label}</span>
             </NavLink>
           ))}

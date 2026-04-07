@@ -1,11 +1,26 @@
 import type { ReactNode } from 'react';
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
-import type { AppRouteId, KnobologyControlId } from '@/content/types';
+import type { AppRouteId, KnobologyControlId, TrackedLearningRouteId } from '@/content/types';
+import { useAuth } from '@/lib/auth';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { syncLearnerSnapshot } from '@/lib/supabaseTracking';
 
 const STORAGE_KEY = 'socal-ebus-prep.web.learner-progress';
 
-type ModuleProgressId = 'pretest' | 'knobology' | 'station-map' | 'station-explorer' | 'lectures' | 'quiz' | 'case-001';
+export interface StoredLearnerProgressRecord {
+  savedAt: string | null;
+  state: LearnerProgressState;
+}
+
+export type ModuleProgressId = 'pretest' | 'knobology' | 'station-map' | 'station-explorer' | 'lectures' | 'quiz' | 'case-001';
+
+function createEngagementSummary() {
+  return {
+    lastTrackedAt: null,
+    totalSeconds: 0,
+  };
+}
 
 export interface ModuleProgress {
   visitedAt: string | null;
@@ -15,8 +30,14 @@ export interface ModuleProgress {
 
 export interface LectureWatchState {
   completed: boolean;
+  completedAt: string | null;
   watchedSeconds: number;
   lastOpenedAt: string | null;
+}
+
+export interface ModuleEngagementSummary {
+  totalSeconds: number;
+  lastTrackedAt: string | null;
 }
 
 export interface QuizHistoryEntry {
@@ -40,15 +61,24 @@ export interface PretestProgress {
 }
 
 export interface LearnerProgressState {
-  version: 2;
+  version: 3;
   moduleProgress: Record<ModuleProgressId, ModuleProgress>;
   bookmarkedStations: string[];
   stationRecognitionStats: Record<string, { attempts: number; correct: number }>;
   lectureWatchStatus: Record<string, LectureWatchState>;
+  engagement: Record<TrackedLearningRouteId, ModuleEngagementSummary>;
   quizScoreHistory: QuizHistoryEntry[];
   pretest: PretestProgress;
   lastViewedStationId: string | null;
   lastUsedKnobologyControl: KnobologyControlId | null;
+}
+
+function isValidTimestamp(value: string | null) {
+  return Boolean(value && Number.isFinite(Date.parse(value)));
+}
+
+export function getLearnerProgressStorageKey(userId: string | null) {
+  return userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY;
 }
 
 type Action =
@@ -56,9 +86,10 @@ type Action =
   | { type: 'visitModule'; moduleId: ModuleProgressId; percentFloor?: number }
   | { type: 'setModuleProgress'; moduleId: ModuleProgressId; percent: number; completed?: boolean }
   | { type: 'toggleStationBookmark'; stationId: string }
-  | { type: 'setLectureState'; lectureId: string; watchedSeconds?: number; completed?: boolean }
+  | { type: 'setLectureState'; lectureId: string; watchedSeconds?: number; completed?: boolean; opened?: boolean }
   | { type: 'recordQuizResult'; entry: QuizHistoryEntry }
   | { type: 'recordRecognitionAttempt'; stationId: string; correct: boolean }
+  | { type: 'recordModuleEngagement'; moduleId: TrackedLearningRouteId; seconds: number }
   | { type: 'setPretestAnswer'; questionId: string; optionId: string }
   | { type: 'setPretestQuestionIndex'; index: number }
   | { type: 'submitPretest'; score: number; answeredCount: number; totalQuestions: number }
@@ -72,7 +103,8 @@ interface LearnerProgressContextValue {
   visitRoute: (routeId: AppRouteId) => void;
   setModuleProgress: (moduleId: ModuleProgressId, percent: number, completed?: boolean) => void;
   toggleStationBookmark: (stationId: string) => void;
-  setLectureState: (lectureId: string, update: { watchedSeconds?: number; completed?: boolean }) => void;
+  setLectureState: (lectureId: string, update: { watchedSeconds?: number; completed?: boolean; opened?: boolean }) => void;
+  recordModuleEngagement: (moduleId: TrackedLearningRouteId, seconds: number) => void;
   recordQuizResult: (entry: Omit<QuizHistoryEntry, 'completedAt'>) => void;
   recordRecognitionAttempt: (stationId: string, correct: boolean) => void;
   setPretestAnswer: (questionId: string, optionId: string) => void;
@@ -107,7 +139,7 @@ function createPretestProgress(): PretestProgress {
 
 export function createInitialLearnerProgress(): LearnerProgressState {
   return {
-    version: 2,
+    version: 3,
     moduleProgress: {
       pretest: createModuleProgress(),
       knobology: createModuleProgress(),
@@ -119,6 +151,14 @@ export function createInitialLearnerProgress(): LearnerProgressState {
     },
     bookmarkedStations: [],
     stationRecognitionStats: {},
+    engagement: {
+      pretest: createEngagementSummary(),
+      lectures: createEngagementSummary(),
+      knobology: createEngagementSummary(),
+      stations: createEngagementSummary(),
+      quiz: createEngagementSummary(),
+      'case-001': createEngagementSummary(),
+    },
     lectureWatchStatus: {},
     quizScoreHistory: [],
     pretest: createPretestProgress(),
@@ -155,7 +195,7 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
   }
 
   return {
-    version: 2,
+    version: 3,
     moduleProgress: nextModuleProgress,
     bookmarkedStations: Array.isArray(raw.bookmarkedStations)
       ? raw.bookmarkedStations.filter((stationId): stationId is string => typeof stationId === 'string')
@@ -188,6 +228,7 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
                   lectureId,
                   {
                     completed: typeof value.completed === 'boolean' ? value.completed : false,
+                    completedAt: typeof value.completedAt === 'string' ? value.completedAt : null,
                     watchedSeconds: typeof value.watchedSeconds === 'number' ? Math.max(0, value.watchedSeconds) : 0,
                     lastOpenedAt: typeof value.lastOpenedAt === 'string' ? value.lastOpenedAt : null,
                   } satisfies LectureWatchState,
@@ -196,6 +237,17 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
             }),
           )
         : {},
+    engagement:
+      raw.engagement && typeof raw.engagement === 'object'
+        ? {
+            pretest: normalizeEngagementRecord(raw.engagement.pretest),
+            lectures: normalizeEngagementRecord(raw.engagement.lectures),
+            knobology: normalizeEngagementRecord(raw.engagement.knobology),
+            stations: normalizeEngagementRecord(raw.engagement.stations),
+            quiz: normalizeEngagementRecord(raw.engagement.quiz),
+            'case-001': normalizeEngagementRecord(raw.engagement['case-001']),
+          }
+        : initial.engagement,
     quizScoreHistory: Array.isArray(raw.quizScoreHistory)
       ? raw.quizScoreHistory.filter((entry): entry is QuizHistoryEntry => {
           return (
@@ -248,6 +300,65 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
       ].includes(raw.lastUsedKnobologyControl)
         ? raw.lastUsedKnobologyControl
         : null,
+  };
+}
+
+export function parseStoredLearnerProgress(candidate: unknown): StoredLearnerProgressRecord | null {
+  if (!candidate || typeof candidate !== 'object') {
+    return null;
+  }
+
+  const raw = candidate as Partial<StoredLearnerProgressRecord> & { state?: unknown };
+
+  if ('state' in raw) {
+    return {
+      savedAt: typeof raw.savedAt === 'string' ? raw.savedAt : null,
+      state: normalizeLearnerProgress(raw.state),
+    };
+  }
+
+  return {
+    savedAt: null,
+    state: normalizeLearnerProgress(candidate),
+  };
+}
+
+export function chooseStoredLearnerProgress(
+  local: StoredLearnerProgressRecord | null,
+  remote: StoredLearnerProgressRecord | null,
+) {
+  if (!local) {
+    return remote;
+  }
+
+  if (!remote) {
+    return local;
+  }
+
+  const localSavedAt = isValidTimestamp(local.savedAt) ? Date.parse(local.savedAt!) : null;
+  const remoteSavedAt = isValidTimestamp(remote.savedAt) ? Date.parse(remote.savedAt!) : null;
+
+  if (localSavedAt === null) {
+    return remote;
+  }
+
+  if (remoteSavedAt === null) {
+    return local;
+  }
+
+  return localSavedAt >= remoteSavedAt ? local : remote;
+}
+
+function normalizeEngagementRecord(candidate: unknown): ModuleEngagementSummary {
+  if (!candidate || typeof candidate !== 'object') {
+    return createEngagementSummary();
+  }
+
+  const record = candidate as Partial<ModuleEngagementSummary>;
+
+  return {
+    totalSeconds: typeof record.totalSeconds === 'number' ? Math.max(0, Math.floor(record.totalSeconds)) : 0,
+    lastTrackedAt: typeof record.lastTrackedAt === 'string' ? record.lastTrackedAt : null,
   };
 }
 
@@ -327,13 +438,21 @@ export function learnerProgressReducer(state: LearnerProgressState, action: Acti
     case 'setLectureState': {
       const current = state.lectureWatchStatus[action.lectureId] ?? {
         completed: false,
+        completedAt: null,
         watchedSeconds: 0,
         lastOpenedAt: null,
       };
       const nextCompleted = action.completed ?? current.completed;
       const nextWatchedSeconds = Math.max(current.watchedSeconds, action.watchedSeconds ?? current.watchedSeconds);
+      const nextCompletedAt = nextCompleted ? current.completedAt ?? new Date().toISOString() : current.completedAt;
+      const nextLastOpenedAt = action.opened || nextWatchedSeconds !== current.watchedSeconds ? new Date().toISOString() : current.lastOpenedAt;
 
-      if (current.completed === nextCompleted && current.watchedSeconds === nextWatchedSeconds) {
+      if (
+        current.completed === nextCompleted &&
+        current.watchedSeconds === nextWatchedSeconds &&
+        current.completedAt === nextCompletedAt &&
+        current.lastOpenedAt === nextLastOpenedAt
+      ) {
         return state;
       }
 
@@ -343,8 +462,29 @@ export function learnerProgressReducer(state: LearnerProgressState, action: Acti
           ...state.lectureWatchStatus,
           [action.lectureId]: {
             completed: nextCompleted,
+            completedAt: nextCompletedAt,
             watchedSeconds: nextWatchedSeconds,
-            lastOpenedAt: new Date().toISOString(),
+            lastOpenedAt: nextLastOpenedAt,
+          },
+        },
+      };
+    }
+    case 'recordModuleEngagement': {
+      const seconds = Math.max(0, Math.floor(action.seconds));
+
+      if (seconds <= 0) {
+        return state;
+      }
+
+      const current = state.engagement[action.moduleId];
+
+      return {
+        ...state,
+        engagement: {
+          ...state.engagement,
+          [action.moduleId]: {
+            totalSeconds: current.totalSeconds + seconds,
+            lastTrackedAt: new Date().toISOString(),
           },
         },
       };
@@ -438,31 +578,171 @@ export function learnerProgressReducer(state: LearnerProgressState, action: Acti
 export function LearnerProgressProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(learnerProgressReducer, undefined, createInitialLearnerProgress);
   const [hydrated, setHydrated] = useState(false);
+  const [remoteReady, setRemoteReady] = useState(false);
+  const [loadedStorageKey, setLoadedStorageKey] = useState<string | null>(null);
+  const syncTimerRef = useRef<number | null>(null);
+  const loadedRemoteForUserRef = useRef<string | null>(null);
+  const { isSupabaseEnabled, user } = useAuth();
+  const activeUserId = isSupabaseEnabled ? user?.id ?? null : null;
+  const activeStorageKey = getLearnerProgressStorageKey(activeUserId);
 
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+      const raw = window.localStorage.getItem(activeStorageKey);
+      const parsed = raw ? parseStoredLearnerProgress(JSON.parse(raw)) : null;
 
-      if (raw) {
+      if (parsed) {
         dispatch({
           type: 'hydrate',
-          payload: normalizeLearnerProgress(JSON.parse(raw)),
+          payload: parsed.state,
+        });
+      } else {
+        dispatch({
+          type: 'hydrate',
+          payload: createInitialLearnerProgress(),
         });
       }
     } catch {
       // Ignore malformed storage and keep defaults.
+      dispatch({
+        type: 'hydrate',
+        payload: createInitialLearnerProgress(),
+      });
     } finally {
+      loadedRemoteForUserRef.current = null;
+      setLoadedStorageKey(activeStorageKey);
       setHydrated(true);
     }
-  }, []);
+  }, [activeStorageKey]);
 
   useEffect(() => {
-    if (!hydrated) {
+    if (!hydrated || loadedStorageKey !== activeStorageKey) {
       return;
     }
 
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [hydrated, state]);
+    window.localStorage.setItem(
+      activeStorageKey,
+      JSON.stringify({
+        savedAt: new Date().toISOString(),
+        state,
+      } satisfies StoredLearnerProgressRecord),
+    );
+  }, [activeStorageKey, hydrated, loadedStorageKey, state]);
+
+  useEffect(() => {
+    if (!hydrated || loadedStorageKey !== activeStorageKey) {
+      return;
+    }
+
+    if (!isSupabaseEnabled || !activeUserId) {
+      loadedRemoteForUserRef.current = null;
+      setRemoteReady(true);
+      return;
+    }
+
+    if (loadedRemoteForUserRef.current === activeUserId) {
+      setRemoteReady(true);
+      return;
+    }
+
+    const nextClient = getSupabaseBrowserClient();
+
+    if (!nextClient) {
+      setRemoteReady(true);
+      return;
+    }
+
+    const client = nextClient;
+    let active = true;
+    setRemoteReady(false);
+
+    async function loadRemoteSnapshot() {
+      let localRecord: StoredLearnerProgressRecord | null = null;
+
+      try {
+        const localRaw = window.localStorage.getItem(activeStorageKey);
+        localRecord = localRaw ? parseStoredLearnerProgress(JSON.parse(localRaw)) : null;
+      } catch {
+        localRecord = null;
+      }
+
+      const { data, error } = await client
+        .from('learner_progress_snapshots')
+        .select('payload, updated_at')
+        .eq('learner_id', activeUserId)
+        .maybeSingle();
+
+      if (!active) {
+        return;
+      }
+
+      if (!error) {
+        const remoteRecord =
+          data?.payload && typeof data === 'object'
+            ? {
+                savedAt: typeof data.updated_at === 'string' ? data.updated_at : null,
+                state: normalizeLearnerProgress(data.payload),
+              }
+            : null;
+        const preferred = chooseStoredLearnerProgress(localRecord, remoteRecord);
+
+        if (preferred && preferred !== localRecord) {
+          dispatch({
+            type: 'hydrate',
+            payload: preferred.state,
+          });
+        }
+      }
+
+      if (error) {
+        // Keep the active local snapshot if the remote read fails.
+      }
+
+      loadedRemoteForUserRef.current = activeUserId;
+      setRemoteReady(true);
+    }
+
+    void loadRemoteSnapshot().catch(() => {
+      if (!active) {
+        return;
+      }
+
+      loadedRemoteForUserRef.current = activeUserId;
+      setRemoteReady(true);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [activeStorageKey, activeUserId, hydrated, isSupabaseEnabled, loadedStorageKey]);
+
+  useEffect(() => {
+    if (!hydrated || !remoteReady || !isSupabaseEnabled || !user) {
+      return;
+    }
+
+    const client = getSupabaseBrowserClient();
+
+    if (!client) {
+      return;
+    }
+
+    if (syncTimerRef.current) {
+      window.clearTimeout(syncTimerRef.current);
+    }
+
+    syncTimerRef.current = window.setTimeout(() => {
+      void syncLearnerSnapshot(client, user.id, state).catch(() => {
+        // Local progress remains authoritative if remote sync is temporarily unavailable.
+      });
+    }, 700);
+
+    return () => {
+      if (syncTimerRef.current) {
+        window.clearTimeout(syncTimerRef.current);
+      }
+    };
+  }, [hydrated, isSupabaseEnabled, remoteReady, state, user]);
 
   const visitRoute = useCallback((routeId: AppRouteId) => {
     const moduleId = getModuleForRoute(routeId);
@@ -485,16 +765,21 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setLectureState = useCallback(
-    (lectureId: string, update: { watchedSeconds?: number; completed?: boolean }) => {
+    (lectureId: string, update: { watchedSeconds?: number; completed?: boolean; opened?: boolean }) => {
       dispatch({
         type: 'setLectureState',
         lectureId,
         watchedSeconds: update.watchedSeconds,
         completed: update.completed,
+        opened: update.opened,
       });
     },
     [],
   );
+
+  const recordModuleEngagement = useCallback((moduleId: TrackedLearningRouteId, seconds: number) => {
+    dispatch({ type: 'recordModuleEngagement', moduleId, seconds });
+  }, []);
 
   const recordQuizResult = useCallback((entry: Omit<QuizHistoryEntry, 'completedAt'>) => {
     dispatch({
@@ -542,6 +827,7 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
       setModuleProgress,
       toggleStationBookmark,
       setLectureState,
+      recordModuleEngagement,
       recordQuizResult,
       recordRecognitionAttempt,
       setPretestAnswer,
@@ -553,6 +839,7 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
     }),
     [
       hydrated,
+      recordModuleEngagement,
       recordQuizResult,
       recordRecognitionAttempt,
       reset,

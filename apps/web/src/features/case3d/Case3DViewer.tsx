@@ -1,4 +1,4 @@
-import { useMemo, useReducer, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import { axisNameToIndex } from '../../../../../features/case3d/patient-space';
 import type { CasePlane, RuntimeCaseManifest } from '../../../../../features/case3d/types';
@@ -114,12 +114,190 @@ function SliceCard({
   );
 }
 
+function OrthogonalPlaneControls({
+  orthogonalPlaneOpacity,
+  planeVisibility,
+  threeDOrthogonalPlanesVisible,
+  onOrthogonalPlaneOpacityChange,
+  onPlaneVisibilityChange,
+  onThreeDOrthogonalPlanesVisibilityChange,
+}: {
+  orthogonalPlaneOpacity: number;
+  planeVisibility: Record<CasePlane, boolean>;
+  threeDOrthogonalPlanesVisible: boolean;
+  onOrthogonalPlaneOpacityChange: (value: number) => void;
+  onPlaneVisibilityChange: (plane: CasePlane, visible: boolean) => void;
+  onThreeDOrthogonalPlanesVisibilityChange: (visible: boolean) => void;
+}) {
+  return (
+    <section className="case3d-hero__control-group">
+      <div>
+        <div className="eyebrow">3D CT</div>
+        <h4 className="case3d-hero__control-title">Orthogonal planes</h4>
+      </div>
+      <p className="case3d-note">3D-only visibility. The slice cards below stay visible.</p>
+      <label className="case3d-toggle">
+        <input
+          checked={threeDOrthogonalPlanesVisible}
+          onChange={(event) => onThreeDOrthogonalPlanesVisibilityChange(event.target.checked)}
+          type="checkbox"
+        />
+        <span>Show 3D CT planes</span>
+      </label>
+      <div className="case3d-toggle-list">
+        <label className="case3d-toggle">
+          <input
+            checked={planeVisibility.axial}
+            disabled={!threeDOrthogonalPlanesVisible}
+            onChange={(event) => onPlaneVisibilityChange('axial', event.target.checked)}
+            type="checkbox"
+          />
+          <span>Axial</span>
+        </label>
+        <label className="case3d-toggle">
+          <input
+            checked={planeVisibility.coronal}
+            disabled={!threeDOrthogonalPlanesVisible}
+            onChange={(event) => onPlaneVisibilityChange('coronal', event.target.checked)}
+            type="checkbox"
+          />
+          <span>Coronal</span>
+        </label>
+        <label className="case3d-toggle">
+          <input
+            checked={planeVisibility.sagittal}
+            disabled={!threeDOrthogonalPlanesVisible}
+            onChange={(event) => onPlaneVisibilityChange('sagittal', event.target.checked)}
+            type="checkbox"
+          />
+          <span>Sagittal</span>
+        </label>
+      </div>
+      <label className="case3d-slider">
+        <span>3D CT plane opacity</span>
+        <input
+          max={1}
+          min={0}
+          onChange={(event) => onOrthogonalPlaneOpacityChange(Number(event.target.value))}
+          step={0.01}
+          type="range"
+          value={orthogonalPlaneOpacity}
+        />
+      </label>
+    </section>
+  );
+}
+
+function ThreeDSceneControls({
+  cutPlaneOpacity,
+  cutPlaneVisible,
+  onCutPlaneOpacityChange,
+  onCutPlaneVisibilityChange,
+  onOrthogonalPlaneOpacityChange,
+  onOverlayOpacityChange,
+  onPlaneVisibilityChange,
+  onResetCamera,
+  onResetCutPlane,
+  onThreeDOrthogonalPlanesVisibilityChange,
+  orthogonalPlaneOpacity,
+  overlayOpacity,
+  planeVisibility,
+  threeDOrthogonalPlanesVisible,
+}: {
+  cutPlaneOpacity: number;
+  cutPlaneVisible: boolean;
+  onCutPlaneOpacityChange: (value: number) => void;
+  onCutPlaneVisibilityChange: (visible: boolean) => void;
+  onOrthogonalPlaneOpacityChange: (value: number) => void;
+  onOverlayOpacityChange: (value: number) => void;
+  onPlaneVisibilityChange: (plane: CasePlane, visible: boolean) => void;
+  onResetCamera?: () => void;
+  onResetCutPlane: () => void;
+  onThreeDOrthogonalPlanesVisibilityChange: (visible: boolean) => void;
+  orthogonalPlaneOpacity: number;
+  overlayOpacity: number;
+  planeVisibility: Record<CasePlane, boolean>;
+  threeDOrthogonalPlanesVisible: boolean;
+}) {
+  return (
+    <>
+      <section className="case3d-hero__control-group">
+        <div>
+          <div className="eyebrow">3D Anatomy</div>
+          <h4 className="case3d-hero__control-title">Surface opacity</h4>
+        </div>
+        <label className="case3d-slider">
+          <span>Anatomy opacity</span>
+          <input
+            max={1}
+            min={0.05}
+            onChange={(event) => onOverlayOpacityChange(Number(event.target.value))}
+            step={0.01}
+            type="range"
+            value={overlayOpacity}
+          />
+        </label>
+      </section>
+
+      <section className="case3d-hero__control-group">
+        <div>
+          <div className="eyebrow">Cut Plane</div>
+          <h4 className="case3d-hero__control-title">Arbitrary reslice</h4>
+        </div>
+        <label className="case3d-toggle">
+          <input
+            checked={cutPlaneVisible}
+            onChange={(event) => onCutPlaneVisibilityChange(event.target.checked)}
+            type="checkbox"
+          />
+          <span>Show cut plane</span>
+        </label>
+        <label className="case3d-slider">
+          <span>Cut-plane opacity</span>
+          <input
+            max={1}
+            min={0.05}
+            onChange={(event) => onCutPlaneOpacityChange(Number(event.target.value))}
+            step={0.01}
+            type="range"
+            value={cutPlaneOpacity}
+          />
+        </label>
+        <button className="case3d-button" onClick={onResetCutPlane} type="button">
+          Reset cut plane
+        </button>
+        <p className="case3d-note">
+          Drag or rotate the cut plane in the 3D scene. The resliced CT panel below stays locked to that same plane.
+        </p>
+      </section>
+
+      <OrthogonalPlaneControls
+        onOrthogonalPlaneOpacityChange={onOrthogonalPlaneOpacityChange}
+        onPlaneVisibilityChange={onPlaneVisibilityChange}
+        onThreeDOrthogonalPlanesVisibilityChange={onThreeDOrthogonalPlanesVisibilityChange}
+        orthogonalPlaneOpacity={orthogonalPlaneOpacity}
+        planeVisibility={planeVisibility}
+        threeDOrthogonalPlanesVisible={threeDOrthogonalPlanesVisible}
+      />
+
+      {onResetCamera ? (
+        <button className="case3d-button case3d-button--secondary" onClick={onResetCamera} type="button">
+          Reset camera
+        </button>
+      ) : null}
+    </>
+  );
+}
+
 export function Case3DViewer({ manifest }: Case3DViewerProps) {
   const [state, dispatch] = useReducer(caseViewerReducer, manifest, createInitialViewerState);
   const [resetCameraToken, setResetCameraToken] = useState(0);
+  const [fullscreenControlsOpen, setFullscreenControlsOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const volumeState = useCaseVolume();
   const volumeRef = useRef<LoadedCaseVolume | null>(null);
   const segmentationRef = useRef<LoadedSegmentation | null>(null);
+  const heroViewportRef = useRef<HTMLDivElement | null>(null);
 
   volumeRef.current = volumeState.ct;
   segmentationRef.current = volumeState.segmentation;
@@ -175,6 +353,49 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
       };
 
   const stationTargetOptions = stationTargets.length > 0 ? stationTargets : [selectedTarget];
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const active = document.fullscreenElement === heroViewportRef.current;
+      setIsFullscreen(active);
+      setFullscreenControlsOpen(active);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  async function toggleFullscreen() {
+    if (!heroViewportRef.current) {
+      return;
+    }
+
+    if (document.fullscreenElement === heroViewportRef.current) {
+      await document.exitFullscreen();
+      return;
+    }
+
+    await heroViewportRef.current.requestFullscreen();
+  }
+
+  const sceneControlProps = {
+    cutPlaneOpacity: state.cutPlane.opacity,
+    cutPlaneVisible: state.cutPlane.visible,
+    onCutPlaneOpacityChange: (value: number) => dispatch({ type: 'set-cut-plane-opacity', value }),
+    onCutPlaneVisibilityChange: (visible: boolean) => dispatch({ type: 'set-cut-plane-visibility', visible }),
+    onOrthogonalPlaneOpacityChange: (value: number) => dispatch({ type: 'set-three-d-plane-opacity', value }),
+    onOverlayOpacityChange: (value: number) => dispatch({ type: 'set-overlay-opacity', value }),
+    onPlaneVisibilityChange: (plane: CasePlane, visible: boolean) =>
+      dispatch({ type: 'set-plane-visibility', plane, visible }),
+    onResetCutPlane: () => dispatch({ type: 'reset-cut-plane' }),
+    onThreeDOrthogonalPlanesVisibilityChange: (visible: boolean) =>
+      dispatch({ type: 'set-three-d-plane-visibility', visible }),
+    orthogonalPlaneOpacity: state.orthogonalPlaneOpacity,
+    overlayOpacity: state.overlayOpacity,
+    planeVisibility: state.planeVisibility,
+    threeDOrthogonalPlanesVisible: state.threeDOrthogonalPlanesVisible,
+  } satisfies Parameters<typeof ThreeDSceneControls>[0];
 
   return (
     <div className="page-stack">
@@ -241,71 +462,6 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
                 ))}
               </select>
             </label>
-            <section className="case3d-hero__control-group">
-              <div>
-                <div className="eyebrow">3D CT</div>
-                <h4 className="case3d-hero__control-title">Orthogonal planes</h4>
-              </div>
-              <p className="case3d-note">3D-only visibility. The slice cards below stay visible.</p>
-              <label className="case3d-toggle">
-                <input
-                  checked={state.threeDOrthogonalPlanesVisible}
-                  onChange={(event) =>
-                    dispatch({ type: 'set-three-d-plane-visibility', visible: event.target.checked })
-                  }
-                  type="checkbox"
-                />
-                <span>Show 3D CT planes</span>
-              </label>
-              <div className="case3d-toggle-list">
-                <label className="case3d-toggle">
-                  <input
-                    checked={state.planeVisibility.axial}
-                    disabled={!state.threeDOrthogonalPlanesVisible}
-                    onChange={(event) =>
-                      dispatch({ type: 'set-plane-visibility', plane: 'axial', visible: event.target.checked })
-                    }
-                    type="checkbox"
-                  />
-                  <span>Axial</span>
-                </label>
-                <label className="case3d-toggle">
-                  <input
-                    checked={state.planeVisibility.coronal}
-                    disabled={!state.threeDOrthogonalPlanesVisible}
-                    onChange={(event) =>
-                      dispatch({ type: 'set-plane-visibility', plane: 'coronal', visible: event.target.checked })
-                    }
-                    type="checkbox"
-                  />
-                  <span>Coronal</span>
-                </label>
-                <label className="case3d-toggle">
-                  <input
-                    checked={state.planeVisibility.sagittal}
-                    disabled={!state.threeDOrthogonalPlanesVisible}
-                    onChange={(event) =>
-                      dispatch({ type: 'set-plane-visibility', plane: 'sagittal', visible: event.target.checked })
-                    }
-                    type="checkbox"
-                  />
-                  <span>Sagittal</span>
-                </label>
-              </div>
-              <label className="case3d-slider">
-                <span>3D CT plane opacity</span>
-                <input
-                  max={1}
-                  min={0}
-                  onChange={(event) =>
-                    dispatch({ type: 'set-three-d-plane-opacity', value: Number(event.target.value) })
-                  }
-                  step={0.01}
-                  type="range"
-                  value={state.orthogonalPlaneOpacity}
-                />
-              </label>
-            </section>
           </article>
 
           <article className="case3d-panel case3d-panel--controls">
@@ -411,12 +567,17 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
                 <div className="eyebrow">Shared Scene</div>
                 <h3>3D patient-space view</h3>
               </div>
-              <button className="case3d-button" onClick={() => setResetCameraToken((value) => value + 1)} type="button">
-                Reset camera
-              </button>
+              <div className="case3d-panel__header-actions">
+                <button className="case3d-button" onClick={() => setResetCameraToken((value) => value + 1)} type="button">
+                  Reset camera
+                </button>
+                <button className="case3d-button" onClick={() => void toggleFullscreen()} type="button">
+                  {isFullscreen ? 'Exit full screen' : 'Full screen'}
+                </button>
+              </div>
             </div>
             <div className="case3d-hero">
-              <div className="case3d-panel__viewport case3d-panel__viewport--hero">
+              <div className="case3d-panel__viewport case3d-panel__viewport--hero" ref={heroViewportRef}>
                 {volumeState.loading ? (
                   <div className="case3d-panel__placeholder">Loading case geometry…</div>
                 ) : volumeState.error ? (
@@ -446,59 +607,39 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
                     volumeRef={volumeRef}
                   />
                 )}
+                {isFullscreen ? (
+                  <>
+                    <div className="case3d-fullscreen-toolbar">
+                      <button
+                        aria-expanded={fullscreenControlsOpen}
+                        className="case3d-button case3d-button--overlay"
+                        onClick={() => setFullscreenControlsOpen((value) => !value)}
+                        type="button">
+                        Scene controls
+                      </button>
+                      <button
+                        className="case3d-button case3d-button--overlay"
+                        onClick={() => void toggleFullscreen()}
+                        type="button">
+                        Exit full screen
+                      </button>
+                    </div>
+                    {fullscreenControlsOpen ? (
+                      <aside className="case3d-fullscreen-menu" aria-label="Fullscreen 3D scene controls">
+                        <ThreeDSceneControls
+                          {...sceneControlProps}
+                          onResetCamera={() => setResetCameraToken((value) => value + 1)}
+                        />
+                      </aside>
+                    ) : null}
+                  </>
+                ) : null}
               </div>
-              <aside className="case3d-hero__controls" aria-label="3D scene controls">
-                <section className="case3d-hero__control-group">
-                  <div>
-                    <div className="eyebrow">3D Anatomy</div>
-                    <h4 className="case3d-hero__control-title">Surface opacity</h4>
-                  </div>
-                  <label className="case3d-slider">
-                    <span>Anatomy opacity</span>
-                    <input
-                      max={1}
-                      min={0.05}
-                      onChange={(event) => dispatch({ type: 'set-overlay-opacity', value: Number(event.target.value) })}
-                      step={0.01}
-                      type="range"
-                      value={state.overlayOpacity}
-                    />
-                  </label>
-                </section>
-
-                <section className="case3d-hero__control-group">
-                  <div>
-                    <div className="eyebrow">Cut Plane</div>
-                    <h4 className="case3d-hero__control-title">Arbitrary reslice</h4>
-                  </div>
-                  <label className="case3d-toggle">
-                    <input
-                      checked={state.cutPlane.visible}
-                      onChange={(event) => dispatch({ type: 'set-cut-plane-visibility', visible: event.target.checked })}
-                      type="checkbox"
-                    />
-                    <span>Show cut plane</span>
-                  </label>
-                  <label className="case3d-slider">
-                    <span>Cut-plane opacity</span>
-                    <input
-                      max={1}
-                      min={0.05}
-                      onChange={(event) => dispatch({ type: 'set-cut-plane-opacity', value: Number(event.target.value) })}
-                      step={0.01}
-                      type="range"
-                      value={state.cutPlane.opacity}
-                    />
-                  </label>
-                  <button className="case3d-button" onClick={() => dispatch({ type: 'reset-cut-plane' })} type="button">
-                    Reset cut plane
-                  </button>
-                  <p className="case3d-note">
-                    Drag or rotate the cut plane in the 3D scene. The resliced CT panel below stays locked to that same
-                    plane.
-                  </p>
-                </section>
-              </aside>
+              {!isFullscreen ? (
+                <aside className="case3d-hero__controls" aria-label="3D scene controls">
+                  <ThreeDSceneControls {...sceneControlProps} />
+                </aside>
+              ) : null}
             </div>
           </article>
 

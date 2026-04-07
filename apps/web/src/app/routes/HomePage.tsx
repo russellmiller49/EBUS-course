@@ -4,6 +4,7 @@ import { buildHomeProgressModel } from '@/app/routes/home/progress';
 import { ModuleCard } from '@/components/ModuleCard';
 import { courseInfo } from '@/content/course';
 import { homeModuleCards } from '@/content/modules';
+import { canAccessRoute, getLockedRoutePath, getRouteLockReason, isPretestComplete } from '@/lib/access';
 import { useLearnerProgress } from '@/lib/progress';
 
 function ProgressMeter({ percent }: { percent: number }) {
@@ -17,6 +18,7 @@ function ProgressMeter({ percent }: { percent: number }) {
 export function HomePage() {
   const { state } = useLearnerProgress();
   const { learningSteps, resumeModule } = buildHomeProgressModel(state);
+  const pretestReady = isPretestComplete(state);
   const reviewedLectures = Object.values(state.lectureWatchStatus).filter((lecture) => lecture.completed).length;
   const lastQuiz = state.quizScoreHistory[0];
   const pretestTag =
@@ -118,6 +120,26 @@ export function HomePage() {
           </div>
         </div>
       </section>
+
+      {!pretestReady ? (
+        <section className="section-card section-card--notice">
+          <div className="section-card__heading">
+            <div>
+              <div className="eyebrow">Course unlock</div>
+              <h2>Finish the baseline pretest before the lecture, anatomy, and quiz modules open.</h2>
+            </div>
+          </div>
+          <p>
+            The pretest submission now acts as the course gate. After you save it once, the rest of the prep path and
+            learner tracking unlock automatically.
+          </p>
+          <div className="button-row button-row--wrap">
+            <Link className="button" to="/pretest">
+              Complete the pretest
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       <section className="course-section course-section--split">
         <div className="course-section__lede">
@@ -279,13 +301,18 @@ export function HomePage() {
 
             <div className="course-step-list">
               {learningSteps.map((step, index) => (
-                <Link key={step.id} className="course-step" to={step.path}>
+                <Link
+                  key={step.id}
+                  className={`course-step${canAccessRoute(step.id, state) ? '' : ' course-step--locked'}`}
+                  to={getLockedRoutePath(step.id, step.path, state)}
+                >
                   <span className={`course-step__marker${step.percent >= 100 ? ' course-step__marker--done' : ''}`}>
                     {step.percent >= 100 ? '✓' : index + 1}
                   </span>
                   <div className="course-step__body">
                     <strong>{step.title}</strong>
                     <ProgressMeter percent={step.percent} />
+                    {!canAccessRoute(step.id, state) ? <p>{getRouteLockReason(step.id, state)}</p> : null}
                   </div>
                   <span className="course-step__percent">{step.percent}%</span>
                 </Link>
@@ -304,7 +331,12 @@ export function HomePage() {
           <div className="course-workspace__modules">
             <div className="module-grid">
               {homeModuleCards.map((module) => (
-                <ModuleCard key={module.id} module={module} />
+                <ModuleCard
+                  key={module.id}
+                  locked={!canAccessRoute(module.id, state)}
+                  lockedReason={getRouteLockReason(module.id, state)}
+                  module={module}
+                />
               ))}
             </div>
           </div>
