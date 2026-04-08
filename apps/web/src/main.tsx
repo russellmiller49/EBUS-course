@@ -1,20 +1,22 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, HashRouter } from 'react-router-dom';
 
 import { App } from '@/app/App';
 import { AuthProvider } from '@/lib/auth';
 import { LearnerProgressProvider } from '@/lib/progress';
 import '@/styles/index.css';
 
+const Router = import.meta.env.BASE_URL !== '/' ? HashRouter : BrowserRouter;
+
 const app = (
-  <BrowserRouter>
+  <Router>
     <AuthProvider>
       <LearnerProgressProvider>
         <App />
       </LearnerProgressProvider>
     </AuthProvider>
-  </BrowserRouter>
+  </Router>
 );
 
 // The vtk.js / itk-wasm case viewer uses imperative rendering and widget setup that does

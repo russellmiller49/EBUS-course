@@ -9,9 +9,12 @@ import type {
   StationMediaEntry,
   StationMediaVariant,
 } from '@/content/types';
+import { mapNestedAssetPaths } from '@/lib/assets';
 
-export const stationMedia = stationMediaData as Record<string, StationMediaEntry>;
-export const knobologyMedia = knobologyMediaData as Record<KnobologyControlId, KnobologyMediaEntry>;
+export const stationMedia = mapNestedAssetPaths(stationMediaData as Record<string, StationMediaEntry>);
+export const knobologyMedia = mapNestedAssetPaths(
+  knobologyMediaData as Record<KnobologyControlId, KnobologyMediaEntry>,
+);
 const ebusAnnotations = ebusAnnotationsData as unknown as Record<string, StationAnnotationSet>;
 
 export function getStationMedia(stationId: string): StationMediaEntry {

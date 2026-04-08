@@ -1,6 +1,7 @@
 import { stationConnections, zoneThemes } from '@/content/stations';
 import type { CombinedStation, StationMapLayout, StationMapLandmark } from '@/content/types';
 import { StationNode } from '@/features/stations/StationNode';
+import { resolveCourseAssetPath } from '@/lib/assets';
 
 function renderLandmark(landmark: StationMapLandmark) {
   const style = {
@@ -50,7 +51,7 @@ export function StationMap({
       <img
         alt={quizMode ? 'Mediastinal station quiz schematic with masked labels' : 'Mediastinal anatomy and lymph node station schematic'}
         className={`station-map__image${quizMode ? ' station-map__image--quiz' : ''}`}
-        src="/media/stations/clean_mediastinum.png"
+        src={resolveCourseAssetPath('/media/stations/clean_mediastinum.png')}
       />
       {quizMode ? (
         <>

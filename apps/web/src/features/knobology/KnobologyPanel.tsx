@@ -20,9 +20,10 @@ import {
   type KnobologyMenuMode,
   type KnobologyProcessorActionId,
 } from '@/features/knobology/logic';
+import { mapNestedAssetPaths } from '@/lib/assets';
 import { useLearnerProgress } from '@/lib/progress';
 
-const euMe2Layout = euMe2LayoutData as EuMe2Layout;
+const euMe2Layout = mapNestedAssetPaths(euMe2LayoutData as EuMe2Layout);
 
 const KEYBOARD_FEEDBACK_CONTROLS = ['depth', 'gain', 'contrast'] as const;
 

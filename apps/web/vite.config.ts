@@ -1,30 +1,46 @@
 import { resolve } from 'node:path';
 
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 
 const repoRoot = resolve(__dirname, '../..');
 
-export default defineConfig({
-  envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
-  plugins: [react()],
-  worker: {
-    format: 'es',
-  },
-  optimizeDeps: {
-    exclude: ['itk-wasm', '@itk-wasm/image-io', '@thewtex/zstddec'],
-  },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './src'),
+function normalizeViteBase(raw: string | undefined): string {
+  let base = raw?.trim() || '/';
+  if (base !== '/' && !base.startsWith('/')) {
+    base = `/${base}`;
+  }
+  if (base !== '/' && !base.endsWith('/')) {
+    base = `${base}/`;
+  }
+  return base;
+}
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, __dirname, '');
+
+  return {
+    base: normalizeViteBase(env.VITE_BASE_URL),
+    envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
+    plugins: [react()],
+    worker: {
+      format: 'es',
     },
-  },
-  server: {
-    fs: {
-      allow: [repoRoot],
+    optimizeDeps: {
+      exclude: ['itk-wasm', '@itk-wasm/image-io', '@thewtex/zstddec'],
     },
-  },
-  test: {
-    environment: 'node',
-  },
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, './src'),
+      },
+    },
+    server: {
+      fs: {
+        allow: [repoRoot],
+      },
+    },
+    test: {
+      environment: 'node',
+    },
+  };
 });
