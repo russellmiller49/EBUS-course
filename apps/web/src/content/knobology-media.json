@@ -1,26 +1,27 @@
 {
   "depth": {
-    "comparisonImages": [
-      "/media/knobology/ebus_depth_1.png",
-      "/media/knobology/ebus_depth_2.png",
-      "/media/knobology/ebus_depth_3.png",
-      "/media/knobology/ebus_depth_4.png",
-      "/media/knobology/ebus_depth_5.png"
+    "clips": [
+      "/media/knobology/Knobology_Clean.mp4"
     ],
-    "caption": "Matched EBUS depth captures. Use the depth slider to step through real depth changes while the field angle stays consistent."
+    "caption": "The control lab now seeks into the local timestamped EBUS video for each depth step instead of simulating depth from a still image."
   },
   "gain": {
-    "caption": "Add undergained, optimized, and overgained examples to replace the simulated frame."
+    "clips": [
+      "/media/knobology/Knobology_Clean.mp4"
+    ],
+    "caption": "Gain controls select one of eight real EBUS gain clips at the current depth."
   },
   "contrast": {
-    "caption": "Add comparison frames showing how contrast changes edge separation."
+    "clips": [
+      "/media/knobology/Knobology_Clean.mp4"
+    ],
+    "caption": "Contrast controls select one of eight real EBUS contrast clips at the current depth."
   },
   "color-doppler": {
     "clips": [
-      "/media/knobology/doppler_off.mp4",
-      "/media/knobology/doppler_on.mp4"
+      "/media/knobology/Knobology_Clean.mp4"
     ],
-    "caption": "Toggle between the Doppler-off and Doppler-on teaching clips to compare the grayscale view against visible flow."
+    "caption": "Flow preview uses the timestamped Color Flow, Power Flow, and H-flow clips at the active depth."
   },
   "calipers": {
     "caption": "Add a measured still frame to demonstrate correct caliper placement."

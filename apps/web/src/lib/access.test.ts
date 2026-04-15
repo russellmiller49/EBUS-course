@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { canAccessRoute, getLockedRoutePath, routeRequiresPretest } from '@/lib/access';
+import {
+  canAccessRoute,
+  getLockedRoutePath,
+  routeRequiresPretest,
+  validatePretestAdminPasscode,
+} from '@/lib/access';
 import { createInitialLearnerProgress } from '@/lib/progress';
 
 describe('course access helpers', () => {
@@ -20,5 +25,17 @@ describe('course access helpers', () => {
 
     expect(canAccessRoute('lectures', state)).toBe(true);
     expect(getLockedRoutePath('lectures', '/lectures', state)).toBe('/lectures');
+  });
+
+  it('allows the admin/developer passcode to satisfy the pretest gate', () => {
+    const state = createInitialLearnerProgress();
+
+    expect(validatePretestAdminPasscode('EBUS_2026')).toBe(true);
+    expect(validatePretestAdminPasscode('wrong')).toBe(false);
+
+    state.pretest.unlockedByPasscodeAt = '2026-04-15T10:00:00.000Z';
+
+    expect(canAccessRoute('knobology', state)).toBe(true);
+    expect(getLockedRoutePath('knobology', '/knobology', state)).toBe('/knobology');
   });
 });

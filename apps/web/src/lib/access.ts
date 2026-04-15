@@ -1,8 +1,14 @@
 import type { AppRouteId } from '@/content/types';
 import type { LearnerProgressState } from '@/lib/progress';
 
+export const PRETEST_ADMIN_UNLOCK_PASSCODE = 'EBUS_2026';
+
+export function validatePretestAdminPasscode(value: string) {
+  return value.trim() === PRETEST_ADMIN_UNLOCK_PASSCODE;
+}
+
 export function isPretestComplete(state: Pick<LearnerProgressState, 'pretest'>) {
-  return Boolean(state.pretest.submittedAt);
+  return Boolean(state.pretest.submittedAt || state.pretest.unlockedByPasscodeAt);
 }
 
 export function routeRequiresPretest(routeId: AppRouteId | null) {

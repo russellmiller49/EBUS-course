@@ -59,13 +59,13 @@
       "focusControl": "depth",
       "start": {
         "depth": 28,
-        "gain": 48,
-        "contrast": 52
+        "gain": 29,
+        "contrast": 43
       },
       "target": {
-        "depth": 68,
-        "gain": 48,
-        "contrast": 52
+        "depth": 60,
+        "gain": 29,
+        "contrast": 43
       },
       "successMessage": "Depth is now framing the target more cleanly. This is a better starting point for the rest of the scan."
     },
@@ -76,14 +76,14 @@
       "instructions": "Raise gain enough to reveal the target without turning the image chalky.",
       "focusControl": "gain",
       "start": {
-        "depth": 60,
-        "gain": 22,
-        "contrast": 58
+        "depth": 40,
+        "gain": 0,
+        "contrast": 43
       },
       "target": {
-        "depth": 60,
-        "gain": 66,
-        "contrast": 58
+        "depth": 40,
+        "gain": 43,
+        "contrast": 43
       },
       "successMessage": "Gain now reveals the border without flooding the screen with brightness."
     },
@@ -94,14 +94,14 @@
       "instructions": "Increase contrast and trim gain enough to recover edge definition.",
       "focusControl": "contrast",
       "start": {
-        "depth": 58,
-        "gain": 74,
-        "contrast": 24
+        "depth": 60,
+        "gain": 57,
+        "contrast": 0
       },
       "target": {
-        "depth": 58,
-        "gain": 50,
-        "contrast": 72
+        "depth": 60,
+        "gain": 29,
+        "contrast": 43
       },
       "successMessage": "Contrast is separating the target from the background again. The frame looks more readable."
     }

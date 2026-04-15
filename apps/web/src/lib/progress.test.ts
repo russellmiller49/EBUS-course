@@ -88,6 +88,20 @@ describe('learnerProgressReducer', () => {
     expect(submitted.pretest.submittedAt).toEqual(expect.any(String));
   });
 
+  it('stores a separate passcode unlock for admin and developer access', () => {
+    const initial = createInitialLearnerProgress();
+    const unlocked = learnerProgressReducer(initial, {
+      type: 'unlockPretestWithPasscode',
+    });
+    const repeated = learnerProgressReducer(unlocked, {
+      type: 'unlockPretestWithPasscode',
+    });
+
+    expect(unlocked.pretest.unlockedByPasscodeAt).toEqual(expect.any(String));
+    expect(unlocked.pretest.submittedAt).toBeNull();
+    expect(repeated.pretest.unlockedByPasscodeAt).toBe(unlocked.pretest.unlockedByPasscodeAt);
+  });
+
   it('parses legacy local progress payloads and scopes signed-in storage keys', () => {
     const parsed = parseStoredLearnerProgress({
       bookmarkedStations: ['4R'],

@@ -1,4 +1,9 @@
 import type { KnobologyCorrectionExercise } from '@/content/types';
+import {
+  getKnobologyVideoValueForIndex,
+  KNOBOLOGY_VIDEO_DEPTH_LEVELS,
+  stepKnobologyVideoValue,
+} from '@/features/knobology/videoSegments';
 
 export type KnobologyImagingMode = 'b' | 'flow' | 'pw';
 export type KnobologyMeasurementMode = 'off' | 'measure' | 'trace';
@@ -125,15 +130,14 @@ export type KnobologySimulatorAction =
       actionId: KnobologyProcessorActionId;
     };
 
-const DEFAULT_DEPTH_FRAME_LEVELS = [20, 40, 60, 80, 100] as const;
+const DEFAULT_DEPTH_FRAME_LEVELS = KNOBOLOGY_VIDEO_DEPTH_LEVELS;
 const FOCUS_MARKER_LEVELS = [26, 42, 58, 74] as const;
 export const FREQUENCY_LABELS = ['5.0 MHz', '6.5 MHz', '7.5 MHz'] as const;
 const CINE_FRAME_COUNT = 7;
-const CONTRAST_STEP = 8;
 const CONTRAST_PRESETS = {
-  off: 24,
-  p: 52,
-  r: 72,
+  off: getKnobologyVideoValueForIndex(1),
+  p: getKnobologyVideoValueForIndex(4),
+  r: getKnobologyVideoValueForIndex(8),
 } as const;
 
 function clamp(value: number, min: number, max: number): number {
@@ -152,11 +156,11 @@ function cycleDepth(depth: number): number {
 }
 
 function getHarmonicModeForContrast(contrast: number): KnobologyHarmonicMode {
-  if (contrast < 40) {
+  if (contrast < getKnobologyVideoValueForIndex(3)) {
     return 'off';
   }
 
-  if (contrast < 64) {
+  if (contrast < getKnobologyVideoValueForIndex(6)) {
     return 'p';
   }
 
@@ -311,12 +315,12 @@ function applyProcessorAction(
       });
     case 'GAIN_DOWN':
       return withAction(state, actionId, {
-        gain: clamp(state.gain - 8, 0, 100),
+        gain: stepKnobologyVideoValue(state.gain, -1),
         statusMessage: 'Gain decreased.',
       });
     case 'GAIN_UP':
       return withAction(state, actionId, {
-        gain: clamp(state.gain + 8, 0, 100),
+        gain: stepKnobologyVideoValue(state.gain, 1),
         statusMessage: 'Gain increased.',
       });
     case 'DEPTH_UP':
@@ -375,7 +379,7 @@ function applyProcessorAction(
       });
     case 'THE_OFF':
       if (state.menu === 'image-adjust') {
-        const contrast = clamp(state.contrast - CONTRAST_STEP, 0, 100);
+        const contrast = stepKnobologyVideoValue(state.contrast, -1);
 
         return withAction(state, actionId, {
           contrast,
@@ -405,7 +409,7 @@ function applyProcessorAction(
       });
     case 'THE_R':
       if (state.menu === 'image-adjust') {
-        const contrast = clamp(state.contrast + CONTRAST_STEP, 0, 100);
+        const contrast = stepKnobologyVideoValue(state.contrast, 1);
 
         return withAction(state, actionId, {
           contrast,

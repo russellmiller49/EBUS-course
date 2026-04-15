@@ -54,6 +54,7 @@ export interface PretestProgress {
   answers: Record<string, string>;
   currentQuestionIndex: number;
   submittedAt: string | null;
+  unlockedByPasscodeAt: string | null;
   score: number | null;
   answeredCount: number;
   totalQuestions: number;
@@ -61,7 +62,7 @@ export interface PretestProgress {
 }
 
 export interface LearnerProgressState {
-  version: 3;
+  version: 4;
   moduleProgress: Record<ModuleProgressId, ModuleProgress>;
   bookmarkedStations: string[];
   stationRecognitionStats: Record<string, { attempts: number; correct: number }>;
@@ -92,6 +93,7 @@ type Action =
   | { type: 'recordModuleEngagement'; moduleId: TrackedLearningRouteId; seconds: number }
   | { type: 'setPretestAnswer'; questionId: string; optionId: string }
   | { type: 'setPretestQuestionIndex'; index: number }
+  | { type: 'unlockPretestWithPasscode' }
   | { type: 'submitPretest'; score: number; answeredCount: number; totalQuestions: number }
   | { type: 'setLastViewedStation'; stationId: string }
   | { type: 'setLastUsedKnobologyControl'; controlId: KnobologyControlId }
@@ -110,6 +112,7 @@ interface LearnerProgressContextValue {
   setPretestAnswer: (questionId: string, optionId: string) => void;
   setPretestQuestionIndex: (index: number) => void;
   submitPretest: (summary: { score: number; answeredCount: number; totalQuestions: number }) => void;
+  unlockPretestWithPasscode: () => void;
   setLastViewedStation: (stationId: string) => void;
   setLastUsedKnobologyControl: (controlId: KnobologyControlId) => void;
   reset: () => void;
@@ -130,6 +133,7 @@ function createPretestProgress(): PretestProgress {
     answers: {},
     currentQuestionIndex: 0,
     submittedAt: null,
+    unlockedByPasscodeAt: null,
     score: null,
     answeredCount: 0,
     totalQuestions: 0,
@@ -139,7 +143,7 @@ function createPretestProgress(): PretestProgress {
 
 export function createInitialLearnerProgress(): LearnerProgressState {
   return {
-    version: 3,
+    version: 4,
     moduleProgress: {
       pretest: createModuleProgress(),
       knobology: createModuleProgress(),
@@ -195,7 +199,7 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
   }
 
   return {
-    version: 3,
+    version: 4,
     moduleProgress: nextModuleProgress,
     bookmarkedStations: Array.isArray(raw.bookmarkedStations)
       ? raw.bookmarkedStations.filter((stationId): stationId is string => typeof stationId === 'string')
@@ -277,6 +281,8 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
                 ? Math.max(0, Math.floor(raw.pretest.currentQuestionIndex))
                 : 0,
             submittedAt: typeof raw.pretest.submittedAt === 'string' ? raw.pretest.submittedAt : null,
+            unlockedByPasscodeAt:
+              typeof raw.pretest.unlockedByPasscodeAt === 'string' ? raw.pretest.unlockedByPasscodeAt : null,
             score: typeof raw.pretest.score === 'number' ? Math.max(0, raw.pretest.score) : null,
             answeredCount:
               typeof raw.pretest.answeredCount === 'number' ? Math.max(0, Math.floor(raw.pretest.answeredCount)) : 0,
@@ -538,6 +544,18 @@ export function learnerProgressReducer(state: LearnerProgressState, action: Acti
         },
       };
     }
+    case 'unlockPretestWithPasscode':
+      if (state.pretest.unlockedByPasscodeAt) {
+        return state;
+      }
+
+      return {
+        ...state,
+        pretest: {
+          ...state.pretest,
+          unlockedByPasscodeAt: new Date().toISOString(),
+        },
+      };
     case 'submitPretest':
       return {
         ...state,
@@ -807,6 +825,10 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'submitPretest', ...summary });
   }, []);
 
+  const unlockPretestWithPasscode = useCallback(() => {
+    dispatch({ type: 'unlockPretestWithPasscode' });
+  }, []);
+
   const setLastViewedStation = useCallback((stationId: string) => {
     dispatch({ type: 'setLastViewedStation', stationId });
   }, []);
@@ -833,6 +855,7 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
       setPretestAnswer,
       setPretestQuestionIndex,
       submitPretest,
+      unlockPretestWithPasscode,
       setLastViewedStation,
       setLastUsedKnobologyControl,
       reset,
@@ -852,6 +875,7 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
       submitPretest,
       state,
       toggleStationBookmark,
+      unlockPretestWithPasscode,
       visitRoute,
     ],
   );

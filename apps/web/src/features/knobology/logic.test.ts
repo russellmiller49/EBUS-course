@@ -23,12 +23,12 @@ const exercise = {
 
 describe('getDepthFrameIndex', () => {
   it('maps depth values to the nearest real EBUS depth frame', () => {
-    expect(getDepthFrameIndex(0, 5)).toBe(0);
-    expect(getDepthFrameIndex(28, 5)).toBe(0);
-    expect(getDepthFrameIndex(40, 5)).toBe(1);
-    expect(getDepthFrameIndex(68, 5)).toBe(2);
-    expect(getDepthFrameIndex(82, 5)).toBe(3);
-    expect(getDepthFrameIndex(100, 5)).toBe(4);
+    expect(getDepthFrameIndex(0, 6)).toBe(0);
+    expect(getDepthFrameIndex(28, 6)).toBe(0);
+    expect(getDepthFrameIndex(40, 6)).toBe(1);
+    expect(getDepthFrameIndex(60, 6)).toBe(2);
+    expect(getDepthFrameIndex(68, 6)).toBe(3);
+    expect(getDepthFrameIndex(100, 6)).toBe(5);
   });
 
   it('falls back safely when only one frame is available', () => {
@@ -54,8 +54,8 @@ describe('reduceKnobologyFrameState', () => {
     state = reduceKnobologyFrameState(state, { type: 'PROCESSOR_ACTION', actionId: 'MEASURE_SET' });
     state = reduceKnobologyFrameState(state, { type: 'PROCESSOR_ACTION', actionId: 'FLOW_MODE' });
 
-    expect(state.gain).toBe(28);
-    expect(state.contrast).toBe(52);
+    expect(state.gain).toBe(29);
+    expect(state.contrast).toBe(43);
     expect(state.menu).toBe('image-adjust');
     expect(state.pipEnabled).toBe(true);
     expect(state.frozen).toBe(true);
@@ -73,7 +73,7 @@ describe('reduceKnobologyFrameState', () => {
 
     state = reduceKnobologyFrameState(state, { type: 'PROCESSOR_ACTION', actionId: 'THE_R' });
 
-    expect(state.contrast).toBe(72);
+    expect(state.contrast).toBe(100);
     expect(state.harmonicMode).toBe('r');
     expect(state.statusMessage).toBe('Contrast set high.');
   });
