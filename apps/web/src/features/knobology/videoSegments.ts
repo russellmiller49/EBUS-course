@@ -2,6 +2,7 @@ import { resolveCourseAssetPath } from '@/lib/assets';
 
 export const KNOBOLOGY_LOOKUP_SRC = resolveCourseAssetPath('/media/knobology/knobology_lookup.json');
 export const KNOBOLOGY_SEGMENT_VIDEO_DIR = resolveCourseAssetPath('/media/knobology/Depth_segments');
+export const KNOBOLOGY_DEPTH_FILE_SEGMENT_DURATION_SECONDS = 2;
 
 export const KNOBOLOGY_VIDEO_DEPTH_LEVELS = [20, 40, 60, 72, 84, 100] as const;
 export const KNOBOLOGY_VIDEO_DEPTHS_CM = [2, 3, 4, 5, 6, 8] as const;
@@ -172,11 +173,61 @@ export function getKnobologyVideoSegmentSrc(depthCm: KnobologyVideoDepthCm | num
   return resolveCourseAssetPath(`/media/knobology/Depth_segments/Depth${depthCm}.mp4`);
 }
 
+function getNumericSegmentValue(value: number | string): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function getDepthFileOffsetForFlowMode(value: number | string): number | null {
+  if (value === 'color') {
+    return 32;
+  }
+
+  if (value === 'power') {
+    return 34;
+  }
+
+  if (value === 'h_flow') {
+    return 36;
+  }
+
+  return null;
+}
+
+function getDepthFileSegmentStart(segment: KnobologyVideoSegment): number | null {
+  const numericValue = getNumericSegmentValue(segment.value);
+
+  if (segment.control === 'gain' && numericValue !== null && numericValue >= 1 && numericValue <= 8) {
+    return (numericValue - 1) * KNOBOLOGY_DEPTH_FILE_SEGMENT_DURATION_SECONDS;
+  }
+
+  if (segment.control === 'contrast' && numericValue !== null && numericValue >= 1 && numericValue <= 8) {
+    return 16 + (numericValue - 1) * KNOBOLOGY_DEPTH_FILE_SEGMENT_DURATION_SECONDS;
+  }
+
+  if (segment.control === 'flow_mode') {
+    return getDepthFileOffsetForFlowMode(segment.value);
+  }
+
+  return null;
+}
+
 export function getKnobologyVideoSegmentStart(segment: KnobologyVideoSegment): number {
+  const depthFileStart = getDepthFileSegmentStart(segment);
+
+  if (depthFileStart !== null) {
+    return depthFileStart;
+  }
+
   return typeof segment.source?.in_seconds === 'number' ? segment.source.in_seconds : segment.sequence.start_seconds;
 }
 
 export function getKnobologyVideoSegmentEnd(segment: KnobologyVideoSegment): number {
+  const depthFileStart = getDepthFileSegmentStart(segment);
+
+  if (depthFileStart !== null) {
+    return depthFileStart + KNOBOLOGY_DEPTH_FILE_SEGMENT_DURATION_SECONDS;
+  }
+
   return typeof segment.source?.out_seconds === 'number' ? segment.source.out_seconds : segment.sequence.end_seconds;
 }
 

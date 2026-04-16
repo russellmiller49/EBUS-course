@@ -101,7 +101,7 @@ describe('knobology video segment mapping', () => {
   });
 
   it('resolves per-depth source files and prefers source-local timing when present', () => {
-    const segment: KnobologyVideoSegment = {
+    const contrastSegment: KnobologyVideoSegment = {
       ...makeSegment('Depth4_Contrast_4', 4, 'contrast', 4),
       sequence: {
         start_frame: 8160,
@@ -121,9 +121,31 @@ describe('knobology video segment mapping', () => {
         source_duration_seconds: 16,
       },
     };
+    const flowSegment: KnobologyVideoSegment = {
+      ...makeSegment('Depth5_Power_Flow', 5, 'flow_mode', 'power'),
+      sequence: {
+        start_frame: 6600,
+        end_frame: 6720,
+        start_seconds: 110,
+        end_seconds: 112,
+        duration_frames: 120,
+        duration_seconds: 2,
+      },
+      source: {
+        file: null,
+        in_frame: 120,
+        out_frame: 240,
+        in_seconds: 2,
+        out_seconds: 4,
+        source_duration_frames: 360,
+        source_duration_seconds: 6,
+      },
+    };
 
     expect(getKnobologyVideoSegmentSrc(4)).toBe('/media/knobology/Depth_segments/Depth4.mp4');
-    expect(getKnobologyVideoSegmentStart(segment)).toBe(6);
-    expect(getKnobologyVideoSegmentEnd(segment)).toBe(8);
+    expect(getKnobologyVideoSegmentStart(contrastSegment)).toBe(22);
+    expect(getKnobologyVideoSegmentEnd(contrastSegment)).toBe(24);
+    expect(getKnobologyVideoSegmentStart(flowSegment)).toBe(34);
+    expect(getKnobologyVideoSegmentEnd(flowSegment)).toBe(36);
   });
 });
