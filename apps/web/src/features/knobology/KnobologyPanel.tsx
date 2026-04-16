@@ -23,7 +23,6 @@ import {
   buildFrameMetrics,
   createKnobologyFrameState,
   evaluateExercise,
-  FREQUENCY_LABELS,
   getMeasurementDistanceMmForDepthCm,
   reduceKnobologyFrameState,
   type KnobologyMenuMode,
@@ -451,18 +450,6 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                   )}
                 </div>
 
-                <div className="knobology-frame__focus-marker" style={{ top: `${frameMetrics.focusMarkerY}%` }} />
-                {frameState.mode === 'pw' ? (
-                  <div className="knobology-frame__waveform" style={{ opacity: frameMetrics.waveformOpacity }}>
-                    {Array.from({ length: 20 }).map((_, index) => (
-                      <span
-                        key={index}
-                        className="knobology-frame__waveform-bar"
-                        style={{ height: `${28 + ((index * 17) % 56)}%` }}
-                      />
-                    ))}
-                  </div>
-                ) : null}
                 {frameState.measurementMode === 'measure' && frameState.measurementStart ? (
                   <div className="knobology-frame__measurement-layer">
                     <div className="knobology-frame__measurement-panel">
@@ -527,34 +514,6 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                         Note {index + 1}
                       </span>
                     ))}
-                  </div>
-                ) : null}
-                {frameState.frozen || frameState.cineReviewMode ? (
-                  <div className="knobology-frame__cine-strip">
-                    <span>Cine {frameState.cineFrame + 1}/7</span>
-                    <div className="knobology-frame__cine-track">
-                      <span
-                        className="knobology-frame__cine-thumb"
-                        style={{ left: `${(frameState.cineFrame / 6) * 100}%` }}
-                      />
-                    </div>
-                    <span>{frameState.cinePlaying ? 'Playing' : 'Paused'}</span>
-                  </div>
-                ) : null}
-                <div className="knobology-frame__status">
-                  <span>D {activeDepthCm} cm</span>
-                  <span>G {frameState.gain}</span>
-                  <span>C {frameState.contrast}</span>
-                  <span>{frameState.mode.toUpperCase()}</span>
-                  <span>F {FREQUENCY_LABELS[frameState.frequencyIndex]}</span>
-                  {frameState.frozen ? <span>FRZ</span> : null}
-                  {frameState.saved ? <span>SAV</span> : null}
-                  {frameState.pipEnabled ? <span>PIP</span> : null}
-                </div>
-                {displayedControlLabSegment ? (
-                  <div className="knobology-frame__segment-chip">
-                    <span>{displayedControlLabSegment.segment.name}</span>
-                    {displayedControlLabSegment.isPreferredBestView ? <strong>Best view</strong> : null}
                   </div>
                 ) : null}
               </div>
