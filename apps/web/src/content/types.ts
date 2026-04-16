@@ -156,6 +156,22 @@ export interface CourseInfoContent {
   visuals: CourseInfoVisuals;
 }
 
+export interface ProceduralVideoContentItem {
+  id: string;
+  playlistIndex: number;
+  title: string;
+  youtubeId: string;
+}
+
+export interface ProceduralVideoLibraryContent {
+  id: string;
+  title: string;
+  summary: string;
+  playlistTitle: string;
+  playlistUrl: string;
+  videos: ProceduralVideoContentItem[];
+}
+
 export interface StationAssetKeys {
   map: string;
   ct: string;
