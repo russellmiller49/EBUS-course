@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useReducer, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import { EducationSectionCard } from '@/components/education/EducationModuleRenderer';
 import { knobologyAdvancedContent } from '@/content/education';
@@ -13,16 +13,18 @@ import type { EuMe2Hotspot, EuMe2Layout } from '@/features/knobology/processor/t
 import { useKnobologyVideoLookup } from '@/features/knobology/useKnobologyVideoLookup';
 import {
   getKnobologyVideoDepthCm,
-  KNOBOLOGY_VIDEO_SRC,
+  getKnobologyVideoSegmentSrc,
   resolveKnobologyVideoSegment,
   type KnobologyBModeSegmentControl,
   type KnobologyFlowSegmentMode,
+  type ResolvedKnobologyVideoSegment,
 } from '@/features/knobology/videoSegments';
 import {
   buildFrameMetrics,
   createKnobologyFrameState,
   evaluateExercise,
   FREQUENCY_LABELS,
+  getMeasurementDistanceMmForDepthCm,
   reduceKnobologyFrameState,
   type KnobologyMenuMode,
   type KnobologyProcessorActionId,
@@ -97,6 +99,41 @@ function getActiveBModeSegmentControl(
   return 'depth';
 }
 
+function buildMeasurementLineModel(
+  start: { x: number; y: number } | null,
+  end: { x: number; y: number } | null,
+  distanceMm: number | null,
+) {
+  if (!start) {
+    return null;
+  }
+
+  if (!end) {
+    return {
+      angle: 0,
+      distanceLabel: null,
+      end: start,
+      length: 0,
+      midX: start.x,
+      midY: start.y,
+      start,
+    };
+  }
+
+  const deltaX = end.x - start.x;
+  const deltaY = end.y - start.y;
+
+  return {
+    angle: (Math.atan2(deltaY, deltaX) * 180) / Math.PI,
+    distanceLabel: distanceMm !== null ? `${distanceMm.toFixed(1)} mm` : null,
+    end,
+    length: Math.sqrt(deltaX ** 2 + deltaY ** 2),
+    midX: (start.x + end.x) / 2,
+    midY: (start.y + end.y) / 2,
+    start,
+  };
+}
+
 export function KnobologyPanel({ processorDebug = false }: { processorDebug?: boolean }) {
   const { setLastUsedKnobologyControl, setModuleProgress, state: progressState } = useLearnerProgress();
   const [activeExerciseId, setActiveExerciseId] = useState(knobologyContent.controlLabExercises[0]?.id ?? '');
@@ -107,6 +144,8 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
   const [showLearnMore, setShowLearnMore] = useState(true);
   const [selectedPathId, setSelectedPathId] = useState<string | null>(null);
   const [flowPreviewMode, setFlowPreviewMode] = useState<KnobologyFlowSegmentMode>('color');
+  const [frozenSegmentSnapshot, setFrozenSegmentSnapshot] = useState<ResolvedKnobologyVideoSegment | null>(null);
+  const wasFrozenRef = useRef(false);
   const videoLookupState = useKnobologyVideoLookup();
   const activeExercise =
     knobologyContent.controlLabExercises.find((exercise) => exercise.id === activeExerciseId) ??
@@ -177,7 +216,6 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
   );
   const lastKeyboardControl = frameState.lastActionId ? getControlForAction(frameState.lastActionId) : null;
   const activeBModeSegmentControl = getActiveBModeSegmentControl(activeControl, lastKeyboardControl);
-  const activeDepthCm = getKnobologyVideoDepthCm(frameState.depth);
   const controlLabFlowMode: KnobologyFlowSegmentMode | null =
     frameState.mode === 'flow' ? 'color' : frameState.mode === 'pw' ? 'power' : null;
   const activeVideoMedia = controlLabFlowMode
@@ -198,6 +236,8 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
         flowMode: controlLabFlowMode,
       })
     : null;
+  const displayedControlLabSegment = frameState.frozen ? frozenSegmentSnapshot ?? controlLabSegment : controlLabSegment;
+  const activeDepthCm = displayedControlLabSegment?.segment.depth ?? getKnobologyVideoDepthCm(frameState.depth);
   const dopplerPreviewSegment = videoLookupState.lookup
     ? resolveKnobologyVideoSegment(videoLookupState.lookup, {
         depth: frameState.depth,
@@ -209,6 +249,17 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
     : null;
   const videoTimelineStatus =
     videoLookupState.status === 'error' ? 'Video timeline unavailable' : 'Loading video timeline';
+  const measurementDistanceMm =
+    frameState.measurementPoints > 1 && frameState.measurementEnd
+      ? getMeasurementDistanceMmForDepthCm(activeDepthCm, frameState.measurementStart, frameState.measurementEnd)
+      : null;
+  const measurementLineModel = buildMeasurementLineModel(
+    frameState.measurementStart,
+    frameState.measurementEnd,
+    measurementDistanceMm,
+  );
+  const activeMeasurementMarker = frameState.activeMeasurementMarker;
+  const trackballActive = frameState.frozen && frameState.measurementMode === 'measure';
   const keyboardFeedbackCards = KEYBOARD_FEEDBACK_CONTROLS.map((controlId) => {
     const currentValue = frameState[controlId];
     const targetValue = activeExercise.target[controlId];
@@ -286,6 +337,18 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
     };
   });
 
+  useEffect(() => {
+    if (frameState.frozen && !wasFrozenRef.current) {
+      setFrozenSegmentSnapshot(controlLabSegment);
+    }
+
+    if (!frameState.frozen && wasFrozenRef.current) {
+      setFrozenSegmentSnapshot(null);
+    }
+
+    wasFrozenRef.current = frameState.frozen;
+  }, [controlLabSegment, frameState.frozen]);
+
   function markExerciseSolved() {
     if (evaluation.solved) {
       setModuleProgress('knobology', 55);
@@ -312,6 +375,14 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
     if (actionId === 'MEASURE_MODE' || actionId === 'MEASURE_SET' || actionId === 'TRACE_MODE') {
       setModuleProgress('knobology', 60);
     }
+  }
+
+  function handleTrackballMove(delta: { x: number; y: number }) {
+    dispatchFrame({
+      type: 'MOVE_TRACKBALL',
+      deltaX: delta.x,
+      deltaY: delta.y,
+    });
   }
 
   return (
@@ -365,13 +436,13 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
             <div className="stack-card knobology-frame">
               <div className="knobology-frame__screen">
                 <div className="knobology-frame__video-shell">
-                  {controlLabSegment ? (
+                  {displayedControlLabSegment ? (
                     <KnobologySegmentVideo
                       ariaLabel="Timestamped EBUS video segment used for the knobology control lab"
                       className="knobology-frame__video"
                       paused={frameState.frozen && !frameState.cinePlaying}
-                      segment={controlLabSegment.segment}
-                      src={KNOBOLOGY_VIDEO_SRC}
+                      segment={displayedControlLabSegment.segment}
+                      src={getKnobologyVideoSegmentSrc(displayedControlLabSegment.segment.depth)}
                     />
                   ) : (
                     <div className="knobology-frame__video-empty">
@@ -392,18 +463,53 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                     ))}
                   </div>
                 ) : null}
-                {frameState.calipers ? (
-                  <div
-                    className={`knobology-frame__calipers${frameState.measurementMode === 'trace' ? ' knobology-frame__calipers--trace' : ''}`}
-                  >
-                    {frameState.measurementPoints > 1 ? (
-                      <span className="knobology-frame__measure-readout">12.4 mm</span>
+                {frameState.measurementMode === 'measure' && frameState.measurementStart ? (
+                  <div className="knobology-frame__measurement-layer">
+                    <div className="knobology-frame__measurement-panel">
+                      <span>D1:</span>
+                      <strong>{measurementDistanceMm !== null ? `${measurementDistanceMm.toFixed(1)} mm` : '-- mm'}</strong>
+                      <span>D2:</span>
+                      <strong>-- mm</strong>
+                    </div>
+                    {measurementLineModel && frameState.measurementEnd ? (
+                      <>
+                        <div
+                          className="knobology-frame__measurement-line"
+                          style={{
+                            left: `${measurementLineModel.start.x * 100}%`,
+                            top: `${measurementLineModel.start.y * 100}%`,
+                            transform: `translateY(-50%) rotate(${measurementLineModel.angle}deg)`,
+                            width: `${measurementLineModel.length * 100}%`,
+                          }}
+                        />
+                        <span
+                          className="knobology-frame__measurement-label"
+                          style={{
+                            left: `${measurementLineModel.end.x * 100}%`,
+                            top: `${measurementLineModel.end.y * 100}%`,
+                          }}
+                        >
+                          D1
+                        </span>
+                      </>
                     ) : null}
+                    {[frameState.measurementStart, frameState.measurementEnd].map((point, index) =>
+                      point ? (
+                        <span
+                          key={`${index}-${point.x}-${point.y}`}
+                          className={`knobology-frame__measurement-marker${activeMeasurementMarker === index ? ' knobology-frame__measurement-marker--active' : ''}`}
+                          style={{
+                            left: `${point.x * 100}%`,
+                            top: `${point.y * 100}%`,
+                          }}
+                        />
+                      ) : null,
+                    )}
                   </div>
                 ) : null}
-                {frameState.pipEnabled && controlLabSegment ? (
+                {frameState.pipEnabled && displayedControlLabSegment ? (
                   <div className="knobology-frame__pip" style={{ opacity: frameMetrics.pipOpacity }}>
-                    <strong>{controlLabSegment.label}</strong>
+                    <strong>{displayedControlLabSegment.label}</strong>
                     <span>PIP</span>
                   </div>
                 ) : null}
@@ -445,10 +551,10 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                   {frameState.saved ? <span>SAV</span> : null}
                   {frameState.pipEnabled ? <span>PIP</span> : null}
                 </div>
-                {controlLabSegment ? (
+                {displayedControlLabSegment ? (
                   <div className="knobology-frame__segment-chip">
-                    <span>{controlLabSegment.segment.name}</span>
-                    {controlLabSegment.isPreferredBestView ? <strong>Best view</strong> : null}
+                    <span>{displayedControlLabSegment.segment.name}</span>
+                    {displayedControlLabSegment.isPreferredBestView ? <strong>Best view</strong> : null}
                   </div>
                 ) : null}
               </div>
@@ -466,7 +572,9 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                 layout={processorLayout}
                 menuMode={frameState.menu}
                 onAction={handleProcessorAction}
+                onTrackballMove={handleTrackballMove}
                 showHotspotHints
+                trackballActive={trackballActive}
               />
 
               <div className="knobology-console__details">
@@ -474,9 +582,9 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                   <div>
                     <h3>Use the processor and touch panel together.</h3>
                     <p>
-                      Every glowing hotspot is clickable, including the touch panel. Try depth, gain, freeze, Doppler,
-                      calipers, and save to see immediate feedback in the frame above. Tapping `IMAGE ADJUST` swaps the
-                      processor screen so the contrast controls change with it.
+                      Freeze first, then tap `CALIPER` to drop the initial cursor. The trackball moves the active
+                      marker, `SET` fixes the first point and arms the second, and `CURSOR` swaps between the two if
+                      you want to fine-tune the measurement.
                     </p>
                   </div>
                 </div>
@@ -484,6 +592,7 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                 <div className="tag-row">
                   <span className="tag">Glowing overlays = tappable controls</span>
                   <span className="tag">Touch panel hotspots change with the active screen</span>
+                  <span className="tag">Trackball drives calipers on frozen images</span>
                 </div>
 
                 <div className="knobology-console__touch-panel">
@@ -614,7 +723,7 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                     ariaLabel="Timestamped EBUS flow video segment"
                     className="doppler-lab__video"
                     segment={dopplerPreviewSegment.segment}
-                    src={KNOBOLOGY_VIDEO_SRC}
+                    src={getKnobologyVideoSegmentSrc(dopplerPreviewSegment.segment.depth)}
                   />
                 ) : (
                   <div className="knobology-frame__video-empty">

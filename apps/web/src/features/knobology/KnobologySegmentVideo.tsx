@@ -1,6 +1,10 @@
 import { useEffect, useRef } from 'react';
 
-import type { KnobologyVideoSegment } from '@/features/knobology/videoSegments';
+import {
+  getKnobologyVideoSegmentEnd,
+  getKnobologyVideoSegmentStart,
+  type KnobologyVideoSegment,
+} from '@/features/knobology/videoSegments';
 
 const SEGMENT_START_OFFSET_SECONDS = 0.025;
 const SEGMENT_LOOP_MARGIN_SECONDS = 0.045;
@@ -14,7 +18,7 @@ interface KnobologySegmentVideoProps {
 }
 
 function getSegmentStart(segment: KnobologyVideoSegment): number {
-  return segment.sequence.start_seconds + SEGMENT_START_OFFSET_SECONDS;
+  return getKnobologyVideoSegmentStart(segment) + SEGMENT_START_OFFSET_SECONDS;
 }
 
 export function KnobologySegmentVideo({
@@ -76,7 +80,7 @@ export function KnobologySegmentVideo({
     }
 
     const start = getSegmentStart(segment);
-    const end = segment.sequence.end_seconds;
+    const end = getKnobologyVideoSegmentEnd(segment);
 
     const loopWithinSegment = () => {
       if (video.currentTime < start - 0.2 || video.currentTime >= end - SEGMENT_LOOP_MARGIN_SECONDS) {

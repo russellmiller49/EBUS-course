@@ -1,25 +1,25 @@
 {
   "depth": {
     "clips": [
-      "/media/knobology/Knobology_Clean.mp4"
+      "/media/knobology/Depth_segments/Depth4.mp4"
     ],
-    "caption": "The control lab now seeks into the local timestamped EBUS video for each depth step instead of simulating depth from a still image."
+    "caption": "The control lab now seeks into depth-specific local EBUS clips instead of a single combined video."
   },
   "gain": {
     "clips": [
-      "/media/knobology/Knobology_Clean.mp4"
+      "/media/knobology/Depth_segments/Depth4.mp4"
     ],
     "caption": "Gain controls select one of eight real EBUS gain clips at the current depth."
   },
   "contrast": {
     "clips": [
-      "/media/knobology/Knobology_Clean.mp4"
+      "/media/knobology/Depth_segments/Depth4.mp4"
     ],
     "caption": "Contrast controls select one of eight real EBUS contrast clips at the current depth."
   },
   "color-doppler": {
     "clips": [
-      "/media/knobology/Knobology_Clean.mp4"
+      "/media/knobology/Depth_segments/Depth4.mp4"
     ],
     "caption": "Flow preview uses the timestamped Color Flow, Power Flow, and H-flow clips at the active depth."
   },

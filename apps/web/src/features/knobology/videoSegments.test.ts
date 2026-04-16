@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   getKnobologyVideoDepthCm,
   getKnobologyVideoSegmentCandidates,
+  getKnobologyVideoSegmentEnd,
+  getKnobologyVideoSegmentSrc,
+  getKnobologyVideoSegmentStart,
   getKnobologyVideoValueIndex,
   resolveKnobologyVideoSegment,
   type KnobologyVideoLookup,
@@ -22,6 +25,15 @@ function makeSegment(name: string, depth: number, control: KnobologyVideoSegment
       end_seconds: 2,
       duration_frames: 120,
       duration_seconds: 2,
+    },
+    source: {
+      file: `${name}.mp4`,
+      in_frame: 0,
+      out_frame: 120,
+      in_seconds: 0,
+      out_seconds: 2,
+      source_duration_frames: 120,
+      source_duration_seconds: 2,
     },
   };
 }
@@ -86,5 +98,32 @@ describe('knobology video segment mapping', () => {
     });
 
     expect(segment?.segment.name).toBe('Depth5_Color.mp4');
+  });
+
+  it('resolves per-depth source files and prefers source-local timing when present', () => {
+    const segment: KnobologyVideoSegment = {
+      ...makeSegment('Depth4_Contrast_4', 4, 'contrast', 4),
+      sequence: {
+        start_frame: 8160,
+        end_frame: 8280,
+        start_seconds: 136,
+        end_seconds: 138,
+        duration_frames: 120,
+        duration_seconds: 2,
+      },
+      source: {
+        file: null,
+        in_frame: 360,
+        out_frame: 480,
+        in_seconds: 6,
+        out_seconds: 8,
+        source_duration_frames: 960,
+        source_duration_seconds: 16,
+      },
+    };
+
+    expect(getKnobologyVideoSegmentSrc(4)).toBe('/media/knobology/Depth_segments/Depth4.mp4');
+    expect(getKnobologyVideoSegmentStart(segment)).toBe(6);
+    expect(getKnobologyVideoSegmentEnd(segment)).toBe(8);
   });
 });

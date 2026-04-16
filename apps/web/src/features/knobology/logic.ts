@@ -1,5 +1,6 @@
 import type { KnobologyCorrectionExercise } from '@/content/types';
 import {
+  getKnobologyVideoDepthCm,
   getKnobologyVideoValueForIndex,
   KNOBOLOGY_VIDEO_DEPTH_LEVELS,
   stepKnobologyVideoValue,
@@ -10,6 +11,7 @@ export type KnobologyMeasurementMode = 'off' | 'measure' | 'trace';
 export type KnobologyMenuMode = 'none' | 'main' | 'image-adjust';
 export type KnobologyHarmonicMode = 'off' | 'p' | 'r';
 export type KnobologyObservationPreset = 'GI' | 'PB' | 'RSP' | null;
+export type KnobologyMeasurementMarkerIndex = 0 | 1;
 
 export type KnobologyProcessorActionId =
   | 'SAVE_REC'
@@ -72,6 +74,9 @@ export interface KnobologyFrameState {
   mode: KnobologyImagingMode;
   measurementMode: KnobologyMeasurementMode;
   measurementPoints: number;
+  measurementStart: KnobologyMeasurementPoint | null;
+  measurementEnd: KnobologyMeasurementPoint | null;
+  activeMeasurementMarker: KnobologyMeasurementMarkerIndex | null;
   commentCount: number;
   irMode: boolean;
   scrollMode: boolean;
@@ -111,6 +116,11 @@ export interface ExerciseEvaluation {
   feedback: string;
 }
 
+export interface KnobologyMeasurementPoint {
+  x: number;
+  y: number;
+}
+
 export type KnobologySimulatorAction =
   | {
       type: 'RESET_FOR_EXERCISE';
@@ -126,6 +136,11 @@ export type KnobologySimulatorAction =
       enabled: boolean;
     }
   | {
+      type: 'MOVE_TRACKBALL';
+      deltaX: number;
+      deltaY: number;
+    }
+  | {
       type: 'PROCESSOR_ACTION';
       actionId: KnobologyProcessorActionId;
     };
@@ -134,6 +149,19 @@ const DEFAULT_DEPTH_FRAME_LEVELS = KNOBOLOGY_VIDEO_DEPTH_LEVELS;
 const FOCUS_MARKER_LEVELS = [26, 42, 58, 74] as const;
 export const FREQUENCY_LABELS = ['5.0 MHz', '6.5 MHz', '7.5 MHz'] as const;
 const CINE_FRAME_COUNT = 7;
+const MEASUREMENT_DEFAULT_POINT = {
+  x: 0.49,
+  y: 0.44,
+} as const satisfies KnobologyMeasurementPoint;
+const MEASUREMENT_TRACKBALL_SENSITIVITY = 0.0012;
+const MEASUREMENT_SECTOR = {
+  apexX: 0.5,
+  apexY: 0.055,
+  baseY: 0.905,
+  baseWidth: 0.92,
+  markerMargin: 0.012,
+  sectorAngleDegrees: 72,
+} as const;
 const CONTRAST_PRESETS = {
   off: getKnobologyVideoValueForIndex(1),
   p: getKnobologyVideoValueForIndex(4),
@@ -153,6 +181,47 @@ function cycleDepth(depth: number): number {
   const nextIndex = currentIndex >= 0 ? cycleIndex(currentIndex, DEFAULT_DEPTH_FRAME_LEVELS.length) : 0;
 
   return DEFAULT_DEPTH_FRAME_LEVELS[nextIndex];
+}
+
+function getMeasurementDepthFraction(y: number) {
+  return clamp((y - MEASUREMENT_SECTOR.apexY) / (MEASUREMENT_SECTOR.baseY - MEASUREMENT_SECTOR.apexY), 0.04, 1);
+}
+
+function clampMeasurementPoint(point: KnobologyMeasurementPoint): KnobologyMeasurementPoint {
+  const depthFraction = getMeasurementDepthFraction(point.y);
+  const sectorWidth = MEASUREMENT_SECTOR.baseWidth * depthFraction;
+  const left = MEASUREMENT_SECTOR.apexX - sectorWidth / 2 + MEASUREMENT_SECTOR.markerMargin;
+  const right = MEASUREMENT_SECTOR.apexX + sectorWidth / 2 - MEASUREMENT_SECTOR.markerMargin;
+
+  return {
+    x: clamp(point.x, left, right),
+    y: clamp(point.y, MEASUREMENT_SECTOR.apexY + 0.01, MEASUREMENT_SECTOR.baseY - 0.01),
+  };
+}
+
+function createDefaultMeasurementPoint() {
+  return clampMeasurementPoint(MEASUREMENT_DEFAULT_POINT);
+}
+
+function moveMeasurementPoint(point: KnobologyMeasurementPoint, deltaX: number, deltaY: number): KnobologyMeasurementPoint {
+  return clampMeasurementPoint({
+    x: point.x + deltaX * MEASUREMENT_TRACKBALL_SENSITIVITY,
+    y: point.y + deltaY * MEASUREMENT_TRACKBALL_SENSITIVITY,
+  });
+}
+
+function resetMeasurementState(): Pick<
+  KnobologyFrameState,
+  'calipers' | 'measurementMode' | 'measurementPoints' | 'measurementStart' | 'measurementEnd' | 'activeMeasurementMarker'
+> {
+  return {
+    calipers: false,
+    measurementMode: 'off',
+    measurementPoints: 0,
+    measurementStart: null,
+    measurementEnd: null,
+    activeMeasurementMarker: null,
+  };
 }
 
 function getHarmonicModeForContrast(contrast: number): KnobologyHarmonicMode {
@@ -190,6 +259,9 @@ export function createKnobologyFrameState(exercise: KnobologyCorrectionExercise)
     mode: 'b',
     measurementMode: 'off',
     measurementPoints: 0,
+    measurementStart: null,
+    measurementEnd: null,
+    activeMeasurementMarker: null,
     commentCount: 0,
     irMode: false,
     scrollMode: false,
@@ -249,25 +321,41 @@ function applyProcessorAction(
       });
     case 'CLEAR':
       return withAction(state, actionId, {
-        calipers: false,
-        measurementMode: 'off',
-        measurementPoints: 0,
+        ...resetMeasurementState(),
         commentCount: 0,
         statusMessage: 'Measurements and comments cleared.',
       });
     case 'TRACE_MODE':
+      if (!state.frozen) {
+        return withAction(state, actionId, {
+          statusMessage: 'Freeze the image before using trace.',
+        });
+      }
+
       return withAction(state, actionId, {
         calipers: false,
         measurementMode: 'trace',
         measurementPoints: 0,
+        measurementStart: null,
+        measurementEnd: null,
+        activeMeasurementMarker: null,
         statusMessage: 'Trace mode ready.',
       });
     case 'MEASURE_MODE':
+      if (!state.frozen) {
+        return withAction(state, actionId, {
+          statusMessage: 'Freeze the image before measuring.',
+        });
+      }
+
       return withAction(state, actionId, {
         calipers: true,
         measurementMode: 'measure',
-        measurementPoints: Math.max(1, state.measurementPoints),
-        statusMessage: 'Measure mode active.',
+        measurementPoints: 1,
+        measurementStart: createDefaultMeasurementPoint(),
+        measurementEnd: null,
+        activeMeasurementMarker: 0,
+        statusMessage: 'Trackball moves the first caliper.',
       });
     case 'COMMENT_ADD':
       return withAction(state, actionId, {
@@ -280,11 +368,28 @@ function applyProcessorAction(
         statusMessage: 'Comments cleared.',
       });
     case 'MEASURE_SET':
+      if (!state.frozen || state.measurementMode !== 'measure' || !state.measurementStart) {
+        return withAction(state, actionId, {
+          statusMessage: 'Freeze and place a caliper before setting a measurement.',
+        });
+      }
+
+      if (state.measurementPoints <= 1) {
+        return withAction(state, actionId, {
+          calipers: true,
+          measurementMode: 'measure',
+          measurementPoints: 2,
+          measurementEnd: state.measurementStart,
+          activeMeasurementMarker: 1,
+          statusMessage: 'First caliper fixed. Move the second marker.',
+        });
+      }
+
       return withAction(state, actionId, {
         calipers: true,
-        measurementMode: state.measurementMode === 'trace' ? 'trace' : 'measure',
-        measurementPoints: clamp(state.measurementPoints + 1, 1, 2),
-        statusMessage: 'Measurement set.',
+        measurementMode: 'measure',
+        measurementPoints: 2,
+        statusMessage: 'Measurement updated.',
       });
     case 'IR_MODE':
       return withAction(state, actionId, {
@@ -294,7 +399,7 @@ function applyProcessorAction(
     case 'SCROLL_MODE':
       return withAction(state, actionId, {
         scrollMode: !state.scrollMode,
-        statusMessage: state.scrollMode ? 'Scroll off.' : 'Scroll on.',
+        statusMessage: state.scrollMode ? 'Trackball scroll off.' : 'Trackball scroll on.',
       });
     case 'CINE_REVIEW_MODE':
       return withAction(state, actionId, {
@@ -357,10 +462,40 @@ function applyProcessorAction(
         statusMessage: 'Cine stepped forward.',
       });
     case 'TOGGLE_FREEZE':
+      if (state.frozen) {
+        return withAction(state, actionId, {
+          frozen: false,
+          cinePlaying: false,
+          cineReviewMode: false,
+          scrollMode: false,
+          ...resetMeasurementState(),
+          statusMessage: 'Live imaging resumed.',
+        });
+      }
+
       return withAction(state, actionId, {
-        frozen: !state.frozen,
+        frozen: true,
         cinePlaying: false,
-        statusMessage: state.frozen ? 'Live imaging resumed.' : 'Image frozen.',
+        cineReviewMode: false,
+        statusMessage: 'Image frozen.',
+      });
+    case 'CURSOR_MODE':
+      if (!state.frozen || state.measurementMode !== 'measure') {
+        return withAction(state, actionId, {
+          statusMessage: 'Freeze and enable calipers before selecting a cursor.',
+        });
+      }
+
+      if (state.measurementPoints <= 1) {
+        return withAction(state, actionId, {
+          activeMeasurementMarker: 0,
+          statusMessage: 'First caliper active.',
+        });
+      }
+
+      return withAction(state, actionId, {
+        activeMeasurementMarker: state.activeMeasurementMarker === 1 ? 0 : 1,
+        statusMessage: state.activeMeasurementMarker === 1 ? 'First caliper active.' : 'Second caliper active.',
       });
     case 'OPEN_MAIN_MENU':
       return withAction(state, actionId, {
@@ -485,11 +620,62 @@ export function reduceKnobologyFrameState(
         mode: action.enabled ? 'flow' : state.mode === 'flow' ? 'b' : state.mode,
         lastActionId: null,
       };
+    case 'MOVE_TRACKBALL': {
+      if (!state.frozen || state.measurementMode !== 'measure' || !state.measurementStart) {
+        return state;
+      }
+
+      if (state.activeMeasurementMarker === 1 && state.measurementPoints > 1 && state.measurementEnd) {
+        return {
+          ...state,
+          measurementEnd: moveMeasurementPoint(state.measurementEnd, action.deltaX, action.deltaY),
+          lastActionId: null,
+        };
+      }
+
+      return {
+        ...state,
+        measurementStart: moveMeasurementPoint(state.measurementStart, action.deltaX, action.deltaY),
+        lastActionId: null,
+      };
+    }
     case 'PROCESSOR_ACTION':
       return applyProcessorAction(state, action.actionId);
     default:
       return state;
   }
+}
+
+export function getMeasurementDistanceMmForDepthCm(
+  depthCm: number,
+  measurementStart: KnobologyMeasurementPoint | null,
+  measurementEnd: KnobologyMeasurementPoint | null,
+) {
+  if (!measurementStart || !measurementEnd) {
+    return null;
+  }
+
+  const averageY = (measurementStart.y + measurementEnd.y) / 2;
+  const depthFraction = getMeasurementDepthFraction(averageY);
+  const totalDepthMm = depthCm * 10;
+  const averageDepthMm = totalDepthMm * depthFraction;
+  const sectorWidthAtDepth = Math.max(0.04, MEASUREMENT_SECTOR.baseWidth * depthFraction);
+  const sectorWidthMm =
+    2 * averageDepthMm * Math.tan((MEASUREMENT_SECTOR.sectorAngleDegrees * Math.PI) / 360);
+  const horizontalMm = (Math.abs(measurementEnd.x - measurementStart.x) / sectorWidthAtDepth) * sectorWidthMm;
+  const verticalMm =
+    (Math.abs(measurementEnd.y - measurementStart.y) / (MEASUREMENT_SECTOR.baseY - MEASUREMENT_SECTOR.apexY)) *
+    totalDepthMm;
+
+  return Math.sqrt(horizontalMm ** 2 + verticalMm ** 2);
+}
+
+export function getMeasurementDistanceMm(state: Pick<KnobologyFrameState, 'depth' | 'measurementStart' | 'measurementEnd'>) {
+  return getMeasurementDistanceMmForDepthCm(
+    getKnobologyVideoDepthCm(state.depth),
+    state.measurementStart,
+    state.measurementEnd,
+  );
 }
 
 export function getDepthFrameIndex(

@@ -1,5 +1,5 @@
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import type { KnobologyMenuMode, KnobologyProcessorActionId } from '@/features/knobology/logic';
 import type { EuMe2Hotspot, EuMe2Layout } from '@/features/knobology/processor/types';
@@ -59,8 +59,10 @@ export function EuMe2Keyboard({
   onAction,
   onHotspotPointerDown,
   onHotspotSelect,
+  onTrackballMove,
   selectedHotspotId = null,
   showHotspotHints = false,
+  trackballActive = false,
 }: {
   activeActionId?: KnobologyProcessorActionId | null;
   debug?: boolean;
@@ -69,11 +71,15 @@ export function EuMe2Keyboard({
   onAction?: (actionId: KnobologyProcessorActionId) => void;
   onHotspotPointerDown?: (hotspotId: string, event: ReactPointerEvent<HTMLButtonElement>) => void;
   onHotspotSelect?: (hotspotId: string) => void;
+  onTrackballMove?: (delta: { x: number; y: number }) => void;
   selectedHotspotId?: string | null;
   showHotspotHints?: boolean;
+  trackballActive?: boolean;
 }) {
   const [hoveredHotspotId, setHoveredHotspotId] = useState<string | null>(null);
   const [pressedHotspotId, setPressedHotspotId] = useState<string | null>(null);
+  const [trackballDragging, setTrackballDragging] = useState(false);
+  const lastTrackballPointRef = useRef<{ x: number; y: number } | null>(null);
   const editorMode = Boolean(onHotspotSelect || onHotspotPointerDown);
   const showHotspotLabels = debug || editorMode;
   const touchPanelRegion = layout.regions.touchPanel;
@@ -89,6 +95,14 @@ export function EuMe2Keyboard({
   ]
     .filter(Boolean)
     .join(' ');
+
+  function handleTrackballDelta(delta: { x: number; y: number }) {
+    if (delta.x === 0 && delta.y === 0) {
+      return;
+    }
+
+    onTrackballMove?.(delta);
+  }
 
   return (
     <figure className={figureClassName}>
@@ -109,6 +123,72 @@ export function EuMe2Keyboard({
           </div>
         ) : null}
         <div className="eu-me2__overlay">
+          {onTrackballMove ? (
+            <button
+              aria-label="Trackball"
+              className={`eu-me2__trackball-control${trackballActive ? ' eu-me2__trackball-control--active' : ''}${trackballDragging ? ' eu-me2__trackball-control--dragging' : ''}`}
+              onBlur={() => {
+                setTrackballDragging(false);
+                lastTrackballPointRef.current = null;
+              }}
+              onLostPointerCapture={() => {
+                setTrackballDragging(false);
+                lastTrackballPointRef.current = null;
+              }}
+              onPointerCancel={() => {
+                setTrackballDragging(false);
+                lastTrackballPointRef.current = null;
+              }}
+              onPointerDown={(event) => {
+                setTrackballDragging(true);
+                lastTrackballPointRef.current = {
+                  x: event.clientX,
+                  y: event.clientY,
+                };
+                event.currentTarget.setPointerCapture(event.pointerId);
+              }}
+              onPointerMove={(event) => {
+                if (!trackballDragging || !lastTrackballPointRef.current) {
+                  return;
+                }
+
+                const delta = {
+                  x: event.clientX - lastTrackballPointRef.current.x,
+                  y: event.clientY - lastTrackballPointRef.current.y,
+                };
+
+                lastTrackballPointRef.current = {
+                  x: event.clientX,
+                  y: event.clientY,
+                };
+                handleTrackballDelta(delta);
+              }}
+              onPointerUp={() => {
+                setTrackballDragging(false);
+                lastTrackballPointRef.current = null;
+              }}
+              onWheel={(event) => {
+                event.preventDefault();
+                handleTrackballDelta({
+                  x: event.shiftKey ? event.deltaY : event.deltaX,
+                  y: event.deltaY,
+                });
+              }}
+              style={getHotspotStyle({
+                action: 'CURSOR_MODE',
+                cx: layout.trackball.cx,
+                cy: layout.trackball.cy,
+                id: 'trackball-control',
+                label: 'Trackball',
+                r: layout.trackball.r,
+                shape: 'circle',
+              })}
+              type="button"
+            >
+              <span className="sr-only">Trackball</span>
+            </button>
+          ) : null}
+
           {debug ? (
             <>
               <div

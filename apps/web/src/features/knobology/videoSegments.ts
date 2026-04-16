@@ -1,7 +1,7 @@
 import { resolveCourseAssetPath } from '@/lib/assets';
 
-export const KNOBOLOGY_VIDEO_SRC = resolveCourseAssetPath('/media/knobology/Knobology_Clean.mp4');
 export const KNOBOLOGY_LOOKUP_SRC = resolveCourseAssetPath('/media/knobology/knobology_lookup.json');
+export const KNOBOLOGY_SEGMENT_VIDEO_DIR = resolveCourseAssetPath('/media/knobology/Depth_segments');
 
 export const KNOBOLOGY_VIDEO_DEPTH_LEVELS = [20, 40, 60, 72, 84, 100] as const;
 export const KNOBOLOGY_VIDEO_DEPTHS_CM = [2, 3, 4, 5, 6, 8] as const;
@@ -27,6 +27,15 @@ export interface KnobologyVideoSegment {
   control: 'gain' | 'contrast' | 'flow_mode' | string;
   value: number | string;
   sequence: KnobologyVideoSegmentSequence;
+  source?: {
+    file: string | null;
+    in_frame: number;
+    out_frame: number;
+    in_seconds: number;
+    out_seconds: number;
+    source_duration_frames: number;
+    source_duration_seconds: number;
+  };
 }
 
 export interface KnobologyVideoLookup {
@@ -157,6 +166,18 @@ export function formatKnobologyVideoSegmentLabel(segment: KnobologyVideoSegment)
   const controlLabel = segment.control === 'contrast' ? 'Contrast' : 'Gain';
 
   return `Depth ${segment.depth} cm · ${controlLabel} ${segment.value}`;
+}
+
+export function getKnobologyVideoSegmentSrc(depthCm: KnobologyVideoDepthCm | number): string {
+  return resolveCourseAssetPath(`/media/knobology/Depth_segments/Depth${depthCm}.mp4`);
+}
+
+export function getKnobologyVideoSegmentStart(segment: KnobologyVideoSegment): number {
+  return typeof segment.source?.in_seconds === 'number' ? segment.source.in_seconds : segment.sequence.start_seconds;
+}
+
+export function getKnobologyVideoSegmentEnd(segment: KnobologyVideoSegment): number {
+  return typeof segment.source?.out_seconds === 'number' ? segment.source.out_seconds : segment.sequence.end_seconds;
 }
 
 export function resolveKnobologyVideoSegment(

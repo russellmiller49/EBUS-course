@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { createKnobologyFrameState, getDepthFrameIndex, reduceKnobologyFrameState } from '@/features/knobology/logic';
+import {
+  createKnobologyFrameState,
+  getDepthFrameIndex,
+  getMeasurementDistanceMmForDepthCm,
+  reduceKnobologyFrameState,
+} from '@/features/knobology/logic';
 
 const exercise = {
   id: 'test',
@@ -63,6 +68,9 @@ describe('reduceKnobologyFrameState', () => {
     expect(state.cineFrame).toBe(1);
     expect(state.calipers).toBe(true);
     expect(state.measurementPoints).toBe(2);
+    expect(state.measurementStart).not.toBeNull();
+    expect(state.measurementEnd).not.toBeNull();
+    expect(state.activeMeasurementMarker).toBe(1);
     expect(state.mode).toBe('flow');
     expect(state.colorDoppler).toBe(true);
     expect(state.statusMessage).toBe('Flow mode active.');
@@ -76,5 +84,36 @@ describe('reduceKnobologyFrameState', () => {
     expect(state.contrast).toBe(100);
     expect(state.harmonicMode).toBe('r');
     expect(state.statusMessage).toBe('Contrast set high.');
+  });
+
+  it('requires freeze before live caliper measurement and clears it when live imaging resumes', () => {
+    let state = createKnobologyFrameState(exercise);
+
+    state = reduceKnobologyFrameState(state, { type: 'PROCESSOR_ACTION', actionId: 'MEASURE_MODE' });
+    expect(state.measurementPoints).toBe(0);
+    expect(state.statusMessage).toBe('Freeze the image before measuring.');
+
+    state = reduceKnobologyFrameState(state, { type: 'PROCESSOR_ACTION', actionId: 'TOGGLE_FREEZE' });
+    state = reduceKnobologyFrameState(state, { type: 'PROCESSOR_ACTION', actionId: 'MEASURE_MODE' });
+    state = reduceKnobologyFrameState(state, { type: 'MOVE_TRACKBALL', deltaX: -120, deltaY: -90 });
+
+    expect(state.measurementPoints).toBe(1);
+    expect(state.measurementStart?.x).not.toBe(0.49);
+
+    state = reduceKnobologyFrameState(state, { type: 'PROCESSOR_ACTION', actionId: 'MEASURE_SET' });
+    state = reduceKnobologyFrameState(state, { type: 'MOVE_TRACKBALL', deltaX: 86, deltaY: 0 });
+
+    expect(state.measurementPoints).toBe(2);
+    expect(state.activeMeasurementMarker).toBe(1);
+    expect(getMeasurementDistanceMmForDepthCm(4, state.measurementStart, state.measurementEnd)).toBeGreaterThan(0);
+
+    state = reduceKnobologyFrameState(state, { type: 'PROCESSOR_ACTION', actionId: 'CURSOR_MODE' });
+    expect(state.activeMeasurementMarker).toBe(0);
+
+    state = reduceKnobologyFrameState(state, { type: 'PROCESSOR_ACTION', actionId: 'TOGGLE_FREEZE' });
+    expect(state.frozen).toBe(false);
+    expect(state.measurementPoints).toBe(0);
+    expect(state.measurementStart).toBeNull();
+    expect(state.measurementEnd).toBeNull();
   });
 });
