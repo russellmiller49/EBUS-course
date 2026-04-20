@@ -4,6 +4,7 @@ import { buildHomeProgressModel } from '@/app/routes/home/progress';
 import { ModuleCard } from '@/components/ModuleCard';
 import { courseInfo } from '@/content/course';
 import { homeModuleCards } from '@/content/modules';
+import { SupabaseSyncCard } from '@/features/supabase/SupabaseSyncCard';
 import { useLearnerProgress } from '@/lib/progress';
 
 function ProgressMeter({ percent }: { percent: number }) {
@@ -299,6 +300,8 @@ export function HomePage() {
                 </span>
               ))}
             </div>
+
+            <SupabaseSyncCard />
           </div>
 
           <div className="course-workspace__modules">

@@ -113,6 +113,12 @@ export interface CourseInfoDirection {
   detail: string;
 }
 
+export interface CourseInfoSupabaseNextStep {
+  repo: string;
+  goal: string;
+  notes: string[];
+}
+
 export interface CourseInfoImageAsset {
   src: string;
   alt: string;
@@ -153,6 +159,7 @@ export interface CourseInfoContent {
   travelDirections: CourseInfoDirection[];
   facilityUrl: string;
   visuals: CourseInfoVisuals;
+  supabaseNextSteps?: CourseInfoSupabaseNextStep[];
 }
 
 export interface StationAssetKeys {

@@ -2,8 +2,10 @@ import type { ReactNode } from 'react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState } from 'react';
 
 import type { AppRouteId, KnobologyControlId } from '@/content/types';
+import { courseRuntimeConfig } from '@/lib/runtime';
 
-const STORAGE_KEY = 'socal-ebus-prep.web.learner-progress';
+const STORAGE_KEY = courseRuntimeConfig.learnerProgressStorageKey;
+const LEGACY_STORAGE_KEYS = courseRuntimeConfig.legacyLearnerProgressStorageKeys;
 
 type ModuleProgressId = 'pretest' | 'knobology' | 'station-map' | 'station-explorer' | 'lectures' | 'quiz' | 'case-001';
 
@@ -84,6 +86,12 @@ interface LearnerProgressContextValue {
 }
 
 const LearnerProgressContext = createContext<LearnerProgressContextValue | undefined>(undefined);
+
+interface StorageLike {
+  getItem(key: string): string | null;
+  removeItem(key: string): void;
+  setItem(key: string, value: string): void;
+}
 
 function createModuleProgress(): ModuleProgress {
   return {
@@ -435,18 +443,43 @@ export function learnerProgressReducer(state: LearnerProgressState, action: Acti
   }
 }
 
+export function loadPersistedLearnerProgress(storage: StorageLike): LearnerProgressState | null {
+  for (const key of [STORAGE_KEY, ...LEGACY_STORAGE_KEYS]) {
+    try {
+      const raw = storage.getItem(key);
+
+      if (!raw) {
+        continue;
+      }
+
+      const normalized = normalizeLearnerProgress(JSON.parse(raw));
+
+      if (key !== STORAGE_KEY) {
+        storage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+        storage.removeItem(key);
+      }
+
+      return normalized;
+    } catch {
+      // Ignore malformed storage entries and continue looking for a valid payload.
+    }
+  }
+
+  return null;
+}
+
 export function LearnerProgressProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(learnerProgressReducer, undefined, createInitialLearnerProgress);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+      const persisted = loadPersistedLearnerProgress(window.localStorage);
 
-      if (raw) {
+      if (persisted) {
         dispatch({
           type: 'hydrate',
-          payload: normalizeLearnerProgress(JSON.parse(raw)),
+          payload: persisted,
         });
       }
     } catch {

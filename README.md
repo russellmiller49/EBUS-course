@@ -14,11 +14,32 @@ From the repo root:
 npm install
 npm run dev
 npm run build
+npm run build:embed
 npm run typecheck
 npm run test
 ```
 
 These commands proxy into `apps/web`.
+
+## Deployment model
+
+This repo is the source of truth for the course itself. The current production integration is not a standalone app deploy from this repository.
+
+- Edit course UI, content, and learning logic here in `EBUS-course`.
+- Build and sync the static bundle into `Interventional-Pulm-Education-Project`.
+- Let the main site own the `/socal-ebus-course` wrapper page, iframe, redirects, and CSP/frame headers.
+
+Use `npm run build:embed` when you want to validate the same subpath-hosted bundle shape that the main site serves from `/socal-ebus-course/app/`.
+
+## Browser env
+
+The web app only accepts browser-safe `VITE_*` variables.
+
+- `VITE_APP_CODE=ebus_course`
+- `VITE_COURSE_CODE=socal_ebus_prep`
+- Optional live browser-side sync: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+
+Do not place service-role keys or other server secrets in this repository.
 
 ## Notes for curriculum assets
 

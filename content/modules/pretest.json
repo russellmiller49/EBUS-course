@@ -5,9 +5,9 @@
   "instructions": [
     "Complete the full pretest before the course when possible.",
     "Correct answers are intentionally hidden during the pretest experience.",
-    "Demo mode stores the latest score only on this device until login-backed logging is available."
+    "The app stores progress locally first and can sync to the shared Supabase project when an authenticated learner session is available."
   ],
-  "demoPolicy": "This demo records a local score and submission timestamp without collecting login details.",
+  "demoPolicy": "This pretest keeps working offline and can write the learner profile, pretest state, and saved score into the shared Supabase project when the learner is signed in.",
   "questions": [
     {
       "id": "pretest-01",

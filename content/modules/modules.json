@@ -5,7 +5,7 @@
     "shortTitle": "Pretest",
     "title": "EBUS Course Pretest",
     "summary": "Baseline course assessment with hidden answers and demo-only local score logging.",
-    "overview": "This module captures a pre-course score, keeps correct answers hidden, and stores the latest demo submission locally until authenticated logging is added.",
+    "overview": "This module captures a pre-course score, keeps correct answers hidden, and stores the latest submission locally first while optionally syncing to the shared Supabase project for authenticated learners.",
     "estimatedMinutes": 25,
     "featureFolder": "features/pretest",
     "route": "/modules/pretest",

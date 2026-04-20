@@ -20,9 +20,28 @@ Run from `apps/web`:
 npm install
 npm run dev
 npm run build
+npm run build:embed
 npm run typecheck
 npm run test
 ```
+
+`npm run build` is the generic local build. `npm run build:embed` produces the subpath-safe bundle shape used when the main Interventional Pulm site syncs this app into `/socal-ebus-course/app/`.
+
+## Integration model
+
+- This repository is the source of truth for the course app.
+- Production is currently served by syncing the built static bundle into the main `Interventional-Pulm-Education-Project` repo.
+- The main site owns the wrapper page, iframe, redirects, and frame/CSP headers.
+- Do not hand-edit synced files under `Interventional-Pulm-Education-Project/public/socal-ebus-course/app`.
+
+## Environment
+
+Use `.env.example` as the browser-side template.
+
+- Only `VITE_*` variables belong in this app.
+- Do not place `SUPABASE_SERVICE_ROLE_KEY` or other server-only secrets in this repo.
+- `VITE_APP_CODE` and `VITE_COURSE_CODE` scope local learner-progress storage so the embedded app can move toward shared-Supabase identity without dropping offline-first behavior.
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` enable optional browser-side live sync. When they or the learner session are missing, the app still falls back to local-only persistence.
 
 ### LLM / code-review digest (gitingest-style markdown)
 
@@ -70,6 +89,7 @@ Processor hotspot tuning note:
 
 - Vite is configured to read repo-root JSON outside `apps/web`, so the web app does not duplicate station, quiz, or case content.
 - The `/cases/case-001` route now uses the repo-native vtk.js viewer.
+- Subpath hosting is supported via `import.meta.env.BASE_URL`, and embedded-build verification is available locally through `npm run build:embed`.
 
 Case 001 source-of-truth note:
 

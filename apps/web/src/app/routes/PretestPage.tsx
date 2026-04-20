@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 
 import { getPretestImage, pretestContent } from '@/content/pretest';
 import { getFirstUnansweredQuestionIndex, getNextUnansweredQuestionIndex, scorePretest } from '@/features/pretest/logic';
+import { useSupabaseSync } from '@/features/supabase/SupabaseSyncProvider';
 import { useLearnerProgress } from '@/lib/progress';
 
 function formatTimestamp(value: string | null) {
@@ -16,6 +17,7 @@ function formatTimestamp(value: string | null) {
 
 export function PretestPage() {
   const { state, setModuleProgress, setPretestAnswer, setPretestQuestionIndex, submitPretest } = useLearnerProgress();
+  const { configured, hasSession, status } = useSupabaseSync();
   const questions = pretestContent.questions;
   const pretest = state.pretest;
   const currentIndex = Math.max(0, Math.min(questions.length - 1, pretest.currentQuestionIndex));
@@ -29,6 +31,13 @@ export function PretestPage() {
   const savedScore = pretest.score ?? result.correctCount;
   const savedTotal = pretest.totalQuestions || questions.length;
   const savedPercent = savedTotal > 0 ? Math.round((savedScore / savedTotal) * 100) : 0;
+  const loggingModeLabel = !configured
+    ? 'Local only'
+    : hasSession
+      ? status === 'syncing'
+        ? 'Syncing to Supabase'
+        : 'Live Supabase sync'
+      : 'Supabase ready, no session';
   const progressPercent =
     submitted || result.totalCount === 0 ? 100 : Math.max(12, Math.round((result.answeredCount / result.totalCount) * 92));
 
@@ -81,7 +90,7 @@ export function PretestPage() {
         <div className="tag-row">
           <span className="tag">{questions.length} questions</span>
           <span className="tag">Answers hidden</span>
-          <span className="tag">Demo local logging</span>
+          <span className="tag">{loggingModeLabel}</span>
         </div>
         <div className="stack-list">
           {pretestContent.instructions.map((instruction) => (
@@ -109,7 +118,7 @@ export function PretestPage() {
             <span>{submitted ? 'Saved percent' : 'Questions remaining'}</span>
           </article>
           <article className="mini-card">
-            <strong>{submitted ? pretest.attemptCount : 'Local only'}</strong>
+            <strong>{submitted ? pretest.attemptCount : loggingModeLabel}</strong>
             <span>{submitted ? 'Saved attempts' : 'Logging mode'}</span>
           </article>
         </div>

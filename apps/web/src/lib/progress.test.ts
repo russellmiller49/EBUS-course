@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { createInitialLearnerProgress, learnerProgressReducer, normalizeLearnerProgress } from '@/lib/progress';
+import {
+  createInitialLearnerProgress,
+  learnerProgressReducer,
+  loadPersistedLearnerProgress,
+  normalizeLearnerProgress,
+} from '@/lib/progress';
+import { getLearnerProgressStorageKeys } from '@/lib/runtime';
 
 describe('learnerProgressReducer', () => {
   it('records lecture completion and preserves the larger watched duration', () => {
@@ -65,5 +71,30 @@ describe('learnerProgressReducer', () => {
     expect(submitted.pretest.totalQuestions).toBe(42);
     expect(submitted.pretest.attemptCount).toBe(1);
     expect(submitted.pretest.submittedAt).toEqual(expect.any(String));
+  });
+
+  it('migrates legacy local progress into the app-scoped storage key', () => {
+    const [primaryStorageKey, legacyStorageKey] = getLearnerProgressStorageKeys();
+    const persistedState = {
+      ...createInitialLearnerProgress(),
+      bookmarkedStations: ['7'],
+    };
+    const storage = new Map<string, string>([[legacyStorageKey, JSON.stringify(persistedState)]]);
+    const removedKeys: string[] = [];
+
+    const hydrated = loadPersistedLearnerProgress({
+      getItem: (key) => storage.get(key) ?? null,
+      removeItem: (key) => {
+        removedKeys.push(key);
+        storage.delete(key);
+      },
+      setItem: (key, value) => {
+        storage.set(key, value);
+      },
+    });
+
+    expect(hydrated?.bookmarkedStations).toEqual(['7']);
+    expect(storage.has(primaryStorageKey)).toBe(true);
+    expect(removedKeys).toEqual([legacyStorageKey]);
   });
 });

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "npm --prefix apps/web run dev",
     "build": "npm --prefix apps/web run build",
+    "build:embed": "npm --prefix apps/web run build:embed",
     "preview": "npm --prefix apps/web run preview",
     "typecheck": "npm --prefix apps/web run typecheck",
     "test": "npm --prefix apps/web run test",
