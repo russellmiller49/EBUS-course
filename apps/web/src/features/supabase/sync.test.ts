@@ -5,6 +5,7 @@ import { createInitialLearnerProgress } from '@/lib/progress';
 import {
   buildLearnerLectureProgressRows,
   buildLearnerModuleProgressRows,
+  buildLearnerPretestAttemptRows,
   buildLearnerProfileRow,
   buildLearnerProgressSnapshotPayload,
   buildLearnerSnapshotRow,
@@ -88,7 +89,39 @@ describe('supabase sync helpers', () => {
         lecture_id: 'lecture-01',
         watched_seconds: 540,
         completed: true,
-        submitted_at: syncedAt,
+        completed_at: syncedAt,
+        last_opened_at: '2026-04-19T10:10:00.000Z',
+        updated_at: syncedAt,
+      },
+    ]);
+  });
+
+  it('builds pretest attempt rows when a submission exists', () => {
+    const state = createInitialLearnerProgress();
+    state.pretest.answers = { 'pretest-01': 'b' };
+    state.pretest.submittedAt = '2026-04-20T11:45:00.000Z';
+    state.pretest.score = 31;
+    state.pretest.answeredCount = 42;
+    state.pretest.totalQuestions = 42;
+    state.pretest.attemptCount = 1;
+
+    const identity = {
+      id: 'user-123',
+      email: 'fellow@example.com',
+    };
+    const syncedAt = '2026-04-20T12:00:00.000Z';
+
+    expect(buildLearnerPretestAttemptRows(identity, state, syncedAt)).toEqual([
+      {
+        learner_id: 'user-123',
+        attempt_number: 1,
+        score: 31,
+        answered_count: 42,
+        total_questions: 42,
+        percent: 74,
+        answers: { 'pretest-01': 'b' },
+        submitted_at: '2026-04-20T11:45:00.000Z',
+        created_at: syncedAt,
       },
     ]);
   });

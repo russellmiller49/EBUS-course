@@ -1,4 +1,5 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { courseRuntimeConfig } from '@/lib/runtime';
 
@@ -18,13 +19,10 @@ export function getSupabaseBrowserClient() {
     return browserClient;
   }
 
-  browserClient = createClient(courseRuntimeConfig.supabaseUrl!, courseRuntimeConfig.supabaseAnonKey!, {
-    auth: {
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      persistSession: true,
-    },
-  });
+  browserClient = createBrowserClient(
+    courseRuntimeConfig.supabaseUrl!,
+    courseRuntimeConfig.supabaseAnonKey!,
+  );
 
   return browserClient;
 }

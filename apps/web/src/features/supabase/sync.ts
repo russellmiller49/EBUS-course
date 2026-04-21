@@ -83,6 +83,36 @@ export function buildLearnerLectureProgressRows(
     lecture_id: lectureId,
     watched_seconds: progress.watchedSeconds,
     completed: progress.completed,
-    submitted_at: progress.completed ? syncedAt : null,
+    completed_at: progress.completed ? syncedAt : null,
+    last_opened_at: progress.lastOpenedAt,
+    updated_at: syncedAt,
   }));
+}
+
+export function buildLearnerPretestAttemptRows(
+  identity: LearnerIdentity,
+  state: LearnerProgressState,
+  syncedAt: string,
+) {
+  if (!state.pretest.submittedAt || state.pretest.attemptCount < 1) {
+    return [];
+  }
+
+  const totalQuestions = state.pretest.totalQuestions;
+  const score = state.pretest.score ?? 0;
+  const percent = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+
+  return [
+    {
+      learner_id: identity.id,
+      attempt_number: state.pretest.attemptCount,
+      score,
+      answered_count: state.pretest.answeredCount,
+      total_questions: totalQuestions,
+      percent,
+      answers: state.pretest.answers,
+      submitted_at: state.pretest.submittedAt,
+      created_at: syncedAt,
+    },
+  ];
 }

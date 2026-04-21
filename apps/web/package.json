@@ -15,6 +15,7 @@
   "dependencies": {
     "@itk-wasm/image-io": "^1.6.1",
     "@kitware/vtk.js": "^35.5.1",
+    "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.104.0",
     "itk-wasm": "^1.0.0-b.196",
     "react": "^19.1.0",

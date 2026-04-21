@@ -8,6 +8,7 @@ import { getSupabaseBrowserClient, hasSupabaseBrowserConfig } from './client';
 import {
   buildLearnerLectureProgressRows,
   buildLearnerModuleProgressRows,
+  buildLearnerPretestAttemptRows,
   buildLearnerProfileRow,
   buildLearnerSnapshotRow,
   hasLearnerProgressActivity,
@@ -144,6 +145,17 @@ export function SupabaseSyncProvider({ children }: PropsWithChildren) {
 
         if (lectureError) {
           throw lectureError;
+        }
+      }
+
+      const pretestAttemptRows = buildLearnerPretestAttemptRows(identity, state, syncedAt);
+      if (pretestAttemptRows.length > 0) {
+        const { error: pretestAttemptError } = await supabase
+          .from('learner_pretest_attempts')
+          .upsert(pretestAttemptRows, { onConflict: 'learner_id,attempt_number' });
+
+        if (pretestAttemptError) {
+          throw pretestAttemptError;
         }
       }
 
