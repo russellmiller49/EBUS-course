@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { LearnerProgressState, LectureWatchState } from '@/lib/progress';
 
 export interface ModuleSessionRecordInput {
-  moduleId: 'pretest' | 'lectures' | 'knobology' | 'stations' | 'quiz' | 'case-001';
+  moduleId: 'pretest' | 'lectures' | 'knobology' | 'stations' | 'quiz' | 'case-001' | 'simulator';
   routePath: string;
   startedAt: string;
   endedAt: string;
@@ -104,6 +104,14 @@ function toTrackedModuleRows(userId: string, state: LearnerProgressState) {
       visited_at: state.moduleProgress['case-001'].visitedAt,
       completed_at: state.moduleProgress['case-001'].completedAt,
       time_spent_seconds: state.engagement['case-001'].totalSeconds,
+    },
+    {
+      learner_id: userId,
+      module_id: 'simulator',
+      percent_complete: state.moduleProgress.simulator.percentComplete,
+      visited_at: state.moduleProgress.simulator.visitedAt,
+      completed_at: state.moduleProgress.simulator.completedAt,
+      time_spent_seconds: state.engagement.simulator.totalSeconds,
     },
     {
       learner_id: userId,

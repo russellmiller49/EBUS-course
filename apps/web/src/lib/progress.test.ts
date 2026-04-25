@@ -36,12 +36,23 @@ describe('learnerProgressReducer', () => {
     const initial = createInitialLearnerProgress();
     const next = learnerProgressReducer(initial, {
       type: 'recordModuleEngagement',
-      moduleId: 'lectures',
+      moduleId: 'simulator',
       seconds: 95,
     });
 
-    expect(next.engagement.lectures.totalSeconds).toBe(95);
-    expect(next.engagement.lectures.lastTrackedAt).toEqual(expect.any(String));
+    expect(next.engagement.simulator.totalSeconds).toBe(95);
+    expect(next.engagement.simulator.lastTrackedAt).toEqual(expect.any(String));
+  });
+
+  it('tracks the simulator as a first-class module route', () => {
+    const initial = createInitialLearnerProgress();
+    const next = learnerProgressReducer(initial, {
+      type: 'visitModule',
+      moduleId: 'simulator',
+    });
+
+    expect(next.moduleProgress.simulator.percentComplete).toBe(15);
+    expect(next.moduleProgress.simulator.visitedAt).toEqual(expect.any(String));
   });
 
   it('normalizes malformed persisted state back to defaults', () => {
@@ -56,6 +67,7 @@ describe('learnerProgressReducer', () => {
     });
 
     expect(normalized.moduleProgress.knobology.percentComplete).toBe(100);
+    expect(normalized.moduleProgress.simulator.percentComplete).toBe(0);
     expect(normalized.moduleProgress.knobology.visitedAt).toBeNull();
     expect(normalized.bookmarkedStations).toEqual(['4R']);
     expect(normalized.engagement.lectures.totalSeconds).toBe(0);

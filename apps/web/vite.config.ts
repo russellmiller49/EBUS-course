@@ -41,6 +41,7 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       environment: 'node',
+      pool: 'forks',
     },
   };
 });

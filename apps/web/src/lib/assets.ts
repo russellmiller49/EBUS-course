@@ -1,4 +1,4 @@
-const ASSET_PREFIXES = ['/media/', '/pipelines/'] as const;
+const ASSET_PREFIXES = ['/media/', '/pipelines/', '/simulator/'] as const;
 const ABSOLUTE_URL_PATTERN = /^(?:[a-z][a-z\d+\-.]*:)?\/\//i;
 
 function normalizeBaseUrl(baseUrl: string | undefined): string {

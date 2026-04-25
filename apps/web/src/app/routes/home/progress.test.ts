@@ -10,6 +10,7 @@ describe('buildHomeProgressModel', () => {
     const { learningSteps, resumeModule } = buildHomeProgressModel(state);
 
     expect(learningSteps[0]?.id).toBe('pretest');
+    expect(learningSteps.map((step) => step.id)).toContain('simulator');
     expect(resumeModule?.id).toBe('pretest');
   });
 

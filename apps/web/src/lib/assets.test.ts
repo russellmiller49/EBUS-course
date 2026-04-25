@@ -8,6 +8,12 @@ describe('resolveCourseAssetPath', () => {
     expect(resolveCourseAssetPath('/media/stations/x.png')).toBe('/media/stations/x.png');
   });
 
+  it('treats simulator case files as course assets', () => {
+    expect(resolveCourseAssetPath('/simulator/case-001/case_manifest.web.json')).toBe(
+      '/simulator/case-001/case_manifest.web.json',
+    );
+  });
+
   it('ignores absolute URLs', () => {
     expect(resolveCourseAssetPath('https://example.com/media/x.png')).toBe('https://example.com/media/x.png');
   });

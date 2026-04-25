@@ -15,6 +15,7 @@ import { LecturesPage } from '@/app/routes/LecturesPage';
 import { PretestPage } from '@/app/routes/PretestPage';
 import { QuizPage } from '@/app/routes/QuizPage';
 import { Case001Page } from '@/app/routes/Case001Page';
+import { SimulatorPage } from '@/app/routes/SimulatorPage';
 import { NotFoundPage } from '@/app/routes/NotFoundPage';
 import { canAccessRoute, getLockedRoutePath, getRouteLockReason } from '@/lib/access';
 import { useAuth } from '@/lib/auth';
@@ -29,6 +30,7 @@ const navItems: NavigationItem[] = [
   { id: 'knobology', label: 'Knobology', icon: '◐', path: '/knobology' },
   { id: 'stations', label: 'Stations', icon: '◎', path: '/stations' },
   { id: 'case-001', label: '3D Anatomy', icon: '◫', path: '/cases/case-001' },
+  { id: 'simulator', label: 'Simulator', icon: '◌', path: '/simulator' },
   { id: 'quiz', label: 'Quiz', icon: '✎', path: '/quiz' },
 ];
 
@@ -61,6 +63,10 @@ function resolveRouteId(pathname: string): AppRouteId | null {
     return 'case-001';
   }
 
+  if (pathname.startsWith('/simulator')) {
+    return 'simulator';
+  }
+
   return null;
 }
 
@@ -87,6 +93,10 @@ function getTrackedModuleId(pathname: string) {
 
   if (pathname.startsWith('/cases/case-001')) {
     return 'case-001';
+  }
+
+  if (pathname.startsWith('/simulator')) {
+    return 'simulator';
   }
 
   return null;
@@ -249,6 +259,7 @@ export function App() {
         <Route element={<LecturesPage />} path="/lectures" />
         <Route element={<QuizPage />} path="/quiz" />
         <Route element={<Case001Page />} path="/cases/case-001" />
+        <Route element={<SimulatorPage />} path="/simulator" />
         <Route element={<NotFoundPage />} path="*" />
       </Routes>
     </AppShell>

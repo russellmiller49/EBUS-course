@@ -13,7 +13,15 @@ export interface StoredLearnerProgressRecord {
   state: LearnerProgressState;
 }
 
-export type ModuleProgressId = 'pretest' | 'knobology' | 'station-map' | 'station-explorer' | 'lectures' | 'quiz' | 'case-001';
+export type ModuleProgressId =
+  | 'pretest'
+  | 'knobology'
+  | 'station-map'
+  | 'station-explorer'
+  | 'lectures'
+  | 'quiz'
+  | 'case-001'
+  | 'simulator';
 
 function createEngagementSummary() {
   return {
@@ -62,7 +70,7 @@ export interface PretestProgress {
 }
 
 export interface LearnerProgressState {
-  version: 4;
+  version: 5;
   moduleProgress: Record<ModuleProgressId, ModuleProgress>;
   bookmarkedStations: string[];
   stationRecognitionStats: Record<string, { attempts: number; correct: number }>;
@@ -143,7 +151,7 @@ function createPretestProgress(): PretestProgress {
 
 export function createInitialLearnerProgress(): LearnerProgressState {
   return {
-    version: 4,
+    version: 5,
     moduleProgress: {
       pretest: createModuleProgress(),
       knobology: createModuleProgress(),
@@ -152,6 +160,7 @@ export function createInitialLearnerProgress(): LearnerProgressState {
       lectures: createModuleProgress(),
       quiz: createModuleProgress(),
       'case-001': createModuleProgress(),
+      simulator: createModuleProgress(),
     },
     bookmarkedStations: [],
     stationRecognitionStats: {},
@@ -162,6 +171,7 @@ export function createInitialLearnerProgress(): LearnerProgressState {
       stations: createEngagementSummary(),
       quiz: createEngagementSummary(),
       'case-001': createEngagementSummary(),
+      simulator: createEngagementSummary(),
     },
     lectureWatchStatus: {},
     quizScoreHistory: [],
@@ -199,7 +209,7 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
   }
 
   return {
-    version: 4,
+    version: 5,
     moduleProgress: nextModuleProgress,
     bookmarkedStations: Array.isArray(raw.bookmarkedStations)
       ? raw.bookmarkedStations.filter((stationId): stationId is string => typeof stationId === 'string')
@@ -250,6 +260,7 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
             stations: normalizeEngagementRecord(raw.engagement.stations),
             quiz: normalizeEngagementRecord(raw.engagement.quiz),
             'case-001': normalizeEngagementRecord(raw.engagement['case-001']),
+            simulator: normalizeEngagementRecord(raw.engagement.simulator),
           }
         : initial.engagement,
     quizScoreHistory: Array.isArray(raw.quizScoreHistory)
