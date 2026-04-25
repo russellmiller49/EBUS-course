@@ -14,7 +14,7 @@ import {
   hasLearnerProgressActivity,
 } from './sync';
 
-type SyncStatus = 'disabled' | 'checking-session' | 'signed-out' | 'ready' | 'syncing' | 'synced' | 'error';
+export type SyncStatus = 'disabled' | 'checking-session' | 'signed-out' | 'ready' | 'syncing' | 'synced' | 'error';
 
 interface SupabaseSyncContextValue {
   configured: boolean;
@@ -22,6 +22,8 @@ interface SupabaseSyncContextValue {
   hasSession: boolean;
   isDirty: boolean;
   lastSyncedAt: string | null;
+  signInWithPassword: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
   status: SyncStatus;
   syncNow: () => Promise<void>;
   syncError: string | null;
@@ -51,6 +53,9 @@ export function SupabaseSyncProvider({ children }: PropsWithChildren) {
   const lastSyncedSignatureRef = useRef<string | null>(null);
   const userId = session?.user.id ?? null;
   const userEmail = session?.user.email ?? null;
+  const sessionUserIdRef = useRef<string | null>(userId);
+
+  sessionUserIdRef.current = userId;
 
   useEffect(() => {
     if (!supabase) {
@@ -100,8 +105,9 @@ export function SupabaseSyncProvider({ children }: PropsWithChildren) {
       return;
     }
 
+    const syncUserId = userId;
     const identity = {
-      id: userId,
+      id: syncUserId,
       email: userEmail,
     };
     const syncedAt = new Date().toISOString();
@@ -159,14 +165,52 @@ export function SupabaseSyncProvider({ children }: PropsWithChildren) {
         }
       }
 
+      if (sessionUserIdRef.current !== syncUserId) {
+        return;
+      }
+
       lastSyncedSignatureRef.current = syncSignature;
       setLastSyncedAt(syncedAt);
       setStatus('synced');
     } catch (error) {
+      if (sessionUserIdRef.current !== syncUserId) {
+        return;
+      }
+
       setSyncError(formatSyncError(error));
       setStatus('error');
     }
   }, [hasActivity, hydrated, state, supabase, syncSignature, userEmail, userId]);
+
+  const signInWithPassword = useCallback(
+    async (email: string, password: string) => {
+      if (!supabase) {
+        throw new Error('Supabase is not configured for this environment.');
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+    },
+    [supabase],
+  );
+
+  const signOut = useCallback(async () => {
+    if (!supabase) {
+      return;
+    }
+
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      throw error;
+    }
+  }, [supabase]);
 
   useEffect(() => {
     if (!supabase || !userId || !hydrated || !hasActivity) {
@@ -193,12 +237,14 @@ export function SupabaseSyncProvider({ children }: PropsWithChildren) {
       hasSession: Boolean(userId),
       isDirty: hasActivity && lastSyncedSignatureRef.current !== syncSignature,
       lastSyncedAt,
+      signInWithPassword,
+      signOut,
       status,
       syncNow,
       syncError,
       userEmail,
     }),
-    [configured, hasActivity, lastSyncedAt, status, syncError, syncNow, syncSignature, userEmail, userId],
+    [configured, hasActivity, lastSyncedAt, signInWithPassword, signOut, status, syncError, syncNow, syncSignature, userEmail, userId],
   );
 
   return <SupabaseSyncContext.Provider value={value}>{children}</SupabaseSyncContext.Provider>;

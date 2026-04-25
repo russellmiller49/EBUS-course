@@ -236,5 +236,51 @@
       "11Ri",
       "11Rs"
     ]
+  },
+  {
+    "id": "simulator",
+    "slug": "simulator",
+    "shortTitle": "Simulator",
+    "title": "EBUS Anatomy Correlation Simulator",
+    "summary": "A static, browser-native station simulator with guided airway motion, curated snap targets, and synchronized EBUS-style sector views.",
+    "overview": "This module brings the standalone simulator into the course app as a Railway-friendly static learning experience. Python tooling remains available for regeneration, but learners use a normal React route with bundled case assets.",
+    "estimatedMinutes": 18,
+    "category": "simulation",
+    "status": "available",
+    "featureFolder": "features/simulator",
+    "route": "/simulator",
+    "goals": [
+      "Correlate airway position, external anatomy, and the EBUS-style sector.",
+      "Use curated station snaps for repeatable anatomy review.",
+      "Keep simulated visuals clearly framed as educational rather than diagnostic."
+    ],
+    "plannedExperiences": [
+      "Static case load",
+      "Station snap selector",
+      "Guided advance and retract",
+      "Probe roll control",
+      "Layer toggles",
+      "Precomputed station-snap sector overlays"
+    ],
+    "assetPlaceholders": [
+      {
+        "key": "simulator-case-001",
+        "label": "Static simulator case export",
+        "folder": "apps/web/public/simulator/case-001",
+        "note": "Regenerated from tools/ebus-simulator/scripts/export_course_case.py."
+      }
+    ],
+    "relatedStationIds": [
+      "2R",
+      "2L",
+      "4R",
+      "4L",
+      "7",
+      "10R",
+      "10L",
+      "11L",
+      "11Ri",
+      "11Rs"
+    ]
   }
 ]

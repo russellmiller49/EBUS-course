@@ -97,4 +97,17 @@ describe('learnerProgressReducer', () => {
     expect(storage.has(primaryStorageKey)).toBe(true);
     expect(removedKeys).toEqual([legacyStorageKey]);
   });
+
+  it('tracks simulator module progress in the local progress model', () => {
+    const initial = createInitialLearnerProgress();
+    const visited = learnerProgressReducer(initial, {
+      type: 'visitModule',
+      moduleId: 'simulator',
+      percentFloor: 20,
+    });
+
+    expect(initial.moduleProgress.simulator.percentComplete).toBe(0);
+    expect(visited.moduleProgress.simulator.percentComplete).toBe(20);
+    expect(visited.moduleProgress.simulator.visitedAt).toEqual(expect.any(String));
+  });
 });

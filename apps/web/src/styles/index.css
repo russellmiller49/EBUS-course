@@ -162,6 +162,27 @@ iframe {
   color: var(--text-muted);
 }
 
+.top-header__auth {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.top-header__auth-status {
+  max-width: 34ch;
+  color: var(--text-soft);
+}
+
+.top-header__action {
+  min-width: 170px;
+}
+
+.top-header__feedback {
+  margin: 0;
+  max-width: 34ch;
+}
+
 .top-nav {
   display: flex;
   gap: 10px;
@@ -1482,6 +1503,80 @@ iframe {
   color: var(--text-soft);
 }
 
+.auth-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(3, 8, 15, 0.78);
+  backdrop-filter: blur(10px);
+}
+
+.auth-dialog {
+  width: min(100%, 480px);
+  max-height: min(calc(100vh - 36px), 720px);
+  overflow-y: auto;
+  padding: 22px;
+  border-radius: 28px;
+  border: 1px solid rgba(127, 189, 242, 0.18);
+  background:
+    radial-gradient(circle at top right, rgba(127, 189, 242, 0.16), transparent 26%),
+    linear-gradient(180deg, rgba(18, 34, 53, 0.96), rgba(7, 17, 29, 0.98));
+  box-shadow: var(--shadow);
+}
+
+.auth-dialog__header,
+.auth-form,
+.field {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-dialog__header {
+  margin-bottom: 18px;
+}
+
+.auth-dialog__header p,
+.auth-feedback {
+  margin: 0;
+}
+
+.auth-dialog__close {
+  justify-self: end;
+}
+
+.field {
+  color: var(--text-muted);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.74rem;
+}
+
+.field input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(127, 189, 242, 0.18);
+  background: rgba(6, 13, 23, 0.92);
+  color: var(--text);
+}
+
+.field input::placeholder {
+  color: var(--text-muted);
+}
+
+.field input:focus-visible {
+  outline: 2px solid rgba(127, 189, 242, 0.72);
+  outline-offset: 2px;
+  border-color: rgba(127, 189, 242, 0.42);
+}
+
+.auth-feedback--error {
+  color: var(--accent-rose);
+}
+
 .doppler-lab {
   display: grid;
   gap: 14px;
@@ -2734,6 +2829,19 @@ iframe {
     flex-direction: column;
     align-items: flex-start;
     text-align: left;
+  }
+
+  .top-header__auth {
+    justify-items: start;
+  }
+
+  .auth-dialog {
+    padding: 18px 16px;
+    border-radius: 24px;
+  }
+
+  .auth-dialog__close {
+    justify-self: start;
   }
 
   .schedule-item {

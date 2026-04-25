@@ -7,7 +7,15 @@ import { courseRuntimeConfig } from '@/lib/runtime';
 const STORAGE_KEY = courseRuntimeConfig.learnerProgressStorageKey;
 const LEGACY_STORAGE_KEYS = courseRuntimeConfig.legacyLearnerProgressStorageKeys;
 
-type ModuleProgressId = 'pretest' | 'knobology' | 'station-map' | 'station-explorer' | 'lectures' | 'quiz' | 'case-001';
+type ModuleProgressId =
+  | 'pretest'
+  | 'knobology'
+  | 'station-map'
+  | 'station-explorer'
+  | 'lectures'
+  | 'quiz'
+  | 'case-001'
+  | 'simulator';
 
 export interface ModuleProgress {
   visitedAt: string | null;
@@ -124,6 +132,7 @@ export function createInitialLearnerProgress(): LearnerProgressState {
       lectures: createModuleProgress(),
       quiz: createModuleProgress(),
       'case-001': createModuleProgress(),
+      simulator: createModuleProgress(),
     },
     bookmarkedStations: [],
     stationRecognitionStats: {},
@@ -270,6 +279,10 @@ function getModuleForRoute(routeId: AppRouteId): ModuleProgressId | null {
 
   if (routeId === 'case-001') {
     return 'case-001';
+  }
+
+  if (routeId === 'simulator') {
+    return 'simulator';
   }
 
   return routeId;

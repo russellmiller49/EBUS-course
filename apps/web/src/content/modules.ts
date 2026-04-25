@@ -47,6 +47,14 @@ export const homeModuleCards: AppModuleCard[] = [
     path: '/cases/case-001',
   },
   {
+    id: 'simulator',
+    title: 'EBUS Simulator',
+    description: 'Static anatomy-correlation simulator with guided centerline motion and station snap targets.',
+    accent: 'var(--accent-green)',
+    icon: '◌',
+    path: '/simulator',
+  },
+  {
     id: 'quiz',
     title: 'Knowledge Check',
     description: 'Mixed question bank across knobology, station recognition, and explorer logic.',

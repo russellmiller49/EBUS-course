@@ -1,5 +1,19 @@
-export type RootModuleId = 'pretest' | 'knobology' | 'station-map' | 'station-explorer' | 'case-3d-explorer';
-export type AppRouteId = 'home' | 'pretest' | 'stations' | 'knobology' | 'lectures' | 'quiz' | 'case-001';
+export type RootModuleId =
+  | 'pretest'
+  | 'knobology'
+  | 'station-map'
+  | 'station-explorer'
+  | 'case-3d-explorer'
+  | 'simulator';
+export type AppRouteId =
+  | 'home'
+  | 'pretest'
+  | 'stations'
+  | 'knobology'
+  | 'lectures'
+  | 'quiz'
+  | 'case-001'
+  | 'simulator';
 export type StationZoneKey = 'upper' | 'subcarinal' | 'hilar';
 export type ExplorerViewId = 'ct' | 'bronchoscopy' | 'ultrasound';
 export type LessonSectionKind =

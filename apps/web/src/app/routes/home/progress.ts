@@ -1,7 +1,7 @@
 import type { LearnerProgressState } from '@/lib/progress';
 
 export interface HomeLearningStep {
-  id: 'pretest' | 'lectures' | 'knobology' | 'stations' | 'case-001' | 'quiz';
+  id: 'pretest' | 'lectures' | 'knobology' | 'stations' | 'case-001' | 'simulator' | 'quiz';
   path: string;
   percent: number;
   title: string;
@@ -14,6 +14,7 @@ const learningStepDefinitions: Array<Pick<HomeLearningStep, 'id' | 'path' | 'tit
   { id: 'knobology', title: 'Knobology', path: '/knobology' },
   { id: 'stations', title: 'Stations', path: '/stations/explore' },
   { id: 'case-001', title: '3D Anatomy', path: '/cases/case-001' },
+  { id: 'simulator', title: 'Simulator', path: '/simulator' },
   { id: 'quiz', title: 'Quiz', path: '/quiz' },
 ];
 
