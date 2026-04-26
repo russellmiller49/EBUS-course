@@ -235,6 +235,72 @@
   outline: none;
 }
 
+.simulator-sector-label-leader path {
+  fill: none;
+  stroke: rgba(217, 240, 238, 0.7);
+  stroke-dasharray: 1.2 1.2;
+  stroke-linecap: round;
+  stroke-width: 0.35;
+}
+
+.simulator-sector-label-leader circle {
+  fill: #d9f0ee;
+  opacity: 0.86;
+}
+
+.simulator-sector-callout {
+  position: absolute;
+  z-index: 3;
+  display: inline-flex;
+  max-width: min(210px, 42%);
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid rgba(139, 212, 255, 0.44);
+  background: rgba(15, 23, 25, 0.94);
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.34);
+  color: #ecf6f2;
+  font-size: 0.78rem;
+  line-height: 1.1;
+  pointer-events: none;
+}
+
+.simulator-sector-callout--left {
+  transform: translate(0, -50%);
+}
+
+.simulator-sector-callout--right {
+  transform: translate(-100%, -50%);
+}
+
+.simulator-sector-callout__swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+  flex: 0 0 auto;
+}
+
+.simulator-sector-callout__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.simulator-sector-callout__text span:first-child {
+  overflow-wrap: anywhere;
+  font-weight: 750;
+}
+
+.simulator-sector-callout__text span:last-child {
+  color: #8fb4c4;
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .simulator-structure-list {
   display: grid;
   gap: 8px;
