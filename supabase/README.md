@@ -3,6 +3,9 @@
 This app now supports:
 
 - invited learner login with Supabase Auth
+- self-service learner signup
+- password recovery emails
+- learner profile editing
 - first-password setup after invite acceptance
 - required pretest gating before other modules unlock
 - persistent learner snapshots, pretest attempts, lecture completion, and module time tracking
@@ -38,5 +41,6 @@ The script also accepts `NEXT_PUBLIC_SUPABASE_URL` or `NEXT_PUBLIC_SUPABASE_PROJ
 ## 4. Hosting notes
 
 - In Supabase Auth settings, add your production app URL and local dev URL to the redirect allow-list.
+- Include `https://your-app-host/auth` and `https://your-app-host/auth?mode=reset-password` in the allow-list for signup confirmation and password recovery.
 - SMTP must be configured in Supabase if you want branded invite emails.
 - The service-role key is only for the invite script. Do not expose it in the Vite client environment.

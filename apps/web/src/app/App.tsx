@@ -5,6 +5,7 @@ import { AppShell } from '@/components/AppShell';
 import type { AppRouteId, NavigationItem } from '@/content/types';
 import { HomePage } from '@/app/routes/HomePage';
 import { AuthPage } from '@/app/routes/AuthPage';
+import { AccountPage } from '@/app/routes/AccountPage';
 import { StationsPage } from '@/app/routes/StationsPage';
 import { StationsExplorePage } from '@/app/routes/stations/ExplorePage';
 import { StationsFlashcardsPage } from '@/app/routes/stations/FlashcardsPage';
@@ -247,6 +248,7 @@ export function App() {
       <Routes>
         <Route element={<HomePage />} path="/" />
         <Route element={<AuthPage />} path="/auth" />
+        <Route element={<AccountPage />} path="/account" />
         <Route element={<PretestPage />} path="/pretest" />
         <Route element={<StationsPage />} path="/stations">
           <Route element={<Navigate replace to="explore" />} index />

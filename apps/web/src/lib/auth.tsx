@@ -2,11 +2,34 @@ import type { ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase';
+import { getSiteUrl, getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase';
+
+export type LearnerDegree = 'MD' | 'DO';
+export type FellowshipYear = 'first' | 'second' | 'third';
+export type EbusConfidence = 'high' | 'moderate' | 'low';
+
+export interface LearnerProfileInput {
+  fullName: string;
+  degree: LearnerDegree;
+  institution: string;
+  institutionalEmail: string;
+  fellowshipYear: FellowshipYear;
+  flexibleBronchoscopyCount: number;
+  ebusCount: number;
+  ebusConfidence: EbusConfidence;
+}
 
 export interface LearnerProfile {
   id: string;
   email: string | null;
+  fullName: string | null;
+  degree: LearnerDegree | null;
+  institution: string | null;
+  institutionalEmail: string | null;
+  fellowshipYear: FellowshipYear | null;
+  flexibleBronchoscopyCount: number | null;
+  ebusCount: number | null;
+  ebusConfidence: EbusConfidence | null;
   inviteSentAt: string | null;
   lastSignInAt: string | null;
   mustSetPassword: boolean;
@@ -21,11 +44,31 @@ interface AuthContextValue {
   user: User | null;
   completePasswordSetup: (password: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  requestPasswordRecovery: (email: string) => Promise<void>;
   signInWithPassword: (email: string, password: string) => Promise<void>;
+  signUpWithProfile: (profile: LearnerProfileInput, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  updateLearnerProfile: (profile: LearnerProfileInput) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+function isLearnerDegree(value: unknown): value is LearnerDegree {
+  return value === 'MD' || value === 'DO';
+}
+
+function isFellowshipYear(value: unknown): value is FellowshipYear {
+  return value === 'first' || value === 'second' || value === 'third';
+}
+
+function isEbusConfidence(value: unknown): value is EbusConfidence {
+  return value === 'high' || value === 'moderate' || value === 'low';
+}
+
+function readNumber(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
 
 function mapProfile(raw: Record<string, unknown> | null): LearnerProfile | null {
   if (!raw) {
@@ -35,6 +78,14 @@ function mapProfile(raw: Record<string, unknown> | null): LearnerProfile | null 
   return {
     id: typeof raw.id === 'string' ? raw.id : '',
     email: typeof raw.email === 'string' ? raw.email : null,
+    fullName: typeof raw.full_name === 'string' ? raw.full_name : null,
+    degree: isLearnerDegree(raw.degree) ? raw.degree : null,
+    institution: typeof raw.institution === 'string' ? raw.institution : null,
+    institutionalEmail: typeof raw.institutional_email === 'string' ? raw.institutional_email : null,
+    fellowshipYear: isFellowshipYear(raw.fellowship_year) ? raw.fellowship_year : null,
+    flexibleBronchoscopyCount: readNumber(raw.flexible_bronchoscopy_count),
+    ebusCount: readNumber(raw.ebus_count),
+    ebusConfidence: isEbusConfidence(raw.ebus_confidence) ? raw.ebus_confidence : null,
     inviteSentAt: typeof raw.invite_sent_at === 'string' ? raw.invite_sent_at : null,
     lastSignInAt: typeof raw.last_sign_in_at === 'string' ? raw.last_sign_in_at : null,
     mustSetPassword: raw.must_set_password === true,
@@ -42,10 +93,31 @@ function mapProfile(raw: Record<string, unknown> | null): LearnerProfile | null 
   };
 }
 
+function toProfileRow(profile: LearnerProfileInput) {
+  return {
+    full_name: profile.fullName.trim(),
+    degree: profile.degree,
+    institution: profile.institution.trim(),
+    institutional_email: profile.institutionalEmail.trim().toLowerCase(),
+    fellowship_year: profile.fellowshipYear,
+    flexible_bronchoscopy_count: profile.flexibleBronchoscopyCount,
+    ebus_count: profile.ebusCount,
+    ebus_confidence: profile.ebusConfidence,
+  };
+}
+
 async function upsertLearnerProfile(
   patch: {
     id: string;
     email: string | null;
+    full_name?: string;
+    degree?: LearnerDegree;
+    institution?: string;
+    institutional_email?: string;
+    fellowship_year?: FellowshipYear;
+    flexible_bronchoscopy_count?: number;
+    ebus_count?: number;
+    ebus_confidence?: EbusConfidence;
     last_sign_in_at: string;
     must_set_password?: boolean;
     onboarding_completed_at?: string;
@@ -98,7 +170,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data, error } = await client
       .from('learner_profiles')
-      .select('id, email, invite_sent_at, last_sign_in_at, must_set_password, onboarding_completed_at')
+      .select(
+        [
+          'id',
+          'email',
+          'full_name',
+          'degree',
+          'institution',
+          'institutional_email',
+          'fellowship_year',
+          'flexible_bronchoscopy_count',
+          'ebus_count',
+          'ebus_confidence',
+          'invite_sent_at',
+          'last_sign_in_at',
+          'must_set_password',
+          'onboarding_completed_at',
+        ].join(', '),
+      )
       .eq('id', currentUser.id)
       .maybeSingle();
 
@@ -197,6 +286,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const signUpWithProfile = useCallback(async (nextProfile: LearnerProfileInput, password: string) => {
+    const client = getSupabaseBrowserClient();
+
+    if (!client) {
+      throw new Error('Supabase is not configured for this environment.');
+    }
+
+    const normalizedProfile = toProfileRow(nextProfile);
+    const institutionalEmail = normalizedProfile.institutional_email;
+    const { data, error } = await client.auth.signUp({
+      email: institutionalEmail,
+      password,
+      options: {
+        data: {
+          ...normalizedProfile,
+          must_set_password: false,
+        },
+        emailRedirectTo: `${getSiteUrl()}/auth`,
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    if (data.session?.user) {
+      await upsertLearnerProfile(
+        {
+          id: data.session.user.id,
+          email: data.session.user.email ?? institutionalEmail,
+          ...normalizedProfile,
+          last_sign_in_at: new Date().toISOString(),
+          must_set_password: false,
+          onboarding_completed_at: new Date().toISOString(),
+        },
+      );
+      await refreshProfile();
+    }
+  }, [refreshProfile]);
+
+  const requestPasswordRecovery = useCallback(async (email: string) => {
+    const client = getSupabaseBrowserClient();
+
+    if (!client) {
+      throw new Error('Supabase is not configured for this environment.');
+    }
+
+    const { error } = await client.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: `${getSiteUrl()}/auth?mode=reset-password`,
+    });
+
+    if (error) {
+      throw error;
+    }
+  }, []);
+
+  const updatePassword = useCallback(async (password: string) => {
+    const client = getSupabaseBrowserClient();
+
+    if (!client) {
+      throw new Error('Supabase is not configured for this environment.');
+    }
+
+    const { error } = await client.auth.updateUser({ password });
+
+    if (error) {
+      throw error;
+    }
+  }, []);
+
   const completePasswordSetup = useCallback(
     async (password: string) => {
       const client = getSupabaseBrowserClient();
@@ -205,11 +364,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('No signed-in learner session is available.');
       }
 
-      const { error: updateError } = await client.auth.updateUser({ password });
-
-      if (updateError) {
-        throw updateError;
-      }
+      await updatePassword(password);
 
       await upsertLearnerProfile(
         {
@@ -223,7 +378,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       await refreshProfile();
     },
-    [refreshProfile, user],
+    [refreshProfile, updatePassword, user],
+  );
+
+  const updateLearnerProfile = useCallback(
+    async (nextProfile: LearnerProfileInput) => {
+      if (!user) {
+        throw new Error('No signed-in learner session is available.');
+      }
+
+      await upsertLearnerProfile(
+        {
+          id: user.id,
+          email: user.email ?? nextProfile.institutionalEmail.trim().toLowerCase(),
+          ...toProfileRow(nextProfile),
+          last_sign_in_at: new Date().toISOString(),
+          must_set_password: false,
+          onboarding_completed_at: profile?.onboardingCompletedAt ?? new Date().toISOString(),
+        },
+      );
+
+      await refreshProfile();
+    },
+    [profile?.onboardingCompletedAt, refreshProfile, user],
   );
 
   const signOut = useCallback(async () => {
@@ -248,10 +425,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       completePasswordSetup,
       refreshProfile,
+      requestPasswordRecovery,
+      signInWithPassword,
+      signUpWithProfile,
+      signOut,
+      updateLearnerProfile,
+      updatePassword,
+    }),
+    [
+      completePasswordSetup,
+      isLoading,
+      isSupabaseEnabled,
+      profile,
+      refreshProfile,
+      requestPasswordRecovery,
+      session,
       signInWithPassword,
       signOut,
-    }),
-    [completePasswordSetup, isLoading, isSupabaseEnabled, profile, refreshProfile, session, signInWithPassword, signOut, user],
+      signUpWithProfile,
+      updateLearnerProfile,
+      updatePassword,
+      user,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { courseInfo } from '@/content/course';
 import { useAuth } from '@/lib/auth';
 import { isPretestComplete } from '@/lib/access';
@@ -26,11 +28,16 @@ export function TopHeader() {
         <span>{pretestReady ? 'Modules unlocked' : 'Pretest unlock required'}</span>
         {isSupabaseEnabled ? (
           <>
-            <span>{user?.email ?? profile?.email ?? 'Signed out'}</span>
+            <span>{profile?.fullName || user?.email || profile?.email || 'Signed out'}</span>
             {user ? (
-              <button className="button button--ghost top-header__action" onClick={() => void signOut()} type="button">
-                Sign out
-              </button>
+              <div className="top-header__actions">
+                <Link className="button button--ghost top-header__action" to="/account">
+                  Account
+                </Link>
+                <button className="button button--ghost top-header__action" onClick={() => void signOut()} type="button">
+                  Sign out
+                </button>
+              </div>
             ) : null}
           </>
         ) : (

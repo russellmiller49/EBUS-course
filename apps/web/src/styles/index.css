@@ -162,6 +162,12 @@ iframe {
   color: var(--text-muted);
 }
 
+.top-header__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .top-nav {
   display: flex;
   gap: 10px;
@@ -2034,13 +2040,23 @@ iframe {
   color: var(--text-soft);
 }
 
-.field input {
+.field input,
+.field select {
   min-height: 46px;
   padding: 0 16px;
   border-radius: 16px;
   border: 1px solid rgba(123, 163, 200, 0.18);
   background: rgba(255, 255, 255, 0.05);
   color: var(--text);
+}
+
+.field select {
+  appearance: none;
+  background:
+    linear-gradient(45deg, transparent 50%, var(--text-soft) 50%) calc(100% - 20px) 20px / 6px 6px no-repeat,
+    linear-gradient(135deg, var(--text-soft) 50%, transparent 50%) calc(100% - 14px) 20px / 6px 6px no-repeat,
+    rgba(255, 255, 255, 0.05);
+  padding-right: 42px;
 }
 
 .field input:disabled {
@@ -2054,6 +2070,12 @@ iframe {
 .auth-form {
   display: grid;
   gap: 14px;
+}
+
+.profile-form__grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
 }
 
 .auth-card__message,

@@ -3,6 +3,14 @@ create extension if not exists pgcrypto;
 create table if not exists public.learner_profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text unique,
+  full_name text,
+  degree text,
+  institution text,
+  institutional_email text,
+  fellowship_year text,
+  flexible_bronchoscopy_count integer,
+  ebus_count integer,
+  ebus_confidence text,
   invite_sent_at timestamptz,
   last_sign_in_at timestamptz,
   must_set_password boolean not null default true,
@@ -10,6 +18,35 @@ create table if not exists public.learner_profiles (
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
+
+alter table public.learner_profiles
+  add column if not exists full_name text,
+  add column if not exists degree text,
+  add column if not exists institution text,
+  add column if not exists institutional_email text,
+  add column if not exists fellowship_year text,
+  add column if not exists flexible_bronchoscopy_count integer,
+  add column if not exists ebus_count integer,
+  add column if not exists ebus_confidence text;
+
+alter table public.learner_profiles
+  drop constraint if exists learner_profiles_degree_check,
+  add constraint learner_profiles_degree_check check (degree is null or degree in ('MD', 'DO'));
+
+alter table public.learner_profiles
+  drop constraint if exists learner_profiles_fellowship_year_check,
+  add constraint learner_profiles_fellowship_year_check check (fellowship_year is null or fellowship_year in ('first', 'second', 'third'));
+
+alter table public.learner_profiles
+  drop constraint if exists learner_profiles_counts_check,
+  add constraint learner_profiles_counts_check check (
+    (flexible_bronchoscopy_count is null or flexible_bronchoscopy_count >= 0)
+    and (ebus_count is null or ebus_count >= 0)
+  );
+
+alter table public.learner_profiles
+  drop constraint if exists learner_profiles_ebus_confidence_check,
+  add constraint learner_profiles_ebus_confidence_check check (ebus_confidence is null or ebus_confidence in ('high', 'moderate', 'low'));
 
 create table if not exists public.learner_progress_snapshots (
   learner_id uuid primary key references public.learner_profiles (id) on delete cascade,
@@ -73,11 +110,74 @@ begin
 end;
 $$;
 
+create or replace function public.handle_new_learner_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  flexible_count integer;
+  ebus_case_count integer;
+begin
+  if new.raw_user_meta_data->>'flexible_bronchoscopy_count' ~ '^[0-9]+$' then
+    flexible_count = (new.raw_user_meta_data->>'flexible_bronchoscopy_count')::integer;
+  end if;
+
+  if new.raw_user_meta_data->>'ebus_count' ~ '^[0-9]+$' then
+    ebus_case_count = (new.raw_user_meta_data->>'ebus_count')::integer;
+  end if;
+
+  insert into public.learner_profiles (
+    id,
+    email,
+    full_name,
+    degree,
+    institution,
+    institutional_email,
+    fellowship_year,
+    flexible_bronchoscopy_count,
+    ebus_count,
+    ebus_confidence,
+    must_set_password,
+    onboarding_completed_at
+  )
+  values (
+    new.id,
+    new.email,
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'degree',
+    new.raw_user_meta_data->>'institution',
+    coalesce(new.raw_user_meta_data->>'institutional_email', new.email),
+    new.raw_user_meta_data->>'fellowship_year',
+    flexible_count,
+    ebus_case_count,
+    new.raw_user_meta_data->>'ebus_confidence',
+    coalesce((new.raw_user_meta_data->>'must_set_password')::boolean, true),
+    case
+      when new.raw_user_meta_data ? 'must_set_password'
+        and (new.raw_user_meta_data->>'must_set_password')::boolean = false
+      then timezone('utc', now())
+      else null
+    end
+  )
+  on conflict (id) do nothing;
+
+  return new;
+end;
+$$;
+
 drop trigger if exists set_learner_profiles_updated_at on public.learner_profiles;
 create trigger set_learner_profiles_updated_at
 before update on public.learner_profiles
 for each row
 execute procedure public.set_updated_at();
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+after insert on auth.users
+for each row
+execute procedure public.handle_new_learner_profile();
 
 alter table public.learner_profiles enable row level security;
 alter table public.learner_progress_snapshots enable row level security;
