@@ -5,6 +5,15 @@ let browserClient: SupabaseClient | null | undefined;
 export type AuthCallbackMode = 'sign-in' | 'reset-password';
 
 const COURSE_AUTH_CALLBACK_APP = 'socal-ebus-course';
+const AUTH_TOKEN_PARAM_KEYS = [
+  'access_token',
+  'expires_at',
+  'expires_in',
+  'refresh_token',
+  'sb',
+  'token_type',
+  'type',
+] as const;
 
 function resolveSupabaseUrl() {
   const directUrl = import.meta.env.VITE_SUPABASE_URL?.trim() || import.meta.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -38,7 +47,7 @@ export function getSupabaseBrowserClient() {
   browserClient = createClient(resolveSupabaseUrl(), resolveSupabaseAnonKey(), {
     auth: {
       autoRefreshToken: true,
-      detectSessionInUrl: true,
+      detectSessionInUrl: false,
       persistSession: true,
     },
   });
@@ -119,7 +128,97 @@ export function getBrowserAuthCallbackMode(): AuthCallbackMode | null {
     return null;
   }
 
-  const mode = new URLSearchParams(window.location.search).get('authMode');
+  const mode = getBrowserAuthUrlParams().get('mode') ?? getBrowserAuthUrlParams().get('authMode');
 
   return mode === 'sign-in' || mode === 'reset-password' ? mode : null;
+}
+
+function appendParams(target: URLSearchParams, source: URLSearchParams) {
+  source.forEach((value, key) => {
+    if (!target.has(key)) {
+      target.set(key, value);
+    }
+  });
+}
+
+export function readAuthParamsFromUrlParts(search: string, hash: string) {
+  const params = new URLSearchParams();
+  const normalizedSearch = search.startsWith('?') ? search.slice(1) : search;
+  const normalizedHash = hash.startsWith('#') ? hash.slice(1) : hash;
+
+  appendParams(params, new URLSearchParams(normalizedSearch));
+
+  if (normalizedHash) {
+    appendParams(params, new URLSearchParams(normalizedHash));
+
+    const hashQueryStart = normalizedHash.indexOf('?');
+
+    if (hashQueryStart !== -1) {
+      appendParams(params, new URLSearchParams(normalizedHash.slice(hashQueryStart + 1)));
+    }
+  }
+
+  return params;
+}
+
+export function getBrowserAuthUrlParams() {
+  if (typeof window === 'undefined') {
+    return new URLSearchParams();
+  }
+
+  return readAuthParamsFromUrlParts(window.location.search, window.location.hash);
+}
+
+export function getBrowserRecoverySessionTokens() {
+  const params = getBrowserAuthUrlParams();
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
+  const tokenType = params.get('token_type');
+  const callbackType = params.get('type');
+
+  if (!accessToken || !refreshToken || tokenType !== 'bearer' || callbackType !== 'recovery') {
+    return null;
+  }
+
+  return {
+    accessToken,
+    refreshToken,
+  };
+}
+
+export function clearBrowserAuthTokensFromUrl() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  const hash = url.hash.startsWith('#') ? url.hash.slice(1) : url.hash;
+  const hashQueryStart = hash.indexOf('?');
+
+  AUTH_TOKEN_PARAM_KEYS.forEach((key) => {
+    url.searchParams.delete(key);
+  });
+
+  if (hashQueryStart !== -1) {
+    const hashPath = hash.slice(0, hashQueryStart);
+    const hashParams = new URLSearchParams(hash.slice(hashQueryStart + 1));
+
+    AUTH_TOKEN_PARAM_KEYS.forEach((key) => {
+      hashParams.delete(key);
+    });
+
+    const nextHashParams = hashParams.toString();
+    url.hash = nextHashParams ? `${hashPath}?${nextHashParams}` : hashPath;
+  } else if (hash) {
+    const hashParams = new URLSearchParams(hash);
+
+    AUTH_TOKEN_PARAM_KEYS.forEach((key) => {
+      hashParams.delete(key);
+    });
+
+    const nextHashParams = hashParams.toString();
+    url.hash = nextHashParams ? `#${nextHashParams}` : '';
+  }
+
+  window.history.replaceState(window.history.state, '', url.toString());
 }

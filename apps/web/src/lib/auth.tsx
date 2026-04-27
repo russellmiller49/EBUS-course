@@ -3,8 +3,10 @@ import type { Session, User } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import {
+  clearBrowserAuthTokensFromUrl,
   getAuthCallbackUrl,
   getBrowserAuthCallbackMode,
+  getBrowserRecoverySessionTokens,
   getSupabaseBrowserClient,
   isSupabaseConfigured,
 } from '@/lib/supabase';
@@ -232,9 +234,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
 
     async function bootstrapSession() {
+      const recoveryTokens = getBrowserRecoverySessionTokens();
+      let recoveredSession: Session | null = null;
+
+      if (recoveryTokens) {
+        const { data, error } = await client.auth.setSession({
+          access_token: recoveryTokens.accessToken,
+          refresh_token: recoveryTokens.refreshToken,
+        });
+
+        if (!error) {
+          recoveredSession = data.session;
+          setIsPasswordRecoverySession(true);
+          clearBrowserAuthTokensFromUrl();
+        }
+      }
+
       const {
         data: { session: nextSession },
-      } = await client.auth.getSession();
+      } = recoveredSession ? { data: { session: recoveredSession } } : await client.auth.getSession();
 
       if (!active) {
         return;

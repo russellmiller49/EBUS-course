@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildAuthCallbackUrl, buildSharedAuthCallbackUrl, getBrowserAuthCallbackMode } from '@/lib/supabase';
+import {
+  buildAuthCallbackUrl,
+  buildSharedAuthCallbackUrl,
+  getBrowserAuthCallbackMode,
+  readAuthParamsFromUrlParts,
+} from '@/lib/supabase';
 
 describe('Supabase auth URL helpers', () => {
   it('builds password recovery callbacks at the app base URL', () => {
@@ -17,5 +22,18 @@ describe('Supabase auth URL helpers', () => {
 
   it('does not report a browser callback mode in non-browser tests', () => {
     expect(getBrowserAuthCallbackMode()).toBeNull();
+  });
+
+  it('reads Supabase tokens from a hash router callback URL', () => {
+    const params = readAuthParamsFromUrlParts(
+      '',
+      '#/auth?mode=reset-password&authMode=reset-password&access_token=access.value&refresh_token=refresh.value&expires_in=3600&token_type=bearer&type=recovery',
+    );
+
+    expect(params.get('mode')).toBe('reset-password');
+    expect(params.get('authMode')).toBe('reset-password');
+    expect(params.get('access_token')).toBe('access.value');
+    expect(params.get('refresh_token')).toBe('refresh.value');
+    expect(params.get('type')).toBe('recovery');
   });
 });
