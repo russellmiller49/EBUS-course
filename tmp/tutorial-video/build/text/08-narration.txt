@@ -1,0 +1,1 @@
+The station explorer extends the same station selection into three correlated views. With station 7 selected, the learner sees CT, bronchoscopic, and EBUS representations side by side. Labels can be pinned when the learner wants help and hidden when they want to test recognition. The point is mental translation: one station identity, three appearances, one staging consequence.

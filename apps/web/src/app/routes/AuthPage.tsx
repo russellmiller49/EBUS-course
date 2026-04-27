@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 
 import { emptyProfileInput, LearnerProfileFields, validateProfileInput } from '@/features/account/LearnerProfileFields';
@@ -27,8 +27,10 @@ export function AuthPage() {
   const {
     completePasswordSetup,
     isLoading,
+    isPasswordRecoverySession,
     isSupabaseEnabled,
     profile,
+    refreshProfile,
     requestPasswordRecovery,
     signInWithPassword,
     signOut,
@@ -47,8 +49,16 @@ export function AuthPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const nextPath = useMemo(() => normalizeNextPath(searchParams.get('next')), [searchParams]);
+  const routeMode = searchParams.get('mode');
   const requiresPasswordSetup = Boolean(user && profile?.mustSetPassword);
-  const isPasswordForm = requiresPasswordSetup || mode === 'reset-password';
+  const isPasswordForm = requiresPasswordSetup || mode === 'reset-password' || isPasswordRecoverySession;
+  const isPendingApproval = Boolean(user && profile?.approvalStatus === 'pending' && !isPasswordForm);
+
+  useEffect(() => {
+    if (routeMode === 'sign-up' || routeMode === 'recover' || routeMode === 'reset-password') {
+      setMode(routeMode);
+    }
+  }, [routeMode]);
 
   function switchMode(nextMode: AuthMode) {
     setMode(nextMode);
@@ -96,7 +106,7 @@ export function AuthPage() {
 
     try {
       await signUpWithProfile(signupProfile, password);
-      setMessage('Account created. Check your institutional email if Supabase requires email confirmation.');
+      setMessage('Account created. Course leadership will approve access before the modules open.');
       setPassword('');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Unable to create the learner account.');
@@ -155,6 +165,21 @@ export function AuthPage() {
     }
   }
 
+  async function handleRefreshApproval() {
+    setIsSubmitting(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      await refreshProfile();
+      setMessage('Approval status refreshed.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Unable to refresh approval status.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   if (!isSupabaseEnabled) {
     return (
       <div className="page-stack">
@@ -181,6 +206,31 @@ export function AuthPage() {
         <section className="section-card">
           <div className="eyebrow">Learner access</div>
           <h2>Checking your session...</h2>
+        </section>
+      </div>
+    );
+  }
+
+  if (isPendingApproval) {
+    return (
+      <div className="page-stack">
+        <section className="hero-card auth-card">
+          <div className="eyebrow">Approval pending</div>
+          <h2>Your account is waiting for course leadership approval.</h2>
+          <p>
+            You are signed in as {user?.email ?? 'this learner account'}, but the course modules stay locked until
+            leadership approves your signup.
+          </p>
+          {message ? <p className="auth-card__message">{message}</p> : null}
+          {error ? <p className="auth-card__error">{error}</p> : null}
+          <div className="button-row button-row--wrap">
+            <button className="button" disabled={isSubmitting} onClick={() => void handleRefreshApproval()} type="button">
+              {isSubmitting ? 'Checking...' : 'Check approval status'}
+            </button>
+            <button className="button button--ghost" onClick={() => void signOut()} type="button">
+              Sign out
+            </button>
+          </div>
         </section>
       </div>
     );

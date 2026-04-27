@@ -11,6 +11,7 @@ import { caseViewerReducer, createInitialViewerState } from './viewerState';
 import { getCrosshairWorld } from './vtk/coordinateTransforms';
 import type { LoadedCaseVolume } from './vtk/loadCaseVolume';
 import type { LoadedSegmentation } from './vtk/loadSegmentation';
+import type { OrthogonalClipMode } from './viewerState';
 
 interface Case3DViewerProps {
   manifest: RuntimeCaseManifest;
@@ -115,16 +116,24 @@ function SliceCard({
 }
 
 function OrthogonalPlaneControls({
+  orthogonalClipMode,
+  orthogonalClipPlane,
   orthogonalPlaneOpacity,
   planeVisibility,
   threeDOrthogonalPlanesVisible,
+  onOrthogonalClipModeChange,
+  onOrthogonalClipPlaneChange,
   onOrthogonalPlaneOpacityChange,
   onPlaneVisibilityChange,
   onThreeDOrthogonalPlanesVisibilityChange,
 }: {
+  orthogonalClipMode: OrthogonalClipMode;
+  orthogonalClipPlane: CasePlane;
   orthogonalPlaneOpacity: number;
   planeVisibility: Record<CasePlane, boolean>;
   threeDOrthogonalPlanesVisible: boolean;
+  onOrthogonalClipModeChange: (mode: OrthogonalClipMode) => void;
+  onOrthogonalClipPlaneChange: (plane: CasePlane) => void;
   onOrthogonalPlaneOpacityChange: (value: number) => void;
   onPlaneVisibilityChange: (plane: CasePlane, visible: boolean) => void;
   onThreeDOrthogonalPlanesVisibilityChange: (visible: boolean) => void;
@@ -184,6 +193,27 @@ function OrthogonalPlaneControls({
           value={orthogonalPlaneOpacity}
         />
       </label>
+      <label className="case3d-select">
+        <span>3D anatomy clipping</span>
+        <select
+          onChange={(event) => onOrthogonalClipModeChange(event.target.value as OrthogonalClipMode)}
+          value={orthogonalClipMode}>
+          <option value="none">No clipping</option>
+          <option value="hide-above">Hide above CT plane</option>
+          <option value="hide-below">Hide below CT plane</option>
+        </select>
+      </label>
+      <label className="case3d-select">
+        <span>Clipping plane</span>
+        <select
+          disabled={orthogonalClipMode === 'none'}
+          onChange={(event) => onOrthogonalClipPlaneChange(event.target.value as CasePlane)}
+          value={orthogonalClipPlane}>
+          <option value="axial">Axial</option>
+          <option value="coronal">Coronal</option>
+          <option value="sagittal">Sagittal</option>
+        </select>
+      </label>
     </section>
   );
 }
@@ -193,12 +223,16 @@ function ThreeDSceneControls({
   cutPlaneVisible,
   onCutPlaneOpacityChange,
   onCutPlaneVisibilityChange,
+  onOrthogonalClipModeChange,
+  onOrthogonalClipPlaneChange,
   onOrthogonalPlaneOpacityChange,
   onOverlayOpacityChange,
   onPlaneVisibilityChange,
   onResetCamera,
   onResetCutPlane,
   onThreeDOrthogonalPlanesVisibilityChange,
+  orthogonalClipMode,
+  orthogonalClipPlane,
   orthogonalPlaneOpacity,
   overlayOpacity,
   planeVisibility,
@@ -208,12 +242,16 @@ function ThreeDSceneControls({
   cutPlaneVisible: boolean;
   onCutPlaneOpacityChange: (value: number) => void;
   onCutPlaneVisibilityChange: (visible: boolean) => void;
+  onOrthogonalClipModeChange: (mode: OrthogonalClipMode) => void;
+  onOrthogonalClipPlaneChange: (plane: CasePlane) => void;
   onOrthogonalPlaneOpacityChange: (value: number) => void;
   onOverlayOpacityChange: (value: number) => void;
   onPlaneVisibilityChange: (plane: CasePlane, visible: boolean) => void;
   onResetCamera?: () => void;
   onResetCutPlane: () => void;
   onThreeDOrthogonalPlanesVisibilityChange: (visible: boolean) => void;
+  orthogonalClipMode: OrthogonalClipMode;
+  orthogonalClipPlane: CasePlane;
   orthogonalPlaneOpacity: number;
   overlayOpacity: number;
   planeVisibility: Record<CasePlane, boolean>;
@@ -272,9 +310,13 @@ function ThreeDSceneControls({
       </section>
 
       <OrthogonalPlaneControls
+        onOrthogonalClipModeChange={onOrthogonalClipModeChange}
+        onOrthogonalClipPlaneChange={onOrthogonalClipPlaneChange}
         onOrthogonalPlaneOpacityChange={onOrthogonalPlaneOpacityChange}
         onPlaneVisibilityChange={onPlaneVisibilityChange}
         onThreeDOrthogonalPlanesVisibilityChange={onThreeDOrthogonalPlanesVisibilityChange}
+        orthogonalClipMode={orthogonalClipMode}
+        orthogonalClipPlane={orthogonalClipPlane}
         orthogonalPlaneOpacity={orthogonalPlaneOpacity}
         planeVisibility={planeVisibility}
         threeDOrthogonalPlanesVisible={threeDOrthogonalPlanesVisible}
@@ -344,6 +386,7 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
         }),
     [manifest.segmentation.segments, stationOrder],
   );
+  const nodalSegmentIds = useMemo(() => nodalSegments.map((segment) => segment.id), [nodalSegments]);
   const threeDPlaneVisibility = state.threeDOrthogonalPlanesVisible
     ? state.planeVisibility
     : {
@@ -384,6 +427,8 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
     cutPlaneVisible: state.cutPlane.visible,
     onCutPlaneOpacityChange: (value: number) => dispatch({ type: 'set-cut-plane-opacity', value }),
     onCutPlaneVisibilityChange: (visible: boolean) => dispatch({ type: 'set-cut-plane-visibility', visible }),
+    onOrthogonalClipModeChange: (mode: OrthogonalClipMode) => dispatch({ type: 'set-orthogonal-clip-mode', mode }),
+    onOrthogonalClipPlaneChange: (plane: CasePlane) => dispatch({ type: 'set-orthogonal-clip-plane', plane }),
     onOrthogonalPlaneOpacityChange: (value: number) => dispatch({ type: 'set-three-d-plane-opacity', value }),
     onOverlayOpacityChange: (value: number) => dispatch({ type: 'set-overlay-opacity', value }),
     onPlaneVisibilityChange: (plane: CasePlane, visible: boolean) =>
@@ -391,11 +436,18 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
     onResetCutPlane: () => dispatch({ type: 'reset-cut-plane' }),
     onThreeDOrthogonalPlanesVisibilityChange: (visible: boolean) =>
       dispatch({ type: 'set-three-d-plane-visibility', visible }),
+    orthogonalClipMode: state.orthogonalClip.mode,
+    orthogonalClipPlane: state.orthogonalClip.plane,
     orthogonalPlaneOpacity: state.orthogonalPlaneOpacity,
     overlayOpacity: state.overlayOpacity,
     planeVisibility: state.planeVisibility,
     threeDOrthogonalPlanesVisible: state.threeDOrthogonalPlanesVisible,
   } satisfies Parameters<typeof ThreeDSceneControls>[0];
+
+  function setNodalSegmentsVisible(segmentIds: string[], visible: boolean) {
+    dispatch({ type: 'set-overlay-group', key: 'nodes', value: true });
+    dispatch({ type: 'set-segments-visibility', segmentIds, visible });
+  }
 
   return (
     <div className="page-stack">
@@ -522,7 +574,7 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
                 <h3>Individual structures</h3>
               </div>
             </div>
-            <p className="case3d-note">Group toggles above act as master switches. These checkboxes fine-tune specific structures and nodal stations.</p>
+            <p className="case3d-note">Group toggles above act as master switches. These checkboxes fine-tune specific structures and lymph nodes.</p>
             <div className="case3d-segment-section">
               <strong className="case3d-segment-section__title">Anatomy structures</strong>
               <div className="case3d-segment-list">
@@ -541,15 +593,29 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
               </div>
             </div>
             <div className="case3d-segment-section">
-              <strong className="case3d-segment-section__title">Nodal stations</strong>
+              <div className="case3d-segment-section__heading">
+                <strong className="case3d-segment-section__title">Lymph nodes</strong>
+                <div className="case3d-button-row">
+                  <button
+                    className="case3d-button case3d-button--secondary"
+                    onClick={() => setNodalSegmentsVisible(nodalSegmentIds, false)}
+                    type="button">
+                    Hide all
+                  </button>
+                  <button
+                    className="case3d-button case3d-button--secondary"
+                    onClick={() => setNodalSegmentsVisible(nodalSegmentIds, true)}
+                    type="button">
+                    Show all
+                  </button>
+                </div>
+              </div>
               <div className="case3d-segment-list">
                 {nodalSegments.map((segment) => (
                   <label className="case3d-toggle" key={segment.id}>
                     <input
                       checked={!state.hiddenSegmentIds.includes(segment.id)}
-                      onChange={(event) =>
-                        dispatch({ type: 'set-segment-visibility', segmentId: segment.id, visible: event.target.checked })
-                      }
+                      onChange={(event) => setNodalSegmentsVisible([segment.id], event.target.checked)}
                       type="checkbox"
                     />
                     <span>{segment.name}</span>
@@ -595,6 +661,8 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
                     manifest={manifest}
                     mode="three-d"
                     onCutPlaneChange={(origin, normal) => dispatch({ type: 'set-cut-plane', origin, normal })}
+                    orthogonalClipMode={state.orthogonalClip.mode}
+                    orthogonalClipPlane={state.orthogonalClip.plane}
                     orthogonalPlaneOpacity={state.orthogonalPlaneOpacity}
                     overlayOpacity={state.overlayOpacity}
                     planeIndices={planeIndices}

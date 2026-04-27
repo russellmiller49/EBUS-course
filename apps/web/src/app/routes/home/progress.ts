@@ -1,7 +1,8 @@
+import { lectureManifest } from '@/content/lectures';
 import type { LearnerProgressState } from '@/lib/progress';
 
 export interface HomeLearningStep {
-  id: 'pretest' | 'lectures' | 'knobology' | 'stations' | 'case-001' | 'simulator' | 'quiz';
+  id: 'pretest' | 'lectures' | 'knobology' | 'stations' | 'tnm-staging' | 'case-001' | 'simulator' | 'quiz';
   path: string;
   percent: number;
   title: string;
@@ -9,10 +10,11 @@ export interface HomeLearningStep {
 }
 
 const learningStepDefinitions: Array<Pick<HomeLearningStep, 'id' | 'path' | 'title'>> = [
-  { id: 'pretest', title: 'Pretest', path: '/pretest' },
-  { id: 'lectures', title: 'Lectures', path: '/lectures' },
+  { id: 'lectures', title: 'Lecture path', path: '/lectures' },
+  { id: 'pretest', title: 'Pre-test', path: '/pretest' },
   { id: 'knobology', title: 'Knobology', path: '/knobology' },
   { id: 'stations', title: 'Stations', path: '/stations/explore' },
+  { id: 'tnm-staging', title: 'TNM-9', path: '/tnm-staging' },
   { id: 'case-001', title: '3D Anatomy', path: '/cases/case-001' },
   { id: 'simulator', title: 'Simulator', path: '/simulator' },
   { id: 'quiz', title: 'Quiz', path: '/quiz' },
@@ -58,10 +60,18 @@ export function buildHomeProgressModel(state: LearnerProgressState) {
     }
 
     const progress = state.moduleProgress[step.id];
+    const percent =
+      step.id === 'lectures'
+        ? Math.round(
+            (Object.values(state.lectureWatchStatus).filter((lecture) => lecture.completed).length /
+              lectureManifest.length) *
+              100,
+          )
+        : progress.percentComplete;
 
     return {
       ...step,
-      percent: progress.percentComplete,
+      percent,
       visitedAt: progress.visitedAt,
     };
   });

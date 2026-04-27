@@ -2,11 +2,17 @@ import type { ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { getSiteUrl, getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase';
+import {
+  getAuthCallbackUrl,
+  getBrowserAuthCallbackMode,
+  getSupabaseBrowserClient,
+  isSupabaseConfigured,
+} from '@/lib/supabase';
 
 export type LearnerDegree = 'MD' | 'DO';
 export type FellowshipYear = 'first' | 'second' | 'third';
 export type EbusConfidence = 'high' | 'moderate' | 'low';
+export type LearnerApprovalStatus = 'pending' | 'approved';
 
 export interface LearnerProfileInput {
   fullName: string;
@@ -34,10 +40,14 @@ export interface LearnerProfile {
   lastSignInAt: string | null;
   mustSetPassword: boolean;
   onboardingCompletedAt: string | null;
+  approvalStatus: LearnerApprovalStatus;
+  approvedAt: string | null;
+  approvedBy: string | null;
 }
 
 interface AuthContextValue {
   isLoading: boolean;
+  isPasswordRecoverySession: boolean;
   isSupabaseEnabled: boolean;
   profile: LearnerProfile | null;
   session: Session | null;
@@ -66,6 +76,10 @@ function isEbusConfidence(value: unknown): value is EbusConfidence {
   return value === 'high' || value === 'moderate' || value === 'low';
 }
 
+function isLearnerApprovalStatus(value: unknown): value is LearnerApprovalStatus {
+  return value === 'pending' || value === 'approved';
+}
+
 function readNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
@@ -90,6 +104,9 @@ function mapProfile(raw: Record<string, unknown> | null): LearnerProfile | null 
     lastSignInAt: typeof raw.last_sign_in_at === 'string' ? raw.last_sign_in_at : null,
     mustSetPassword: raw.must_set_password === true,
     onboardingCompletedAt: typeof raw.onboarding_completed_at === 'string' ? raw.onboarding_completed_at : null,
+    approvalStatus: isLearnerApprovalStatus(raw.approval_status) ? raw.approval_status : 'pending',
+    approvedAt: typeof raw.approved_at === 'string' ? raw.approved_at : null,
+    approvedBy: typeof raw.approved_by === 'string' ? raw.approved_by : null,
   };
 }
 
@@ -143,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<LearnerProfile | null>(null);
+  const [isPasswordRecoverySession, setIsPasswordRecoverySession] = useState(false);
   const isSupabaseEnabled = isSupabaseConfigured();
 
   const refreshProfile = useCallback(async () => {
@@ -186,6 +204,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           'last_sign_in_at',
           'must_set_password',
           'onboarding_completed_at',
+          'approval_status',
+          'approved_at',
+          'approved_by',
         ].join(', '),
       )
       .eq('id', currentUser.id)
@@ -223,6 +244,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(nextSession?.user ?? null);
 
       if (nextSession?.user) {
+        if (getBrowserAuthCallbackMode() === 'reset-password') {
+          setIsPasswordRecoverySession(true);
+        }
+
         try {
           await refreshProfile();
         } catch {
@@ -244,11 +269,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = client.auth.onAuthStateChange((_event, nextSession) => {
+    } = client.auth.onAuthStateChange((event, nextSession) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecoverySession(true);
+      }
+
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
 
       if (!nextSession?.user) {
+        setIsPasswordRecoverySession(false);
         setProfile(null);
         setIsLoading(false);
         return;
@@ -284,6 +314,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       throw error;
     }
+
+    setIsPasswordRecoverySession(false);
   }, []);
 
   const signUpWithProfile = useCallback(async (nextProfile: LearnerProfileInput, password: string) => {
@@ -302,8 +334,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: {
           ...normalizedProfile,
           must_set_password: false,
+          approval_status: 'pending',
         },
-        emailRedirectTo: `${getSiteUrl()}/auth`,
+        emailRedirectTo: getAuthCallbackUrl('sign-in'),
       },
     });
 
@@ -334,12 +367,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const { error } = await client.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: `${getSiteUrl()}/auth?mode=reset-password`,
+      redirectTo: getAuthCallbackUrl('reset-password'),
     });
 
     if (error) {
       throw error;
     }
+
+    setIsPasswordRecoverySession(false);
   }, []);
 
   const updatePassword = useCallback(async (password: string) => {
@@ -354,6 +389,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       throw error;
     }
+
+    setIsPasswordRecoverySession(false);
   }, []);
 
   const completePasswordSetup = useCallback(
@@ -411,6 +448,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     await client.auth.signOut();
+    setIsPasswordRecoverySession(false);
     setProfile(null);
     setSession(null);
     setUser(null);
@@ -419,6 +457,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       isLoading,
+      isPasswordRecoverySession,
       isSupabaseEnabled,
       profile,
       session,
@@ -435,6 +474,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [
       completePasswordSetup,
       isLoading,
+      isPasswordRecoverySession,
       isSupabaseEnabled,
       profile,
       refreshProfile,

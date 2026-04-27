@@ -5,7 +5,9 @@ import { AppShell } from '@/components/AppShell';
 import type { AppRouteId, NavigationItem } from '@/content/types';
 import { HomePage } from '@/app/routes/HomePage';
 import { AuthPage } from '@/app/routes/AuthPage';
+import { AdminPage } from '@/app/routes/AdminPage';
 import { AccountPage } from '@/app/routes/AccountPage';
+import { SponsorsPage } from '@/app/routes/SponsorsPage';
 import { StationsPage } from '@/app/routes/StationsPage';
 import { StationsExplorePage } from '@/app/routes/stations/ExplorePage';
 import { StationsFlashcardsPage } from '@/app/routes/stations/FlashcardsPage';
@@ -17,8 +19,10 @@ import { PretestPage } from '@/app/routes/PretestPage';
 import { QuizPage } from '@/app/routes/QuizPage';
 import { Case001Page } from '@/app/routes/Case001Page';
 import { SimulatorPage } from '@/app/routes/SimulatorPage';
+import { TnmStagingPage } from '@/app/routes/TnmStagingPage';
 import { NotFoundPage } from '@/app/routes/NotFoundPage';
 import { canAccessRoute, getLockedRoutePath, getRouteLockReason } from '@/lib/access';
+import { useCourseAdminSessionActive } from '@/lib/adminSession';
 import { useAuth } from '@/lib/auth';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useLearnerProgress } from '@/lib/progress';
@@ -26,22 +30,38 @@ import { recordModuleSession } from '@/lib/supabaseTracking';
 
 const navItems: NavigationItem[] = [
   { id: 'home', label: 'Home', icon: '⌂', path: '/' },
+  { id: 'sponsors', label: 'Sponsors', icon: '☆', path: '/sponsors' },
   { id: 'pretest', label: 'Pretest', icon: '◇', path: '/pretest' },
   { id: 'lectures', label: 'Lectures', icon: '▶', path: '/lectures' },
   { id: 'knobology', label: 'Knobology', icon: '◐', path: '/knobology' },
   { id: 'stations', label: 'Stations', icon: '◎', path: '/stations' },
+  { id: 'tnm-staging', label: 'TNM-9', icon: '◆', path: '/tnm-staging' },
   { id: 'case-001', label: '3D Anatomy', icon: '◫', path: '/cases/case-001' },
   { id: 'simulator', label: 'Simulator', icon: '◌', path: '/simulator' },
   { id: 'quiz', label: 'Quiz', icon: '✎', path: '/quiz' },
 ];
+
+const adminNavItem: NavigationItem = { id: 'admin', label: 'Dashboard', icon: '▣', path: '/admin' };
 
 function resolveRouteId(pathname: string): AppRouteId | null {
   if (pathname === '/') {
     return 'home';
   }
 
+  if (pathname.startsWith('/admin')) {
+    return 'admin';
+  }
+
+  if (pathname.startsWith('/sponsors')) {
+    return 'sponsors';
+  }
+
   if (pathname.startsWith('/stations')) {
     return 'stations';
+  }
+
+  if (pathname.startsWith('/tnm-staging')) {
+    return 'tnm-staging';
   }
 
   if (pathname.startsWith('/pretest')) {
@@ -88,6 +108,10 @@ function getTrackedModuleId(pathname: string) {
     return 'stations';
   }
 
+  if (pathname.startsWith('/tnm-staging')) {
+    return 'tnm-staging';
+  }
+
   if (pathname.startsWith('/quiz')) {
     return 'quiz';
   }
@@ -106,7 +130,8 @@ function getTrackedModuleId(pathname: string) {
 export function App() {
   const location = useLocation();
   const { hydrated, recordModuleEngagement, state, visitRoute } = useLearnerProgress();
-  const { isLoading: authLoading, isSupabaseEnabled, profile, user } = useAuth();
+  const { isLoading: authLoading, isPasswordRecoverySession, isSupabaseEnabled, profile, user } = useAuth();
+  const adminSessionActive = useCourseAdminSessionActive();
   const sessionRef = useRef<{
     moduleId: ReturnType<typeof getTrackedModuleId>;
     path: string;
@@ -114,15 +139,18 @@ export function App() {
   } | null>(null);
   const routeId = resolveRouteId(location.pathname);
   const isAuthPath = location.pathname.startsWith('/auth');
+  const isAdminPath = location.pathname.startsWith('/admin');
+
+  const activeNavItems = useMemo(() => (adminSessionActive ? [...navItems, adminNavItem] : navItems), [adminSessionActive]);
 
   const gatedNavItems = useMemo(() => {
-    return navItems.map((item) => ({
+    return activeNavItems.map((item) => ({
       ...item,
-      locked: !canAccessRoute(item.id, state),
-      lockedReason: getRouteLockReason(item.id, state) ?? undefined,
-      path: getLockedRoutePath(item.id, item.path, state),
+      locked: !canAccessRoute(item.id, state, { admin: adminSessionActive }),
+      lockedReason: getRouteLockReason(item.id, state, { admin: adminSessionActive }) ?? undefined,
+      path: getLockedRoutePath(item.id, item.path, state, { admin: adminSessionActive }),
     }));
-  }, [state]);
+  }, [activeNavItems, adminSessionActive, state]);
 
   useEffect(() => {
     if (routeId) {
@@ -227,27 +255,39 @@ export function App() {
     );
   }
 
-  if (isSupabaseEnabled && !user && !isAuthPath) {
+  if (isSupabaseEnabled && !user && !adminSessionActive && !isAuthPath && !isAdminPath) {
     const next = `${location.pathname}${location.search}`;
 
     return <Navigate replace to={`/auth?next=${encodeURIComponent(next)}`} />;
   }
 
-  if (isSupabaseEnabled && user && profile?.mustSetPassword && !isAuthPath) {
+  if (isSupabaseEnabled && user && isPasswordRecoverySession && !adminSessionActive && !isAuthPath && !isAdminPath) {
+    return <Navigate replace to="/auth?mode=reset-password" />;
+  }
+
+  if (isSupabaseEnabled && user && profile?.mustSetPassword && !adminSessionActive && !isAuthPath && !isAdminPath) {
     const next = `${location.pathname}${location.search}`;
 
     return <Navigate replace to={`/auth?next=${encodeURIComponent(next)}`} />;
   }
 
-  if (routeId && !canAccessRoute(routeId, state)) {
-    return <Navigate replace to="/pretest" />;
+  if (isSupabaseEnabled && user && profile?.approvalStatus === 'pending' && !adminSessionActive && !isAuthPath && !isAdminPath) {
+    const next = `${location.pathname}${location.search}`;
+
+    return <Navigate replace to={`/auth?next=${encodeURIComponent(next)}`} />;
+  }
+
+  if (routeId && !canAccessRoute(routeId, state, { admin: adminSessionActive })) {
+    return <Navigate replace to={getLockedRoutePath(routeId, location.pathname, state, { admin: adminSessionActive })} />;
   }
 
   return (
     <AppShell navItems={gatedNavItems}>
       <Routes>
         <Route element={<HomePage />} path="/" />
+        <Route element={<SponsorsPage />} path="/sponsors" />
         <Route element={<AuthPage />} path="/auth" />
+        <Route element={<AdminPage />} path="/admin" />
         <Route element={<AccountPage />} path="/account" />
         <Route element={<PretestPage />} path="/pretest" />
         <Route element={<StationsPage />} path="/stations">
@@ -258,6 +298,7 @@ export function App() {
           <Route element={<StationsHandbookPage />} path="handbook" />
         </Route>
         <Route element={<KnobologyPage />} path="/knobology" />
+        <Route element={<TnmStagingPage />} path="/tnm-staging" />
         <Route element={<LecturesPage />} path="/lectures" />
         <Route element={<QuizPage />} path="/quiz" />
         <Route element={<Case001Page />} path="/cases/case-001" />

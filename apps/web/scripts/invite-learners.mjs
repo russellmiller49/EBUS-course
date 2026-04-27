@@ -99,12 +99,16 @@ async function main() {
     }
 
     if (data.user?.id) {
+      const now = new Date().toISOString();
       const { error: profileError } = await supabase.from('learner_profiles').upsert(
         {
           id: data.user.id,
           email,
-          invite_sent_at: new Date().toISOString(),
+          invite_sent_at: now,
           must_set_password: true,
+          approval_status: 'approved',
+          approved_at: now,
+          approved_by: 'invite script',
         },
         { onConflict: 'id' },
       );

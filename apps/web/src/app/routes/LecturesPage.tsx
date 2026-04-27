@@ -6,6 +6,8 @@ import { courseInfo } from '@/content/course';
 import { lectureManifest } from '@/content/lectures';
 import { AabipVideoLibrary } from '@/features/lectures/AabipVideoLibrary';
 import { LectureCard } from '@/features/lectures/LectureCard';
+import { useCourseAdminSessionActive } from '@/lib/adminSession';
+import { getLectureWorkflowStatus, getNextCourseStep } from '@/lib/courseWorkflow';
 import { useLearnerProgress } from '@/lib/progress';
 
 const VIDEO_TABS = [
@@ -18,8 +20,10 @@ type VideoTabId = (typeof VIDEO_TABS)[number]['id'];
 export function LecturesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { state, setLectureState, setModuleProgress } = useLearnerProgress();
+  const adminSessionActive = useCourseAdminSessionActive();
   const reviewedCount = Object.values(state.lectureWatchStatus).filter((lecture) => lecture.completed).length;
   const activeTab = searchParams.get('tab') === 'aabip-videos' ? 'aabip-videos' : 'course-videos';
+  const nextCourseStep = getNextCourseStep(state, { admin: adminSessionActive });
 
   const handleLectureUpdate = useCallback(
     (lectureId: string, update: { watchedSeconds?: number; completed?: boolean; opened?: boolean }) => {
@@ -94,6 +98,10 @@ export function LecturesPage() {
               <div>
                 <div className="eyebrow">Lecture manifest</div>
                 <h2>Prep window: {courseInfo.prepWindow}</h2>
+                <p>
+                  Start with the welcome video. The pre-test, post-lecture quizzes, post-test, survey, answers, and
+                  certificate unlock in sequence as each required step is completed.
+                </p>
               </div>
             </div>
             <div className="mini-card-grid">
@@ -109,21 +117,28 @@ export function LecturesPage() {
             <div className="section-card__heading">
               <div>
                 <div className="eyebrow">Progress</div>
-                <h2>{reviewedCount} lectures marked reviewed</h2>
+                <h2>{reviewedCount} of {lectureManifest.length} lectures marked reviewed</h2>
+                {nextCourseStep ? <p>Current step: {nextCourseStep.title}</p> : <p>All course steps are complete.</p>}
               </div>
               <div className="tag-row">
                 <span className="tag">Core course only</span>
               </div>
             </div>
             <div className="stack-list">
-              {lectureManifest.map((lecture) => (
-                <LectureCard
-                  key={lecture.id}
-                  lecture={lecture}
-                  onUpdateWatchState={handleLectureUpdate}
-                  watchState={state.lectureWatchStatus[lecture.id]}
-                />
-              ))}
+              {lectureManifest.map((lecture) => {
+                const workflowStatus = getLectureWorkflowStatus(state, lecture.id, { admin: adminSessionActive });
+
+                return (
+                  <LectureCard
+                    key={lecture.id}
+                    lecture={lecture}
+                    locked={!workflowStatus?.unlocked}
+                    lockedReason={workflowStatus?.lockedReason}
+                    onUpdateWatchState={handleLectureUpdate}
+                    watchState={state.lectureWatchStatus[lecture.id]}
+                  />
+                );
+              })}
             </div>
           </section>
         </div>

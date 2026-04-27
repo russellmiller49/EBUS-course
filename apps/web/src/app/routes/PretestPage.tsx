@@ -308,7 +308,7 @@ export function PretestPage() {
             onClick={handleSubmit}
             type="button"
           >
-            {submitted ? 'Pretest saved' : `Save ${result.percent}% score`}
+            {submitted ? 'Pretest saved' : 'Submit pre-test'}
           </button>
         </div>
       </section>

@@ -18,6 +18,7 @@ export type ModuleProgressId =
   | 'knobology'
   | 'station-map'
   | 'station-explorer'
+  | 'tnm-staging'
   | 'lectures'
   | 'quiz'
   | 'case-001'
@@ -58,6 +59,19 @@ export interface QuizHistoryEntry {
   completedAt: string;
 }
 
+export interface CourseAssessmentProgress {
+  completedAt: string | null;
+  correctCount: number;
+  totalCount: number;
+  percent: number;
+  attemptCount: number;
+}
+
+export interface CourseSurveyProgress {
+  submittedAt: string | null;
+  responses: Record<string, string>;
+}
+
 export interface PretestProgress {
   answers: Record<string, string>;
   currentQuestionIndex: number;
@@ -69,17 +83,28 @@ export interface PretestProgress {
   attemptCount: number;
 }
 
+export interface TnmCaseAttemptStat {
+  attempts: number;
+  correct: number;
+  lastAttemptedAt: string | null;
+}
+
 export interface LearnerProgressState {
-  version: 5;
+  version: 7;
   moduleProgress: Record<ModuleProgressId, ModuleProgress>;
   bookmarkedStations: string[];
   stationRecognitionStats: Record<string, { attempts: number; correct: number }>;
+  tnmCaseStats: Record<string, TnmCaseAttemptStat>;
+  tnmTagStats: Record<string, TnmCaseAttemptStat>;
   lectureWatchStatus: Record<string, LectureWatchState>;
   engagement: Record<TrackedLearningRouteId, ModuleEngagementSummary>;
   quizScoreHistory: QuizHistoryEntry[];
+  courseAssessmentResults: Record<string, CourseAssessmentProgress>;
+  courseSurvey: CourseSurveyProgress;
   pretest: PretestProgress;
   lastViewedStationId: string | null;
   lastUsedKnobologyControl: KnobologyControlId | null;
+  lastViewedTnmCaseId: string | null;
 }
 
 function isValidTimestamp(value: string | null) {
@@ -97,7 +122,16 @@ type Action =
   | { type: 'toggleStationBookmark'; stationId: string }
   | { type: 'setLectureState'; lectureId: string; watchedSeconds?: number; completed?: boolean; opened?: boolean }
   | { type: 'recordQuizResult'; entry: QuizHistoryEntry }
+  | {
+      type: 'recordCourseAssessmentResult';
+      assessmentId: string;
+      correctCount: number;
+      totalCount: number;
+      percent: number;
+    }
+  | { type: 'submitCourseSurvey'; responses: Record<string, string> }
   | { type: 'recordRecognitionAttempt'; stationId: string; correct: boolean }
+  | { type: 'recordTnmCaseAttempt'; caseId: string; tags: string[]; correct: boolean }
   | { type: 'recordModuleEngagement'; moduleId: TrackedLearningRouteId; seconds: number }
   | { type: 'setPretestAnswer'; questionId: string; optionId: string }
   | { type: 'setPretestQuestionIndex'; index: number }
@@ -105,6 +139,7 @@ type Action =
   | { type: 'submitPretest'; score: number; answeredCount: number; totalQuestions: number }
   | { type: 'setLastViewedStation'; stationId: string }
   | { type: 'setLastUsedKnobologyControl'; controlId: KnobologyControlId }
+  | { type: 'setLastViewedTnmCase'; caseId: string }
   | { type: 'reset' };
 
 interface LearnerProgressContextValue {
@@ -116,13 +151,22 @@ interface LearnerProgressContextValue {
   setLectureState: (lectureId: string, update: { watchedSeconds?: number; completed?: boolean; opened?: boolean }) => void;
   recordModuleEngagement: (moduleId: TrackedLearningRouteId, seconds: number) => void;
   recordQuizResult: (entry: Omit<QuizHistoryEntry, 'completedAt'>) => void;
+  recordCourseAssessmentResult: (entry: {
+    assessmentId: string;
+    correctCount: number;
+    totalCount: number;
+    percent: number;
+  }) => void;
+  submitCourseSurvey: (responses: Record<string, string>) => void;
   recordRecognitionAttempt: (stationId: string, correct: boolean) => void;
+  recordTnmCaseAttempt: (caseId: string, tags: string[], correct: boolean) => void;
   setPretestAnswer: (questionId: string, optionId: string) => void;
   setPretestQuestionIndex: (index: number) => void;
   submitPretest: (summary: { score: number; answeredCount: number; totalQuestions: number }) => void;
   unlockPretestWithPasscode: () => void;
   setLastViewedStation: (stationId: string) => void;
   setLastUsedKnobologyControl: (controlId: KnobologyControlId) => void;
+  setLastViewedTnmCase: (caseId: string) => void;
   reset: () => void;
 }
 
@@ -151,12 +195,13 @@ function createPretestProgress(): PretestProgress {
 
 export function createInitialLearnerProgress(): LearnerProgressState {
   return {
-    version: 5,
+    version: 7,
     moduleProgress: {
       pretest: createModuleProgress(),
       knobology: createModuleProgress(),
       'station-map': createModuleProgress(),
       'station-explorer': createModuleProgress(),
+      'tnm-staging': createModuleProgress(),
       lectures: createModuleProgress(),
       quiz: createModuleProgress(),
       'case-001': createModuleProgress(),
@@ -164,20 +209,29 @@ export function createInitialLearnerProgress(): LearnerProgressState {
     },
     bookmarkedStations: [],
     stationRecognitionStats: {},
+    tnmCaseStats: {},
+    tnmTagStats: {},
     engagement: {
       pretest: createEngagementSummary(),
       lectures: createEngagementSummary(),
       knobology: createEngagementSummary(),
       stations: createEngagementSummary(),
+      'tnm-staging': createEngagementSummary(),
       quiz: createEngagementSummary(),
       'case-001': createEngagementSummary(),
       simulator: createEngagementSummary(),
     },
     lectureWatchStatus: {},
     quizScoreHistory: [],
+    courseAssessmentResults: {},
+    courseSurvey: {
+      submittedAt: null,
+      responses: {},
+    },
     pretest: createPretestProgress(),
     lastViewedStationId: null,
     lastUsedKnobologyControl: null,
+    lastViewedTnmCaseId: null,
   };
 }
 
@@ -209,7 +263,7 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
   }
 
   return {
-    version: 5,
+    version: 7,
     moduleProgress: nextModuleProgress,
     bookmarkedStations: Array.isArray(raw.bookmarkedStations)
       ? raw.bookmarkedStations.filter((stationId): stationId is string => typeof stationId === 'string')
@@ -229,6 +283,8 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
             }),
           )
         : {},
+    tnmCaseStats: normalizeTnmAttemptStats(raw.tnmCaseStats),
+    tnmTagStats: normalizeTnmAttemptStats(raw.tnmTagStats),
     lectureWatchStatus:
       raw.lectureWatchStatus && typeof raw.lectureWatchStatus === 'object'
         ? Object.fromEntries(
@@ -258,6 +314,7 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
             lectures: normalizeEngagementRecord(raw.engagement.lectures),
             knobology: normalizeEngagementRecord(raw.engagement.knobology),
             stations: normalizeEngagementRecord(raw.engagement.stations),
+            'tnm-staging': normalizeEngagementRecord(raw.engagement['tnm-staging']),
             quiz: normalizeEngagementRecord(raw.engagement.quiz),
             'case-001': normalizeEngagementRecord(raw.engagement['case-001']),
             simulator: normalizeEngagementRecord(raw.engagement.simulator),
@@ -276,6 +333,24 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
           );
         })
       : [],
+    courseAssessmentResults: normalizeCourseAssessmentResults(raw.courseAssessmentResults),
+    courseSurvey:
+      raw.courseSurvey && typeof raw.courseSurvey === 'object'
+        ? {
+            submittedAt: typeof raw.courseSurvey.submittedAt === 'string' ? raw.courseSurvey.submittedAt : null,
+            responses:
+              raw.courseSurvey.responses && typeof raw.courseSurvey.responses === 'object'
+                ? Object.fromEntries(
+                    Object.entries(raw.courseSurvey.responses).flatMap(([questionId, value]) =>
+                      typeof value === 'string' ? [[questionId, value]] : [],
+                    ),
+                  )
+                : {},
+          }
+        : {
+            submittedAt: null,
+            responses: {},
+          },
     pretest:
       raw.pretest && typeof raw.pretest === 'object'
         ? {
@@ -317,6 +392,7 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
       ].includes(raw.lastUsedKnobologyControl)
         ? raw.lastUsedKnobologyControl
         : null,
+    lastViewedTnmCaseId: typeof raw.lastViewedTnmCaseId === 'string' ? raw.lastViewedTnmCaseId : null,
   };
 }
 
@@ -379,8 +455,77 @@ function normalizeEngagementRecord(candidate: unknown): ModuleEngagementSummary 
   };
 }
 
+function normalizeTnmAttemptStats(candidate: unknown): Record<string, TnmCaseAttemptStat> {
+  if (!candidate || typeof candidate !== 'object') {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(candidate).flatMap(([id, value]) => {
+      if (!value || typeof value !== 'object') {
+        return [];
+      }
+
+      const record = value as Partial<TnmCaseAttemptStat>;
+      const attempts = typeof record.attempts === 'number' ? Math.max(0, Math.floor(record.attempts)) : 0;
+      const correct = typeof record.correct === 'number' ? Math.max(0, Math.min(Math.floor(record.correct), attempts)) : 0;
+
+      return [
+        [
+          id,
+          {
+            attempts,
+            correct,
+            lastAttemptedAt: typeof record.lastAttemptedAt === 'string' ? record.lastAttemptedAt : null,
+          },
+        ],
+      ];
+    }),
+  );
+}
+
+function normalizeCourseAssessmentResults(candidate: unknown): Record<string, CourseAssessmentProgress> {
+  if (!candidate || typeof candidate !== 'object') {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(candidate).flatMap(([assessmentId, value]) => {
+      if (!value || typeof value !== 'object') {
+        return [];
+      }
+
+      const record = value as Partial<CourseAssessmentProgress>;
+      const totalCount = typeof record.totalCount === 'number' ? Math.max(0, Math.floor(record.totalCount)) : 0;
+      const correctCount =
+        typeof record.correctCount === 'number'
+          ? Math.max(0, Math.min(Math.floor(record.correctCount), totalCount || Number.MAX_SAFE_INTEGER))
+          : 0;
+      const percent =
+        typeof record.percent === 'number'
+          ? Math.max(0, Math.min(100, Math.round(record.percent)))
+          : totalCount > 0
+            ? Math.round((correctCount / totalCount) * 100)
+            : 0;
+
+      return [
+        [
+          assessmentId,
+          {
+            completedAt: typeof record.completedAt === 'string' ? record.completedAt : null,
+            correctCount,
+            totalCount,
+            percent,
+            attemptCount: typeof record.attemptCount === 'number' ? Math.max(0, Math.floor(record.attemptCount)) : 0,
+          },
+        ],
+      ];
+    }),
+  );
+}
+
 function getModuleForRoute(routeId: AppRouteId): ModuleProgressId | null {
-  if (routeId === 'home') {
+  if (routeId === 'home' || routeId === 'admin' || routeId === 'sponsors') {
     return null;
   }
 
@@ -511,6 +656,31 @@ export function learnerProgressReducer(state: LearnerProgressState, action: Acti
         ...state,
         quizScoreHistory: [action.entry, ...state.quizScoreHistory].slice(0, 12),
       };
+    case 'recordCourseAssessmentResult': {
+      const current = state.courseAssessmentResults[action.assessmentId];
+
+      return {
+        ...state,
+        courseAssessmentResults: {
+          ...state.courseAssessmentResults,
+          [action.assessmentId]: {
+            completedAt: new Date().toISOString(),
+            correctCount: Math.max(0, action.correctCount),
+            totalCount: Math.max(0, action.totalCount),
+            percent: Math.max(0, Math.min(100, Math.round(action.percent))),
+            attemptCount: (current?.attemptCount ?? 0) + 1,
+          },
+        },
+      };
+    }
+    case 'submitCourseSurvey':
+      return {
+        ...state,
+        courseSurvey: {
+          submittedAt: state.courseSurvey.submittedAt ?? new Date().toISOString(),
+          responses: action.responses,
+        },
+      };
     case 'recordRecognitionAttempt': {
       const current = state.stationRecognitionStats[action.stationId] ?? { attempts: 0, correct: 0 };
 
@@ -523,6 +693,34 @@ export function learnerProgressReducer(state: LearnerProgressState, action: Acti
             correct: current.correct + (action.correct ? 1 : 0),
           },
         },
+      };
+    }
+    case 'recordTnmCaseAttempt': {
+      const now = new Date().toISOString();
+      const currentCase = state.tnmCaseStats[action.caseId] ?? { attempts: 0, correct: 0, lastAttemptedAt: null };
+      const nextTagStats = { ...state.tnmTagStats };
+
+      for (const tag of action.tags) {
+        const currentTag = nextTagStats[tag] ?? { attempts: 0, correct: 0, lastAttemptedAt: null };
+        nextTagStats[tag] = {
+          attempts: currentTag.attempts + 1,
+          correct: currentTag.correct + (action.correct ? 1 : 0),
+          lastAttemptedAt: now,
+        };
+      }
+
+      return {
+        ...state,
+        lastViewedTnmCaseId: action.caseId,
+        tnmCaseStats: {
+          ...state.tnmCaseStats,
+          [action.caseId]: {
+            attempts: currentCase.attempts + 1,
+            correct: currentCase.correct + (action.correct ? 1 : 0),
+            lastAttemptedAt: now,
+          },
+        },
+        tnmTagStats: nextTagStats,
       };
     }
     case 'setPretestAnswer':
@@ -596,6 +794,15 @@ export function learnerProgressReducer(state: LearnerProgressState, action: Acti
       return {
         ...state,
         lastUsedKnobologyControl: action.controlId,
+      };
+    case 'setLastViewedTnmCase':
+      if (state.lastViewedTnmCaseId === action.caseId) {
+        return state;
+      }
+
+      return {
+        ...state,
+        lastViewedTnmCaseId: action.caseId,
       };
     case 'reset':
       return createInitialLearnerProgress();
@@ -820,8 +1027,29 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const recordCourseAssessmentResult = useCallback(
+    (entry: { assessmentId: string; correctCount: number; totalCount: number; percent: number }) => {
+      dispatch({
+        type: 'recordCourseAssessmentResult',
+        assessmentId: entry.assessmentId,
+        correctCount: entry.correctCount,
+        totalCount: entry.totalCount,
+        percent: entry.percent,
+      });
+    },
+    [],
+  );
+
+  const submitCourseSurvey = useCallback((responses: Record<string, string>) => {
+    dispatch({ type: 'submitCourseSurvey', responses });
+  }, []);
+
   const recordRecognitionAttempt = useCallback((stationId: string, correct: boolean) => {
     dispatch({ type: 'recordRecognitionAttempt', stationId, correct });
+  }, []);
+
+  const recordTnmCaseAttempt = useCallback((caseId: string, tags: string[], correct: boolean) => {
+    dispatch({ type: 'recordTnmCaseAttempt', caseId, tags, correct });
   }, []);
 
   const setPretestAnswer = useCallback((questionId: string, optionId: string) => {
@@ -848,6 +1076,10 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'setLastUsedKnobologyControl', controlId });
   }, []);
 
+  const setLastViewedTnmCase = useCallback((caseId: string) => {
+    dispatch({ type: 'setLastViewedTnmCase', caseId });
+  }, []);
+
   const reset = useCallback(() => {
     dispatch({ type: 'reset' });
   }, []);
@@ -862,25 +1094,33 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
       setLectureState,
       recordModuleEngagement,
       recordQuizResult,
+      recordCourseAssessmentResult,
+      submitCourseSurvey,
       recordRecognitionAttempt,
+      recordTnmCaseAttempt,
       setPretestAnswer,
       setPretestQuestionIndex,
       submitPretest,
       unlockPretestWithPasscode,
       setLastViewedStation,
       setLastUsedKnobologyControl,
+      setLastViewedTnmCase,
       reset,
     }),
     [
       hydrated,
       recordModuleEngagement,
+      recordCourseAssessmentResult,
       recordQuizResult,
       recordRecognitionAttempt,
+      recordTnmCaseAttempt,
       reset,
       setLastUsedKnobologyControl,
       setLastViewedStation,
+      setLastViewedTnmCase,
       setLectureState,
       setModuleProgress,
+      submitCourseSurvey,
       setPretestAnswer,
       setPretestQuestionIndex,
       submitPretest,

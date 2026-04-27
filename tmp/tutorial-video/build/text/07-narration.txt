@@ -1,0 +1,1 @@
+Quiz mode stays map based. The app asks the learner to pin a station from a prompt, then gives a hint or explanation. Below that, the recognition challenge tracks accuracy for selected stations. The design keeps mistakes productive: the learner sees why the answer is correct, and local progress records which stations still need repetition.

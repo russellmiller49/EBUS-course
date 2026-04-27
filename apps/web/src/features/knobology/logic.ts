@@ -159,8 +159,13 @@ const MEASUREMENT_SECTOR = {
   apexY: 0.055,
   baseY: 0.905,
   baseWidth: 0.92,
-  markerMargin: 0.012,
   sectorAngleDegrees: 72,
+} as const;
+const MEASUREMENT_CURSOR_BOUNDS = {
+  minX: 0.045,
+  maxX: 0.94,
+  minY: 0.065,
+  maxY: 0.895,
 } as const;
 const CONTRAST_PRESETS = {
   off: getKnobologyVideoValueForIndex(1),
@@ -188,14 +193,9 @@ function getMeasurementDepthFraction(y: number) {
 }
 
 function clampMeasurementPoint(point: KnobologyMeasurementPoint): KnobologyMeasurementPoint {
-  const depthFraction = getMeasurementDepthFraction(point.y);
-  const sectorWidth = MEASUREMENT_SECTOR.baseWidth * depthFraction;
-  const left = MEASUREMENT_SECTOR.apexX - sectorWidth / 2 + MEASUREMENT_SECTOR.markerMargin;
-  const right = MEASUREMENT_SECTOR.apexX + sectorWidth / 2 - MEASUREMENT_SECTOR.markerMargin;
-
   return {
-    x: clamp(point.x, left, right),
-    y: clamp(point.y, MEASUREMENT_SECTOR.apexY + 0.01, MEASUREMENT_SECTOR.baseY - 0.01),
+    x: clamp(point.x, MEASUREMENT_CURSOR_BOUNDS.minX, MEASUREMENT_CURSOR_BOUNDS.maxX),
+    y: clamp(point.y, MEASUREMENT_CURSOR_BOUNDS.minY, MEASUREMENT_CURSOR_BOUNDS.maxY),
   };
 }
 

@@ -1,0 +1,1 @@
+Below the 3D scene, the same target is linked to axial, coronal, and sagittal CT slices. The crosshair and segmentation overlay help learners connect a station target in 3D with its corresponding CT location. The arbitrary reslice panel is designed to stay aligned with the draggable plane in the 3D scene.

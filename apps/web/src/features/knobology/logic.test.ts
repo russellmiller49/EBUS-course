@@ -116,4 +116,20 @@ describe('reduceKnobologyFrameState', () => {
     expect(state.measurementStart).toBeNull();
     expect(state.measurementEnd).toBeNull();
   });
+
+  it('lets frozen calipers travel across the ultrasound screen at shallow depths', () => {
+    let state = createKnobologyFrameState(exercise);
+
+    state = reduceKnobologyFrameState(state, { type: 'PROCESSOR_ACTION', actionId: 'TOGGLE_FREEZE' });
+    state = reduceKnobologyFrameState(state, { type: 'PROCESSOR_ACTION', actionId: 'MEASURE_MODE' });
+    state = reduceKnobologyFrameState(state, { type: 'MOVE_TRACKBALL', deltaX: 500, deltaY: -300 });
+
+    expect(state.measurementStart).not.toBeNull();
+    expect(state.measurementStart?.y).toBeLessThan(0.1);
+    expect(state.measurementStart?.x).toBeCloseTo(0.94);
+
+    state = reduceKnobologyFrameState(state, { type: 'MOVE_TRACKBALL', deltaX: -1_000, deltaY: 0 });
+
+    expect(state.measurementStart?.x).toBeCloseTo(0.045);
+  });
 });

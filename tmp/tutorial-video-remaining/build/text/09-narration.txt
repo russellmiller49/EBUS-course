@@ -1,0 +1,1 @@
+The simulator starts from curated station snaps. Learners choose a station target, advance or retract along a guided airway centerline, and adjust roll while keeping teaching layers visible. The status strip shows the approach, distance, and whether the EBUS-style sector comes from a prepared snapshot or live browser projection.

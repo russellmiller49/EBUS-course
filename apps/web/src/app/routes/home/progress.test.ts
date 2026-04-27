@@ -4,14 +4,15 @@ import { createInitialLearnerProgress } from '@/lib/progress';
 import { buildHomeProgressModel } from '@/app/routes/home/progress';
 
 describe('buildHomeProgressModel', () => {
-  it('starts the recommended path with the pretest', () => {
+  it('starts the recommended path with the lecture path', () => {
     const state = createInitialLearnerProgress();
 
     const { learningSteps, resumeModule } = buildHomeProgressModel(state);
 
-    expect(learningSteps[0]?.id).toBe('pretest');
+    expect(learningSteps[0]?.id).toBe('lectures');
     expect(learningSteps.map((step) => step.id)).toContain('simulator');
-    expect(resumeModule?.id).toBe('pretest');
+    expect(learningSteps.map((step) => step.id)).toContain('tnm-staging');
+    expect(resumeModule?.id).toBe('lectures');
   });
 
   it('combines station map and explorer progress into one stations step', () => {

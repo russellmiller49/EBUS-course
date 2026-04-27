@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import '@kitware/vtk.js/Rendering/Profiles/All';
 import vtkGenericRenderWindow from '@kitware/vtk.js/Rendering/Misc/GenericRenderWindow';
 import vtkInteractorStyleImage from '@kitware/vtk.js/Interaction/Style/InteractorStyleImage';
+import vtkPlane from '@kitware/vtk.js/Common/DataModel/Plane';
 import vtkWidgetManager from '@kitware/vtk.js/Widgets/Core/WidgetManager';
 import { ViewTypes } from '@kitware/vtk.js/Widgets/Core/WidgetManager/Constants';
 import vtkImplicitPlaneWidget from '@kitware/vtk.js/Widgets/Widgets3D/ImplicitPlaneWidget';
@@ -31,6 +32,8 @@ import { normalizeStructureKey } from './structureKeys';
 import { crossVectors, normalizeVector } from '../../../../../features/case3d/patient-space';
 import type { LoadedCaseVolume } from './vtk/loadCaseVolume';
 import type { LoadedSegmentation } from './vtk/loadSegmentation';
+import type { OrthogonalClipMode } from './viewerState';
+import type { vtkPlane as VtkPlane } from '@kitware/vtk.js/Common/DataModel/Plane';
 import type {
   CasePlane,
   RuntimeCaseManifest,
@@ -80,6 +83,8 @@ interface ThreeDViewportProps extends CommonViewportProps {
   manifest: RuntimeCaseManifest;
   planeIndices: SliceIndex;
   planeVisibility: Record<CasePlane, boolean>;
+  orthogonalClipMode: OrthogonalClipMode;
+  orthogonalClipPlane: CasePlane;
   crosshairWorld: Vector3Tuple;
   orthogonalPlaneOpacity: number;
   overlayOpacity: number;
@@ -119,6 +124,7 @@ type ThreeDPipeline = {
   planeActors: Record<CasePlane, ReturnType<typeof createOrthogonalPlaneActor>>;
   crosshair: ReturnType<typeof createCrosshairActors>;
   cutSlice: ReturnType<typeof createCutPlaneSlice>;
+  orthogonalClipPlane: VtkPlane;
   widgetFactory: any;
   widgetManager: vtkWidgetManager;
   widgetSubscription: { unsubscribe: () => void } | null;
@@ -155,19 +161,40 @@ function buildSegmentSignature(segments: SegmentationSegment[]) {
     .join('|');
 }
 
-function ensureMapperClipping(
-  mapper: { addClippingPlane: (plane: any) => void; getClippingPlanes: () => any[]; removeAllClippingPlanes: () => void },
-  plane: any,
-  enabled: boolean,
+function syncMapperClipping(
+  mapper: {
+    addClippingPlane: (plane: any) => void;
+    getClippingPlanes: () => any[];
+    modified?: () => void;
+    removeAllClippingPlanes: () => void;
+  },
+  planes: VtkPlane[],
 ) {
-  if (!enabled) {
-    mapper.removeAllClippingPlanes();
+  const currentPlanes = mapper.getClippingPlanes();
+  const unchanged = currentPlanes.length === planes.length && currentPlanes.every((plane, index) => plane === planes[index]);
+
+  if (unchanged) {
+    mapper.modified?.();
     return;
   }
 
-  if (!mapper.getClippingPlanes().includes(plane)) {
-    mapper.addClippingPlane(plane);
-  }
+  mapper.removeAllClippingPlanes();
+  planes.forEach((plane) => mapper.addClippingPlane(plane));
+}
+
+function getOrthogonalClipPlaneDefinition(
+  manifest: RuntimeCaseManifest,
+  plane: CasePlane,
+  planeIndices: SliceIndex,
+  mode: OrthogonalClipMode,
+) {
+  const origin = getPlaneCenterWorld(manifest.volumeGeometry, plane, planeIndices[plane]);
+  const normal = getPlaneNormalWorld(manifest.volumeGeometry, plane);
+
+  return {
+    origin,
+    normal: mode === 'hide-above' ? ([-normal[0], -normal[1], -normal[2]] as Vector3Tuple) : normal,
+  };
 }
 
 function styleGlbActor(actor: any, opacity: number) {
@@ -259,6 +286,7 @@ export function VtkViewport(props: VtkViewportProps) {
   const showGlbRef = useRef(props.mode === 'three-d' ? props.showGlb : false);
   const baseVisibleStructureKeysRef = useRef<Set<string>>(new Set());
   const selectedNodeStructureKeysRef = useRef<Set<string>>(new Set());
+  const activeClippingPlanesRef = useRef<VtkPlane[]>([]);
   const cutPlaneRef = useRef<{ normal: Vector3Tuple; origin: Vector3Tuple }>(
     props.mode === 'three-d'
       ? { origin: props.cutPlaneOrigin, normal: props.cutPlaneNormal }
@@ -451,6 +479,10 @@ export function VtkViewport(props: VtkViewportProps) {
         props.cutPlaneOrigin,
         props.cutPlaneNormal,
       );
+      const orthogonalClipPlane = vtkPlane.newInstance({
+        origin: props.crosshairWorld,
+        normal: getPlaneNormalWorld(props.manifest.volumeGeometry, props.orthogonalClipPlane),
+      });
       const crosshair = createCrosshairActors(props.crosshairWorld, 18);
       const widgetManager = vtkWidgetManager.newInstance();
       widgetManager.setRenderer(renderer);
@@ -496,6 +528,7 @@ export function VtkViewport(props: VtkViewportProps) {
         },
         crosshair,
         cutSlice,
+        orthogonalClipPlane,
         widgetFactory,
         widgetManager,
         widgetSubscription,
@@ -659,6 +692,22 @@ export function VtkViewport(props: VtkViewportProps) {
     }
 
     const renderer = genericRenderWindow.getRenderer();
+    if (props.orthogonalClipMode !== 'none') {
+      const clipDefinition = getOrthogonalClipPlaneDefinition(
+        props.manifest,
+        props.orthogonalClipPlane,
+        props.planeIndices,
+        props.orthogonalClipMode,
+      );
+      pipeline.orthogonalClipPlane.setOrigin(clipDefinition.origin);
+      pipeline.orthogonalClipPlane.setNormal(clipDefinition.normal);
+    }
+
+    const activeClippingPlanes = [
+      ...(props.cutPlaneVisible ? [pipeline.cutSlice.plane] : []),
+      ...(props.orthogonalClipMode !== 'none' ? [pipeline.orthogonalClipPlane] : []),
+    ];
+    activeClippingPlanesRef.current = activeClippingPlanes;
     const glbReady = Boolean(pipeline.glbImporter?.importer.getActors?.().size);
     const useGlbAsPrimary = props.showGlb && glbReady;
     const syncGlbActors = (
@@ -674,7 +723,7 @@ export function VtkViewport(props: VtkViewportProps) {
           actor.setVisibility(false);
 
           if (mapper) {
-            ensureMapperClipping(mapper, pipeline.cutSlice.plane, false);
+            syncMapperClipping(mapper, []);
           }
         });
         return;
@@ -682,6 +731,7 @@ export function VtkViewport(props: VtkViewportProps) {
 
       if (loaded.namedActors.size > 0) {
         const namedVisibleActors = new Set<any>();
+        const clippingPlanes = activeClippingPlanesRef.current;
 
         allActors.forEach((actor) => actor.setVisibility(false));
         loaded.namedActors.forEach((actors, key) => {
@@ -694,7 +744,7 @@ export function VtkViewport(props: VtkViewportProps) {
             styleGlbActor(actor, props.overlayOpacity);
 
             if (mapper) {
-              ensureMapperClipping(mapper, pipeline.cutSlice.plane, actorVisible && props.cutPlaneVisible);
+              syncMapperClipping(mapper, actorVisible ? clippingPlanes : []);
             }
           });
         });
@@ -708,7 +758,7 @@ export function VtkViewport(props: VtkViewportProps) {
           actor.setVisibility(false);
 
           if (mapper) {
-            ensureMapperClipping(mapper, pipeline.cutSlice.plane, false);
+            syncMapperClipping(mapper, []);
           }
         });
 
@@ -717,11 +767,12 @@ export function VtkViewport(props: VtkViewportProps) {
 
       allActors.forEach((actor) => {
         const mapper = actor.getMapper?.();
+        const clippingPlanes = activeClippingPlanesRef.current;
         actor.setVisibility(allowedKeys.size > 0);
         styleGlbActor(actor, props.overlayOpacity);
 
         if (mapper) {
-          ensureMapperClipping(mapper, pipeline.cutSlice.plane, allowedKeys.size > 0 && props.cutPlaneVisible);
+          syncMapperClipping(mapper, allowedKeys.size > 0 ? clippingPlanes : []);
         }
       });
     };
@@ -789,7 +840,7 @@ export function VtkViewport(props: VtkViewportProps) {
           segments,
           SEGMENT_GROUP_COLORS[groupKey],
           props.overlayOpacity,
-          props.cutPlaneVisible ? pipeline.cutSlice.plane : undefined,
+          activeClippingPlanes,
         );
 
         if (!actorBundle) {
@@ -809,7 +860,7 @@ export function VtkViewport(props: VtkViewportProps) {
         return;
       }
 
-      ensureMapperClipping(bundle.mapper, pipeline.cutSlice.plane, props.cutPlaneVisible);
+      syncMapperClipping(bundle.mapper, activeClippingPlanes);
       bundle.actor.setVisibility(true);
       bundle.actor.getProperty().setOpacity(props.overlayOpacity);
     });
@@ -831,12 +882,16 @@ export function VtkViewport(props: VtkViewportProps) {
         props.selectedSegments,
         SEGMENT_GROUP_COLORS.selected,
         Math.min(1, props.overlayOpacity + 0.24),
-        props.cutPlaneVisible ? pipeline.cutSlice.plane : undefined,
+        activeClippingPlanes,
       );
 
       if (pipeline.selectedActor) {
         renderer.addActor(pipeline.selectedActor.actor);
       }
+    }
+
+    if (pipeline.selectedActor) {
+      syncMapperClipping(pipeline.selectedActor.mapper, activeClippingPlanes);
     }
 
     if (props.showGlb && !pipeline.glbImporter) {
@@ -918,6 +973,8 @@ export function VtkViewport(props: VtkViewportProps) {
     props.mode === 'three-d' ? props.cutPlaneNormal : null,
     props.mode === 'three-d' ? props.cutPlaneOpacity : null,
     props.mode === 'three-d' ? props.cutPlaneVisible : null,
+    props.mode === 'three-d' ? props.orthogonalClipMode : null,
+    props.mode === 'three-d' ? props.orthogonalClipPlane : null,
     props.mode === 'three-d' ? props.showGlb : null,
     props.mode === 'three-d' ? props.resetCameraToken : null,
     props.mode === 'three-d' ? props.planeIndices.axial : null,

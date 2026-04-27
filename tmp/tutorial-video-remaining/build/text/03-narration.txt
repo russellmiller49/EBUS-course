@@ -1,0 +1,1 @@
+The interactive stager turns the reference matrix into a working calculator. The learner chooses T, N, and M descriptors and immediately sees the computed clinical stage with an explanation. Adjacent comparisons show why nearby descriptor changes matter. That makes the screen useful for teaching stage-group logic, not just returning a final label.

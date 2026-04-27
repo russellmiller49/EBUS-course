@@ -24,10 +24,16 @@ export function QuizCard({
   questions,
   label,
   onComplete,
+  revealAnswers = true,
+  deferFeedbackUntilComplete = false,
+  showRunningScore = true,
 }: {
   questions: QuizQuestionContent[];
   label: string;
   onComplete?: (result: ReturnType<typeof calculateQuizResult>) => void;
+  revealAnswers?: boolean;
+  deferFeedbackUntilComplete?: boolean;
+  showRunningScore?: boolean;
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string[] | undefined>>({});
@@ -39,6 +45,7 @@ export function QuizCard({
   const currentSelection = finalizedSelection.length > 0 ? finalizedSelection : draftSelection;
   const answeredCurrent = Boolean(currentQuestion && finalizedSelection.length > 0);
   const result = calculateQuizResult(questions, answers);
+  const shouldRevealAnswers = revealAnswers && (!deferFeedbackUntilComplete || completionRecorded);
 
   if (questions.length === 0 || !currentQuestion) {
     return null;
@@ -101,7 +108,9 @@ export function QuizCard({
           <h2>{currentQuestion.prompt}</h2>
         </div>
         <span className="quiz-card__score">
-          {result.correctCount}/{result.answeredCount || questions.length}
+          {showRunningScore
+            ? `${result.correctCount}/${result.answeredCount || questions.length}`
+            : `${result.answeredCount}/${questions.length} answered`}
         </span>
       </div>
 
@@ -116,10 +125,12 @@ export function QuizCard({
               className={`quiz-card__progress-pill${
                 index === currentIndex
                   ? ' quiz-card__progress-pill--active'
-                  : selected.length > 0
+                  : selected.length > 0 && shouldRevealAnswers
                     ? isCorrect
                       ? ' quiz-card__progress-pill--correct'
                       : ' quiz-card__progress-pill--incorrect'
+                    : selected.length > 0
+                      ? ' quiz-card__progress-pill--answered'
                     : ''
               }`}
             />
@@ -168,7 +179,7 @@ export function QuizCard({
             <button
               key={option.id}
               className={`choice-card${
-                answeredCurrent
+                answeredCurrent && shouldRevealAnswers
                   ? isCorrect
                     ? ' choice-card--correct'
                     : isSelected
@@ -190,7 +201,9 @@ export function QuizCard({
         })}
       </div>
 
-      {answeredCurrent ? <QuizExplanationPanel question={currentQuestion} selectedOptionIds={finalizedSelection} /> : null}
+      {answeredCurrent && shouldRevealAnswers ? (
+        <QuizExplanationPanel question={currentQuestion} selectedOptionIds={finalizedSelection} />
+      ) : null}
 
       <div className="button-row button-row--wrap">
         <button
@@ -219,7 +232,7 @@ export function QuizCard({
               onClick={submitCurrentQuestion}
               type="button"
             >
-              Check answer
+              {showRunningScore ? 'Check answer' : 'Lock answer'}
             </button>
           </>
         ) : currentIndex < questions.length - 1 ? (
@@ -237,7 +250,7 @@ export function QuizCard({
             onClick={recordCompletion}
             type="button"
           >
-            {completionRecorded ? 'Attempt saved' : `Save ${result.percent}% score`}
+            {completionRecorded ? 'Attempt saved' : showRunningScore ? `Save ${result.percent}% score` : 'Submit attempt'}
           </button>
         )}
       </div>
