@@ -4,6 +4,7 @@ import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { emptyProfileInput, LearnerProfileFields, validateProfileInput } from '@/features/account/LearnerProfileFields';
 import type { LearnerProfileInput } from '@/lib/auth';
 import { useAuth } from '@/lib/auth';
+import { getBrowserRecoverySessionTokens } from '@/lib/supabase';
 
 type AuthMode = 'sign-in' | 'sign-up' | 'recover' | 'reset-password';
 
@@ -53,6 +54,8 @@ export function AuthPage() {
   const requiresPasswordSetup = Boolean(user && profile?.mustSetPassword);
   const isPasswordForm = requiresPasswordSetup || mode === 'reset-password' || isPasswordRecoverySession;
   const isPendingApproval = Boolean(user && profile?.approvalStatus === 'pending' && !isPasswordForm);
+  const hasRecoverySessionTokens = Boolean(getBrowserRecoverySessionTokens());
+  const isMissingRecoverySession = mode === 'reset-password' && !requiresPasswordSetup && !user && !hasRecoverySessionTokens;
 
   useEffect(() => {
     if (routeMode === 'sign-up' || routeMode === 'recover' || routeMode === 'reset-password') {
@@ -268,6 +271,22 @@ export function AuthPage() {
         {error ? <p className="auth-card__error">{error}</p> : null}
 
         {isPasswordForm ? (
+          isMissingRecoverySession ? (
+            <div className="auth-form">
+              <p className="auth-card__error">
+                This recovery link is missing its reset session or has already been used. Request a fresh recovery email,
+                then open the newest link.
+              </p>
+              <div className="button-row button-row--wrap">
+                <button className="button" onClick={() => switchMode('recover')} type="button">
+                  Request recovery link
+                </button>
+                <button className="button button--ghost" onClick={() => switchMode('sign-in')} type="button">
+                  Back to sign in
+                </button>
+              </div>
+            </div>
+          ) : (
           <form className="auth-form" onSubmit={handlePasswordUpdate}>
             <label className="field">
               <span>Account email</span>
@@ -304,6 +323,7 @@ export function AuthPage() {
               ) : null}
             </div>
           </form>
+          )
         ) : mode === 'sign-up' ? (
           <form className="auth-form" onSubmit={handleSignUp}>
             <LearnerProfileFields onChange={setSignupProfile} values={signupProfile} />
