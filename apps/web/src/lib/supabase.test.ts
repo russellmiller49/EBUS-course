@@ -36,4 +36,16 @@ describe('Supabase auth URL helpers', () => {
     expect(params.get('refresh_token')).toBe('refresh.value');
     expect(params.get('type')).toBe('recovery');
   });
+
+  it('reads Supabase auth codes from a hash router callback URL', () => {
+    const params = readAuthParamsFromUrlParts(
+      '?authCallback=1',
+      '#/auth?mode=reset-password&authMode=reset-password&code=recovery.code.value',
+    );
+
+    expect(params.get('authCallback')).toBe('1');
+    expect(params.get('mode')).toBe('reset-password');
+    expect(params.get('authMode')).toBe('reset-password');
+    expect(params.get('code')).toBe('recovery.code.value');
+  });
 });

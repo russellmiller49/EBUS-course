@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import {
   clearBrowserAuthTokensFromUrl,
   clearStoredBrowserRecoverySessionTokens,
+  getBrowserAuthCodeFromUrl,
   getAuthCallbackUrl,
   getBrowserAuthCallbackMode,
   getBrowserRecoverySessionTokens,
@@ -237,10 +238,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
 
     async function bootstrapSession() {
+      const recoveryCode = getBrowserAuthCodeFromUrl();
       const recoveryTokens = getBrowserRecoverySessionTokensFromUrl();
       let recoveredSession: Session | null = null;
 
-      if (recoveryTokens) {
+      if (recoveryCode && getBrowserAuthCallbackMode() === 'reset-password') {
+        const { data, error } = await client.auth.exchangeCodeForSession(recoveryCode);
+
+        if (!error && data.session?.user) {
+          recoveredSession = data.session;
+          setIsPasswordRecoverySession(true);
+          clearStoredBrowserRecoverySessionTokens();
+          clearBrowserAuthTokensFromUrl();
+        } else {
+          clearStoredBrowserRecoverySessionTokens();
+          await client.auth.signOut({ scope: 'local' });
+          setIsPasswordRecoverySession(true);
+        }
+      } else if (recoveryTokens) {
         storeBrowserRecoverySessionTokens(recoveryTokens);
 
         const { data, error } = await client.auth.setSession({
@@ -253,6 +268,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsPasswordRecoverySession(true);
           clearBrowserAuthTokensFromUrl();
         } else {
+          clearStoredBrowserRecoverySessionTokens();
+          await client.auth.signOut({ scope: 'local' });
           setIsPasswordRecoverySession(true);
         }
       }
@@ -421,7 +438,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         if (sessionError) {
-          throw sessionError;
+          clearStoredBrowserRecoverySessionTokens();
+          await client.auth.signOut({ scope: 'local' });
+          throw new Error('The recovery link is invalid or expired. Request a fresh recovery email, then open the newest link.');
         }
 
         if (!data.session?.user) {
@@ -434,6 +453,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const retry = await client.auth.updateUser({ password });
         error = retry.error;
+      } else {
+        throw new Error('The recovery link is missing its reset session. Request a fresh recovery email, then open the newest link.');
       }
     }
 

@@ -10,8 +10,10 @@ export interface BrowserRecoverySessionTokens {
 
 const COURSE_AUTH_CALLBACK_APP = 'socal-ebus-course';
 const RECOVERY_SESSION_STORAGE_KEY = 'socal-ebus-recovery-session';
+const RECOVERY_SESSION_STORAGE_TTL_MS = 15 * 60 * 1000;
 const AUTH_TOKEN_PARAM_KEYS = [
   'access_token',
+  'code',
   'expires_at',
   'expires_in',
   'refresh_token',
@@ -199,7 +201,13 @@ export function storeBrowserRecoverySessionTokens(tokens: BrowserRecoverySession
     return;
   }
 
-  window.sessionStorage.setItem(RECOVERY_SESSION_STORAGE_KEY, JSON.stringify(tokens));
+  window.sessionStorage.setItem(
+    RECOVERY_SESSION_STORAGE_KEY,
+    JSON.stringify({
+      ...tokens,
+      createdAt: Date.now(),
+    }),
+  );
 }
 
 export function getStoredBrowserRecoverySessionTokens(): BrowserRecoverySessionTokens | null {
@@ -214,9 +222,14 @@ export function getStoredBrowserRecoverySessionTokens(): BrowserRecoverySessionT
   }
 
   try {
-    const parsed = JSON.parse(raw) as Partial<BrowserRecoverySessionTokens>;
+    const parsed = JSON.parse(raw) as Partial<BrowserRecoverySessionTokens> & { createdAt?: unknown };
 
-    if (typeof parsed.accessToken === 'string' && typeof parsed.refreshToken === 'string') {
+    if (
+      typeof parsed.accessToken === 'string' &&
+      typeof parsed.refreshToken === 'string' &&
+      typeof parsed.createdAt === 'number' &&
+      Date.now() - parsed.createdAt < RECOVERY_SESSION_STORAGE_TTL_MS
+    ) {
       return {
         accessToken: parsed.accessToken,
         refreshToken: parsed.refreshToken,
@@ -232,6 +245,13 @@ export function getStoredBrowserRecoverySessionTokens(): BrowserRecoverySessionT
 
 export function getBrowserRecoverySessionTokens() {
   return getBrowserRecoverySessionTokensFromUrl() ?? getStoredBrowserRecoverySessionTokens();
+}
+
+export function getBrowserAuthCodeFromUrl() {
+  const params = getBrowserAuthUrlParams();
+  const code = params.get('code');
+
+  return code || null;
 }
 
 export function clearStoredBrowserRecoverySessionTokens() {
