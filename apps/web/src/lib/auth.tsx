@@ -4,11 +4,14 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 import {
   clearBrowserAuthTokensFromUrl,
+  clearStoredBrowserRecoverySessionTokens,
   getAuthCallbackUrl,
   getBrowserAuthCallbackMode,
   getBrowserRecoverySessionTokens,
+  getBrowserRecoverySessionTokensFromUrl,
   getSupabaseBrowserClient,
   isSupabaseConfigured,
+  storeBrowserRecoverySessionTokens,
 } from '@/lib/supabase';
 
 export type LearnerDegree = 'MD' | 'DO';
@@ -234,19 +237,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
 
     async function bootstrapSession() {
-      const recoveryTokens = getBrowserRecoverySessionTokens();
+      const recoveryTokens = getBrowserRecoverySessionTokensFromUrl();
       let recoveredSession: Session | null = null;
 
       if (recoveryTokens) {
+        storeBrowserRecoverySessionTokens(recoveryTokens);
+
         const { data, error } = await client.auth.setSession({
           access_token: recoveryTokens.accessToken,
           refresh_token: recoveryTokens.refreshToken,
         });
 
-        if (!error) {
+        if (!error && data.session?.user) {
           recoveredSession = data.session;
           setIsPasswordRecoverySession(true);
           clearBrowserAuthTokensFromUrl();
+        } else {
+          setIsPasswordRecoverySession(true);
         }
       }
 
@@ -402,12 +409,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Supabase is not configured for this environment.');
     }
 
-    const { error } = await client.auth.updateUser({ password });
+    let { error } = await client.auth.updateUser({ password });
+
+    if (error?.message === 'Auth session missing!') {
+      const recoveryTokens = getBrowserRecoverySessionTokens();
+
+      if (recoveryTokens) {
+        const { data, error: sessionError } = await client.auth.setSession({
+          access_token: recoveryTokens.accessToken,
+          refresh_token: recoveryTokens.refreshToken,
+        });
+
+        if (sessionError) {
+          throw sessionError;
+        }
+
+        if (!data.session?.user) {
+          throw new Error('The recovery link did not create a valid password reset session. Request a new recovery email.');
+        }
+
+        setSession(data.session);
+        setUser(data.session.user);
+        clearBrowserAuthTokensFromUrl();
+
+        const retry = await client.auth.updateUser({ password });
+        error = retry.error;
+      }
+    }
 
     if (error) {
       throw error;
     }
 
+    clearStoredBrowserRecoverySessionTokens();
     setIsPasswordRecoverySession(false);
   }, []);
 

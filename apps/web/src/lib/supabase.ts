@@ -3,8 +3,13 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 let browserClient: SupabaseClient | null | undefined;
 
 export type AuthCallbackMode = 'sign-in' | 'reset-password';
+export interface BrowserRecoverySessionTokens {
+  accessToken: string;
+  refreshToken: string;
+}
 
 const COURSE_AUTH_CALLBACK_APP = 'socal-ebus-course';
+const RECOVERY_SESSION_STORAGE_KEY = 'socal-ebus-recovery-session';
 const AUTH_TOKEN_PARAM_KEYS = [
   'access_token',
   'expires_at',
@@ -169,8 +174,7 @@ export function getBrowserAuthUrlParams() {
   return readAuthParamsFromUrlParts(window.location.search, window.location.hash);
 }
 
-export function getBrowserRecoverySessionTokens() {
-  const params = getBrowserAuthUrlParams();
+function readRecoverySessionTokens(params: URLSearchParams): BrowserRecoverySessionTokens | null {
   const accessToken = params.get('access_token');
   const refreshToken = params.get('refresh_token');
   const tokenType = params.get('token_type');
@@ -184,6 +188,58 @@ export function getBrowserRecoverySessionTokens() {
     accessToken,
     refreshToken,
   };
+}
+
+export function getBrowserRecoverySessionTokensFromUrl() {
+  return readRecoverySessionTokens(getBrowserAuthUrlParams());
+}
+
+export function storeBrowserRecoverySessionTokens(tokens: BrowserRecoverySessionTokens) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.sessionStorage.setItem(RECOVERY_SESSION_STORAGE_KEY, JSON.stringify(tokens));
+}
+
+export function getStoredBrowserRecoverySessionTokens(): BrowserRecoverySessionTokens | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const raw = window.sessionStorage.getItem(RECOVERY_SESSION_STORAGE_KEY);
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<BrowserRecoverySessionTokens>;
+
+    if (typeof parsed.accessToken === 'string' && typeof parsed.refreshToken === 'string') {
+      return {
+        accessToken: parsed.accessToken,
+        refreshToken: parsed.refreshToken,
+      };
+    }
+  } catch {
+    // Clear malformed recovery state so a future reset link can recover cleanly.
+  }
+
+  window.sessionStorage.removeItem(RECOVERY_SESSION_STORAGE_KEY);
+  return null;
+}
+
+export function getBrowserRecoverySessionTokens() {
+  return getBrowserRecoverySessionTokensFromUrl() ?? getStoredBrowserRecoverySessionTokens();
+}
+
+export function clearStoredBrowserRecoverySessionTokens() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.sessionStorage.removeItem(RECOVERY_SESSION_STORAGE_KEY);
 }
 
 export function clearBrowserAuthTokensFromUrl() {
