@@ -2377,11 +2377,117 @@ iframe {
   gap: 18px;
 }
 
+.case3d-layout--field {
+  padding: 14px;
+}
+
+.case3d-fullscreen-module {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: minmax(280px, 0.78fr) minmax(460px, 1.55fr) minmax(300px, 0.82fr);
+  gap: 12px;
+  width: 100vw;
+  height: 100dvh;
+  padding: 12px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(5, 13, 22, 0.98), rgba(2, 7, 13, 1)),
+    radial-gradient(circle at 50% 0%, rgba(127, 189, 242, 0.1), transparent 32%);
+}
+
+.case3d-control-panel,
+.case3d-scene-panel,
+.case3d-ct-strip {
+  min-height: 0;
+  border-radius: 18px;
+  border: 1px solid rgba(123, 163, 200, 0.16);
+  background: linear-gradient(180deg, rgba(16, 30, 46, 0.82), rgba(7, 15, 26, 0.96));
+}
+
+.case3d-control-panel,
+.case3d-ct-strip {
+  overflow: auto;
+  padding: 14px;
+}
+
+.case3d-control-panel {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.case3d-scene-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+}
+
+.case3d-scene-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.case3d-scene-panel__header h2 {
+  margin: 0;
+  font-size: 1.08rem;
+}
+
+.case3d-scene-panel__header .case3d-button {
+  width: auto;
+}
+
+.case3d-scene-hint {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  max-width: min(420px, calc(100% - 24px));
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(127, 189, 242, 0.22);
+  background: rgba(7, 15, 26, 0.72);
+  color: var(--text-soft);
+  font-size: 0.84rem;
+  backdrop-filter: blur(10px);
+}
+
 .case3d-sidebar,
 .case3d-main,
-.case3d-grid {
+.case3d-grid,
+.case3d-ct-strip {
   display: grid;
   gap: 16px;
+}
+
+.case3d-workspace {
+  display: grid;
+  gap: 16px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.case3d-ct-strip {
+  align-content: start;
+  min-width: 0;
+}
+
+.case3d-ct-strip__header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 34px;
+}
+
+.case3d-ct-strip__header h3 {
+  margin: 0;
+  font-size: 1rem;
 }
 
 .case3d-panel {
@@ -2392,6 +2498,11 @@ iframe {
   border-radius: var(--radius-lg);
   border: 1px solid rgba(123, 163, 200, 0.16);
   background: linear-gradient(180deg, rgba(16, 30, 46, 0.82), rgba(7, 15, 26, 0.96));
+}
+
+.case3d-panel--field {
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: clamp(560px, calc(100dvh - 184px), 900px);
 }
 
 .case3d-panel h3 {
@@ -2432,19 +2543,14 @@ iframe {
   min-height: 460px;
 }
 
-.case3d-panel__viewport--hero:fullscreen {
-  width: 100%;
-  height: 100dvh;
-  min-height: 100dvh;
-  border: 0;
-  border-radius: 0;
-  background:
-    linear-gradient(180deg, rgba(8, 15, 25, 0.98), rgba(4, 8, 14, 1)),
-    radial-gradient(circle at top left, rgba(127, 189, 242, 0.12), transparent 28%);
+.case3d-scene-panel .case3d-panel__viewport--hero {
+  height: 100%;
+  min-height: 0;
 }
 
-.case3d-panel__viewport--hero::backdrop {
-  background: rgba(4, 10, 18, 0.96);
+.case3d-panel--field .case3d-panel__viewport--hero {
+  height: 100%;
+  min-height: 0;
 }
 
 .case3d-hero {
@@ -2477,33 +2583,13 @@ iframe {
   gap: 10px;
 }
 
-.case3d-fullscreen-toolbar {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 3;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
+.case3d-toggle-list--columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.case3d-fullscreen-menu {
-  position: absolute;
-  top: 72px;
-  right: 16px;
-  z-index: 3;
+.case3d-plane-slider-list {
   display: grid;
-  gap: 12px;
-  width: min(360px, calc(100vw - 32px));
-  max-height: min(78dvh, 720px);
-  overflow: auto;
-  padding: 16px;
-  border-radius: 22px;
-  border: 1px solid rgba(127, 189, 242, 0.2);
-  background: rgba(7, 15, 26, 0.9);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.42);
+  gap: 10px;
 }
 
 .case3d-panel__placeholder {
@@ -2564,6 +2650,14 @@ iframe {
   height: 18px;
 }
 
+.case3d-ct-overlay-toggle {
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(127, 189, 242, 0.22);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .case3d-button {
   min-height: 44px;
   padding: 0 16px;
@@ -2622,6 +2716,20 @@ iframe {
   max-height: 260px;
   overflow: auto;
   padding-right: 6px;
+}
+
+.case3d-slice-card--compact {
+  gap: 10px;
+  padding: 14px;
+}
+
+.case3d-slice-card--compact .case3d-panel__viewport {
+  min-height: 170px;
+  border-radius: 14px;
+}
+
+.case3d-slice-card--compact .case3d-panel__placeholder {
+  min-height: 170px;
 }
 
 .page-stack--course-overview {
@@ -3147,6 +3255,36 @@ iframe {
   text-align: left;
 }
 
+.lecture-workflow-item,
+.lecture-assessment-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.lecture-assessment-stack {
+  margin-left: clamp(0px, 2vw, 24px);
+}
+
+.course-assessment-card--inline {
+  min-height: 0;
+}
+
+.course-assessment-card__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.course-assessment-card__heading > div {
+  display: grid;
+  gap: 6px;
+}
+
+.course-assessment-card__heading .tag {
+  white-space: nowrap;
+}
+
 .course-assessment-card:disabled {
   cursor: default;
   opacity: 0.58;
@@ -3430,6 +3568,14 @@ iframe {
     align-items: start;
   }
 
+  .case3d-layout--field {
+    grid-template-columns: 1fr;
+  }
+
+  .case3d-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  }
+
   .case3d-hero {
     grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
     align-items: start;
@@ -3441,6 +3587,13 @@ iframe {
 
   .bottom-nav {
     display: none;
+  }
+}
+
+@media (max-width: 1120px) {
+  .case3d-fullscreen-module {
+    grid-template-columns: minmax(250px, 0.75fr) minmax(380px, 1.35fr) minmax(270px, 0.8fr);
+    overflow-x: auto;
   }
 }
 
@@ -3469,19 +3622,22 @@ iframe {
     min-height: 360px;
   }
 
-  .case3d-fullscreen-toolbar {
-    left: 12px;
-    right: 12px;
-    top: 12px;
+  .case3d-panel--field {
+    min-height: 520px;
   }
 
-  .case3d-fullscreen-menu {
-    top: 68px;
-    right: 12px;
-    left: 12px;
-    width: auto;
-    max-height: calc(100dvh - 84px);
+  .case3d-panel--field .case3d-panel__viewport--hero {
+    min-height: 420px;
   }
+
+  .case3d-fullscreen-module {
+    grid-template-columns: minmax(260px, 0.76fr) minmax(420px, 1.32fr) minmax(280px, 0.82fr);
+  }
+
+  .case3d-toggle-list--columns {
+    grid-template-columns: 1fr;
+  }
+
 }
 
 @media (max-width: 560px) {
@@ -3553,6 +3709,7 @@ iframe {
   .admin-learner-card__header,
   .lecture-card__header,
   .lecture-card__actions,
+  .course-assessment-card__heading,
   .section-card__heading,
   .learn-more-drawer__header,
   .detail-card__header,
@@ -3561,6 +3718,10 @@ iframe {
     flex-direction: column;
     align-items: flex-start;
     text-align: left;
+  }
+
+  .lecture-assessment-stack {
+    margin-left: 0;
   }
 
   .aabip-video-library__list-item {

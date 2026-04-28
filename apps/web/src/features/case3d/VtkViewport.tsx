@@ -5,6 +5,7 @@ import '@kitware/vtk.js/Rendering/Profiles/All';
 import vtkGenericRenderWindow from '@kitware/vtk.js/Rendering/Misc/GenericRenderWindow';
 import vtkInteractorStyleImage from '@kitware/vtk.js/Interaction/Style/InteractorStyleImage';
 import vtkPlane from '@kitware/vtk.js/Common/DataModel/Plane';
+import vtkCellPicker from '@kitware/vtk.js/Rendering/Core/CellPicker';
 import vtkWidgetManager from '@kitware/vtk.js/Widgets/Core/WidgetManager';
 import { ViewTypes } from '@kitware/vtk.js/Widgets/Core/WidgetManager/Constants';
 import vtkImplicitPlaneWidget from '@kitware/vtk.js/Widgets/Widgets3D/ImplicitPlaneWidget';
@@ -97,6 +98,7 @@ interface ThreeDViewportProps extends CommonViewportProps {
   showGlb: boolean;
   resetCameraToken: number;
   onCutPlaneChange: (origin: Vector3Tuple, normal: Vector3Tuple) => void;
+  onScenePointPick?: (world: Vector3Tuple) => void;
   segmentationRef: { current: LoadedSegmentation | null };
   volumeRef: { current: LoadedCaseVolume | null };
 }
@@ -283,6 +285,19 @@ export function VtkViewport(props: VtkViewportProps) {
   const genericRenderWindowRef = useRef<vtkGenericRenderWindow | null>(null);
   const pipelineRef = useRef<SlicePipeline | CutPipeline | ThreeDPipeline | null>(null);
   const lastResetCameraTokenRef = useRef(0);
+  const scenePickStartRef = useRef<{ x: number; y: number } | null>(null);
+  const onScenePointPickRef = useRef<((world: Vector3Tuple) => void) | null>(
+    props.mode === 'three-d' ? props.onScenePointPick ?? null : null,
+  );
+  const planeVisibilityRef = useRef<Record<CasePlane, boolean>>(
+    props.mode === 'three-d'
+      ? props.planeVisibility
+      : {
+          axial: false,
+          coronal: false,
+          sagittal: false,
+        },
+  );
   const showGlbRef = useRef(props.mode === 'three-d' ? props.showGlb : false);
   const baseVisibleStructureKeysRef = useRef<Set<string>>(new Set());
   const selectedNodeStructureKeysRef = useRef<Set<string>>(new Set());
@@ -356,6 +371,8 @@ export function VtkViewport(props: VtkViewportProps) {
     }
 
     showGlbRef.current = props.showGlb;
+    onScenePointPickRef.current = props.onScenePointPick ?? null;
+    planeVisibilityRef.current = props.planeVisibility;
     baseVisibleStructureKeysRef.current = new Set(baseVisibleStructureKeys);
     selectedNodeStructureKeysRef.current = new Set(selectedNodeStructureKeys);
     cutPlaneRef.current = {
@@ -365,6 +382,10 @@ export function VtkViewport(props: VtkViewportProps) {
   }, [
     props.mode,
     props.mode === 'three-d' ? props.showGlb : null,
+    props.mode === 'three-d' ? props.onScenePointPick : null,
+    props.mode === 'three-d' ? props.planeVisibility.axial : null,
+    props.mode === 'three-d' ? props.planeVisibility.coronal : null,
+    props.mode === 'three-d' ? props.planeVisibility.sagittal : null,
     props.mode === 'three-d' ? baseVisibleStructureSignature : null,
     props.mode === 'three-d' ? selectedNodeStructureSignature : null,
     props.mode === 'three-d' ? props.cutPlaneOrigin : null,
@@ -493,6 +514,7 @@ export function VtkViewport(props: VtkViewportProps) {
       const widgetState = widgetFactory.getWidgetState();
       widgetState.setOrigin(props.cutPlaneOrigin);
       widgetState.setNormal(props.cutPlaneNormal);
+      const scenePicker = vtkCellPicker.newInstance({ tolerance: 0.001 });
       const widgetSubscription = widgetFactory.onWidgetChange(() => {
         const state = widgetFactory.getWidgetState();
         const nextOrigin = state.getOrigin();
@@ -509,6 +531,39 @@ export function VtkViewport(props: VtkViewportProps) {
       });
       widgetManager.addWidget(widgetFactory, ViewTypes.GEOMETRY);
       const interactionSubscriptions = [
+        interactor.onLeftButtonPress((eventData: any) => {
+          scenePickStartRef.current = {
+            x: eventData.position.x,
+            y: eventData.position.y,
+          };
+        }),
+        interactor.onLeftButtonRelease((eventData: any) => {
+          const start = scenePickStartRef.current;
+          scenePickStartRef.current = null;
+
+          if (!start || eventData.shiftKey || eventData.controlKey || eventData.altKey) {
+            return;
+          }
+
+          const movement = Math.hypot(eventData.position.x - start.x, eventData.position.y - start.y);
+          const visibility = planeVisibilityRef.current;
+          const planesHidden = !visibility.axial && !visibility.coronal && !visibility.sagittal;
+          const onPick = onScenePointPickRef.current;
+
+          if (!planesHidden || !onPick || movement > 5) {
+            return;
+          }
+
+          const pickRenderer = eventData.pokedRenderer ?? renderer;
+          scenePicker.pick([eventData.position.x, eventData.position.y, 0], pickRenderer);
+          const pickedPosition = scenePicker.getPickedPositions()[0] ?? scenePicker.getPickPosition();
+
+          if (!pickedPosition?.every((value: number) => Number.isFinite(value))) {
+            return;
+          }
+
+          onPick([pickedPosition[0], pickedPosition[1], pickedPosition[2]]);
+        }),
         interactor.onAnimation(() => renderer.resetCameraClippingRange(boundsToExtent(props.manifest.bounds.union))),
         interactor.onEndAnimation(() => renderer.resetCameraClippingRange(boundsToExtent(props.manifest.bounds.union))),
       ];

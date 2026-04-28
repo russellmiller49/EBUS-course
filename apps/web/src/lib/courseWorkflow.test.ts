@@ -54,6 +54,9 @@ describe('courseWorkflow', () => {
     };
 
     expect(getCourseStepModels(state).find((step) => step.id === 'post-lecture-02')?.unlocked).toBe(true);
+    expect(getCourseStepModels(state).find((step) => step.id === 'post-lecture-02')?.path).toBe(
+      '/lectures?assessment=post-lecture-02',
+    );
     expect(getCourseStepModels(state).find((step) => step.id === 'lecture-03')?.unlocked).toBe(false);
 
     const afterQuiz = learnerProgressReducer(state, {

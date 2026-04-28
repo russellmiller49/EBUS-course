@@ -21,7 +21,7 @@ import type {
 } from './types';
 import { useSimulatorCase, useSimulatorSectorSnapshot } from './useSimulatorCase';
 
-const SIMULATOR_STATE_STORAGE_KEY = 'socal-ebus-prep:simulator-state:v1';
+const SIMULATOR_STATE_STORAGE_KEY = 'socal-ebus-prep:simulator-state:v2';
 const SNAP_TARGET_SLAB_HALF_THICKNESS_MM = 18;
 const LIVE_CAPTURE_HALF_THICKNESS_MM = {
   node: 6,
@@ -63,6 +63,8 @@ const LIVE_PLANE_RENDER_RADIUS_PX = {
   node: 4.8,
   vessel: 4.2,
 } as const;
+const ROLL_MIN_DEG = -180;
+const ROLL_MAX_DEG = 180;
 
 const DEFAULT_LAYERS: SimulatorLayerState = {
   airway: true,
@@ -73,7 +75,7 @@ const DEFAULT_LAYERS: SimulatorLayerState = {
   context: false,
   centerline: false,
   fan: true,
-  cutPlane: true,
+  cutPlane: false,
 };
 
 const SIMULATOR_LAYER_LABELS: Record<keyof SimulatorLayerState, string> = {
@@ -131,6 +133,10 @@ function normalizeSimulatorLayers(layers: Partial<SimulatorLayerState> | null | 
     nodes: false,
     centerline: false,
   };
+}
+
+function clampProbeRollDeg(value: number): number {
+  return clamp(value, ROLL_MIN_DEG, ROLL_MAX_DEG);
 }
 
 function volumeLabelToSectorItem(label: SimulatorVolumeSectorLabel): SimulatorSectorItem {
@@ -653,7 +659,11 @@ export function SimulatorPage() {
     setSelectedKey(first.preset_key);
     setLineIndex(typeof persisted?.lineIndex === 'number' ? persisted.lineIndex : first.line_index);
     setSMm(typeof persisted?.sMm === 'number' ? persisted.sMm : first.centerline_s_mm);
-    setRollDeg(typeof persisted?.rollDeg === 'number' ? persisted.rollDeg : caseData.render_defaults.roll_deg);
+    setRollDeg(
+      typeof persisted?.rollDeg === 'number'
+        ? clampProbeRollDeg(persisted.rollDeg)
+        : clampProbeRollDeg(caseData.render_defaults.roll_deg),
+    );
     setLayers(normalizeSimulatorLayers(persisted?.layers));
     setTeachingView(typeof persisted?.teachingView === 'boolean' ? persisted.teachingView : true);
   }, [caseData, selectedKey]);
@@ -803,7 +813,7 @@ export function SimulatorPage() {
     setSelectedKey(preset.preset_key);
     setLineIndex(preset.line_index);
     setSMm(preset.centerline_s_mm);
-    setRollDeg(caseData.render_defaults.roll_deg);
+    setRollDeg(clampProbeRollDeg(caseData.render_defaults.roll_deg));
     setActiveStructure(preset.station_key);
     setModuleProgress('simulator', 55);
   };
@@ -875,17 +885,17 @@ export function SimulatorPage() {
           />
         </label>
         <label>
-          <span>Roll</span>
+          <span>Roll ({Math.round(rollDeg)} deg)</span>
           <input
-            max={45}
-            min={-45}
+            max={ROLL_MAX_DEG}
+            min={ROLL_MIN_DEG}
             onChange={(event) => {
-              setRollDeg(Number(event.target.value));
+              setRollDeg(clampProbeRollDeg(Number(event.target.value)));
               setModuleProgress('simulator', 45);
             }}
             step={1}
             type="range"
-            value={rollDeg}
+            value={clampProbeRollDeg(rollDeg)}
           />
         </label>
         <div className="simulator-layer-toggles" aria-label="Anatomy layers">

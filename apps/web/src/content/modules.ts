@@ -16,7 +16,7 @@ export const homeModuleCards: AppModuleCard[] = [
   {
     id: 'lectures',
     title: 'Pre-Course Lectures',
-    description: 'Sequential 20-video curriculum wired to S3 video slots and post-lecture unlocks.',
+    description: 'Sequential videos with in-module post-lecture quizzes, final post-test, survey, and certificate.',
     accent: 'var(--accent-gold)',
     icon: '▶',
     path: '/lectures',
@@ -61,14 +61,6 @@ export const homeModuleCards: AppModuleCard[] = [
     accent: 'var(--accent-green)',
     icon: '◌',
     path: '/simulator',
-  },
-  {
-    id: 'quiz',
-    title: 'Knowledge Check',
-    description: 'Course quizzes, final post-test, survey, certificate, and mixed practice review.',
-    accent: 'var(--accent-rose)',
-    icon: '✎',
-    path: '/quiz',
   },
 ];
 

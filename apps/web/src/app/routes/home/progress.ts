@@ -1,8 +1,8 @@
-import { lectureManifest } from '@/content/lectures';
+import { getLectureModuleProgressSummary } from '@/lib/courseWorkflow';
 import type { LearnerProgressState } from '@/lib/progress';
 
 export interface HomeLearningStep {
-  id: 'pretest' | 'lectures' | 'knobology' | 'stations' | 'tnm-staging' | 'case-001' | 'simulator' | 'quiz';
+  id: 'pretest' | 'lectures' | 'knobology' | 'stations' | 'tnm-staging' | 'case-001' | 'simulator';
   path: string;
   percent: number;
   title: string;
@@ -17,7 +17,6 @@ const learningStepDefinitions: Array<Pick<HomeLearningStep, 'id' | 'path' | 'tit
   { id: 'tnm-staging', title: 'TNM-9', path: '/tnm-staging' },
   { id: 'case-001', title: '3D Anatomy', path: '/cases/case-001' },
   { id: 'simulator', title: 'Simulator', path: '/simulator' },
-  { id: 'quiz', title: 'Quiz', path: '/quiz' },
 ];
 
 function getTimestamp(value: string | null): number {
@@ -62,11 +61,7 @@ export function buildHomeProgressModel(state: LearnerProgressState) {
     const progress = state.moduleProgress[step.id];
     const percent =
       step.id === 'lectures'
-        ? Math.round(
-            (Object.values(state.lectureWatchStatus).filter((lecture) => lecture.completed).length /
-              lectureManifest.length) *
-              100,
-          )
+        ? getLectureModuleProgressSummary(state).percent
         : progress.percentComplete;
 
     return {

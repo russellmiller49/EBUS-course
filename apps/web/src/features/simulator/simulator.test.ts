@@ -190,6 +190,36 @@ describe('simulator pose math', () => {
     expect(pose.lateralAxis.length()).toBeCloseTo(1, 5);
     expect(Math.abs(pose.tangent.dot(pose.depthAxis))).toBeLessThan(1e-6);
   });
+
+  it('supports a complete 360 degree probe roll', () => {
+    const preset: SimulatorPreset = {
+      approach: 'default',
+      centerline_s_mm: 5,
+      contact: [0, 5, 0],
+      contact_to_target_distance_mm: 10,
+      label: 'Station 4R node A',
+      line_index: 1,
+      node: 'a',
+      preset_id: 'station_4r_node_a',
+      preset_key: 'station_4r_node_a::default',
+      station: '4r',
+      station_key: 'station_4r',
+      target: [0, 5, 10],
+      target_lps: [0, 0, 0],
+      vessel_overlays: [],
+    };
+    const baseline = computeSimulatorPose(polyline, 5, 0, preset);
+    const fullRotation = computeSimulatorPose(polyline, 5, 360, preset);
+    const halfRotation = computeSimulatorPose(polyline, 5, 180, preset);
+
+    baseline.depthAxis.toArray().forEach((value, index) => {
+      expect(fullRotation.depthAxis.toArray()[index]).toBeCloseTo(value, 5);
+    });
+    baseline.lateralAxis.toArray().forEach((value, index) => {
+      expect(fullRotation.lateralAxis.toArray()[index]).toBeCloseTo(value, 5);
+    });
+    expect(halfRotation.depthAxis.dot(baseline.depthAxis)).toBeCloseTo(-1, 5);
+  });
 });
 
 describe('simulator sector source selection', () => {

@@ -54,7 +54,7 @@ function assessmentStep(assessmentId: string): CourseWorkflowStepDefinition {
     kind: assessment?.kind === 'post-test' ? 'post-test' : 'assessment',
     assessmentId,
     title: assessment?.title ?? assessmentId,
-    path: '/quiz',
+    path: `/lectures?assessment=${assessmentId}`,
   };
 }
 
@@ -110,19 +110,19 @@ export const courseWorkflowSteps: CourseWorkflowStepDefinition[] = [
     id: 'post-course-survey',
     kind: 'survey',
     title: 'Post-course survey',
-    path: '/quiz',
+    path: '/lectures?section=course-completion',
   },
   {
     id: 'post-test-answers',
     kind: 'answers',
     title: 'Post-test answers',
-    path: '/quiz',
+    path: '/lectures?section=course-completion',
   },
   {
     id: 'certificate',
     kind: 'certificate',
     title: 'Certificate of completion',
-    path: '/quiz',
+    path: '/lectures?section=course-completion',
   },
 ];
 
@@ -285,6 +285,21 @@ export function getCourseStepModels(state: LearnerProgressState, options: Course
 
 export function getNextCourseStep(state: LearnerProgressState, options: CourseWorkflowOptions = {}) {
   return getCourseStepModels(state, options).find((step) => step.unlocked && !step.completed) ?? null;
+}
+
+export function getLectureModuleProgressSummary(state: LearnerProgressState) {
+  const lectureModuleSteps = courseWorkflowSteps.filter((step) =>
+    ['lecture', 'assessment', 'post-test', 'survey'].includes(step.kind),
+  );
+  const completedCount = lectureModuleSteps.filter((step) => isCourseStepComplete(state, step)).length;
+  const totalCount = lectureModuleSteps.length;
+
+  return {
+    completed: totalCount > 0 && completedCount >= totalCount,
+    completedCount,
+    percent: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
+    totalCount,
+  };
 }
 
 export function getLectureWorkflowStatus(state: LearnerProgressState, lectureId: string, options: CourseWorkflowOptions = {}) {

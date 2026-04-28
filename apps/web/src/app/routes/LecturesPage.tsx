@@ -1,46 +1,188 @@
-import { useCallback } from 'react';
+import type { FormEvent } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { aabipProceduralVideoLibrary } from '@/content/aabipProceduralVideos';
+import { courseAssessments, finalPostTestAssessment, getCourseAssessmentById } from '@/content/courseAssessments';
 import { courseInfo } from '@/content/course';
 import { lectureManifest } from '@/content/lectures';
+import type { CourseAssessmentContent } from '@/content/types';
 import { AabipVideoLibrary } from '@/features/lectures/AabipVideoLibrary';
 import { LectureCard } from '@/features/lectures/LectureCard';
+import { QuizCard } from '@/features/quiz/QuizCard';
 import { useCourseAdminSessionActive } from '@/lib/adminSession';
-import { getLectureWorkflowStatus, getNextCourseStep } from '@/lib/courseWorkflow';
-import { useLearnerProgress } from '@/lib/progress';
+import { useAuth } from '@/lib/auth';
+import {
+  getAssessmentWorkflowStatus,
+  getCourseAssessmentProgress,
+  getLectureModuleProgressSummary,
+  getLectureWorkflowStatus,
+  getNextCourseStep,
+  isCourseSurveyComplete,
+  type CourseWorkflowStepModel,
+} from '@/lib/courseWorkflow';
+import { type CourseAssessmentProgress, useLearnerProgress } from '@/lib/progress';
 
 const VIDEO_TABS = [
   { id: 'course-videos', label: 'Course Videos' },
   { id: 'aabip-videos', label: 'AABIP Videos' },
 ] as const;
 
+const surveyItems = [
+  {
+    id: 'confidence',
+    label: 'Confidence after the course',
+    options: ['More confident with cpEBUS fundamentals', 'About the same', 'Less confident'],
+  },
+  {
+    id: 'pacing',
+    label: 'Online curriculum pacing',
+    options: ['About right', 'Too compressed', 'Too slow'],
+  },
+  {
+    id: 'readiness',
+    label: 'Readiness for the live simulation day',
+    options: ['Ready to practice deliberately', 'Need more review time', 'Unsure'],
+  },
+];
+
 type VideoTabId = (typeof VIDEO_TABS)[number]['id'];
+
+function formatTimestamp(value: string | null | undefined) {
+  if (!value) {
+    return 'Not completed';
+  }
+
+  const parsed = new Date(value);
+
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString();
+}
+
+function getAssessmentScoreLabel(assessment: CourseAssessmentContent, progress: CourseAssessmentProgress | null) {
+  if (!progress?.completedAt) {
+    return `${assessment.questions.length} questions`;
+  }
+
+  return `${progress.percent}% saved`;
+}
+
+function getAssessmentRequirementLabel(assessment: CourseAssessmentContent) {
+  const lectureLabels = assessment.requiredLectureIds.map((lectureId) => {
+    const lecture = lectureManifest.find((entry) => entry.id === lectureId);
+
+    return lecture?.week ?? lecture?.title ?? lectureId;
+  });
+
+  return lectureLabels.length > 0 ? `After ${lectureLabels.join(' + ')}` : 'After required lecture';
+}
+
+function getTrailingLectureId(assessment: CourseAssessmentContent) {
+  return assessment.requiredLectureIds[assessment.requiredLectureIds.length - 1] ?? null;
+}
+
+function getProgressPercent(completedCount: number, totalCount: number) {
+  return totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+}
+
+function CourseAssessmentSummary({
+  active,
+  assessment,
+  onSelect,
+  progress,
+  workflow,
+}: {
+  active: boolean;
+  assessment: CourseAssessmentContent;
+  onSelect: () => void;
+  progress: CourseAssessmentProgress | null;
+  workflow: CourseWorkflowStepModel | null;
+}) {
+  const locked = !workflow?.unlocked;
+  const completed = Boolean(progress?.completedAt);
+
+  return (
+    <article className={`course-assessment-card course-assessment-card--inline${active ? ' course-assessment-card--active' : ''}`}>
+      <div className="course-assessment-card__heading">
+        <div>
+          <span className="eyebrow">{assessment.kind === 'post-test' ? 'Post-test' : 'Post-lecture quiz'}</span>
+          <strong>{assessment.title}</strong>
+          <span>{getAssessmentRequirementLabel(assessment)}</span>
+        </div>
+        <span className="tag">{getAssessmentScoreLabel(assessment, progress)}</span>
+      </div>
+      {locked ? <small>{workflow?.lockedReason ?? 'Complete the required lecture to unlock this quiz.'}</small> : null}
+      {completed ? <small>Completed {formatTimestamp(progress?.completedAt)}</small> : null}
+      <div className="button-row button-row--wrap">
+        <button className="button button--ghost" disabled={locked} onClick={onSelect} type="button">
+          {completed ? 'Review or retake' : active ? 'Continue quiz' : 'Start quiz'}
+        </button>
+      </div>
+    </article>
+  );
+}
 
 export function LecturesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { state, setLectureState, setModuleProgress } = useLearnerProgress();
+  const {
+    recordCourseAssessmentResult,
+    recordQuizResult,
+    setLectureState,
+    setModuleProgress,
+    state,
+    submitCourseSurvey,
+  } = useLearnerProgress();
+  const { profile, user } = useAuth();
   const adminSessionActive = useCourseAdminSessionActive();
   const reviewedCount = Object.values(state.lectureWatchStatus).filter((lecture) => lecture.completed).length;
   const activeTab = searchParams.get('tab') === 'aabip-videos' ? 'aabip-videos' : 'course-videos';
+  const selectedAssessmentParam = searchParams.get('assessment');
+  const selectedCourseAssessmentId = selectedAssessmentParam && getCourseAssessmentById(selectedAssessmentParam) ? selectedAssessmentParam : null;
   const nextCourseStep = getNextCourseStep(state, { admin: adminSessionActive });
+  const activeAssessmentId = selectedCourseAssessmentId ?? nextCourseStep?.assessmentId ?? null;
+  const lectureModuleProgress = getLectureModuleProgressSummary(state);
+  const completedAssessments = courseAssessments.filter(
+    (assessment) => state.courseAssessmentResults[assessment.id]?.completedAt,
+  ).length;
+  const postTestProgress = finalPostTestAssessment
+    ? getCourseAssessmentProgress(state, finalPostTestAssessment.id)
+    : null;
+  const surveyComplete = isCourseSurveyComplete(state);
+  const surveyUnlocked = adminSessionActive || Boolean(postTestProgress?.completedAt);
+  const completionArtifactsUnlocked = adminSessionActive || surveyComplete;
+  const certificateName = profile?.fullName || user?.email || 'EBUS learner';
+  const [surveyResponses, setSurveyResponses] = useState<Record<string, string>>({});
+  const canSubmitSurvey = surveyItems.every((item) => surveyResponses[item.id]);
+
+  const assessmentsByTrailingLectureId = useMemo(() => {
+    return courseAssessments.reduce<Record<string, CourseAssessmentContent[]>>((grouped, assessment) => {
+      const lectureId = getTrailingLectureId(assessment);
+
+      if (!lectureId) {
+        return grouped;
+      }
+
+      return {
+        ...grouped,
+        [lectureId]: [...(grouped[lectureId] ?? []), assessment],
+      };
+    }, {});
+  }, []);
 
   const handleLectureUpdate = useCallback(
     (lectureId: string, update: { watchedSeconds?: number; completed?: boolean; opened?: boolean }) => {
-      const wasCompleted = state.lectureWatchStatus[lectureId]?.completed ?? false;
-      const nextReviewedCount = reviewedCount + (!wasCompleted && update.completed ? 1 : 0);
+      const wasCompleted = getLectureWorkflowStatus(state, lectureId, { admin: adminSessionActive })?.completed ?? false;
+      const nextCompletedCount = lectureModuleProgress.completedCount + (!wasCompleted && update.completed ? 1 : 0);
 
       setLectureState(lectureId, update);
 
       if (update.completed) {
         setModuleProgress(
           'lectures',
-          Math.round((nextReviewedCount / lectureManifest.length) * 100),
-          nextReviewedCount >= lectureManifest.length,
+          getProgressPercent(nextCompletedCount, lectureModuleProgress.totalCount),
+          nextCompletedCount >= lectureModuleProgress.totalCount,
         );
       }
     },
-    [reviewedCount, setLectureState, setModuleProgress, state.lectureWatchStatus],
+    [adminSessionActive, lectureModuleProgress.completedCount, lectureModuleProgress.totalCount, setLectureState, setModuleProgress, state],
   );
 
   function handleTabChange(nextTab: VideoTabId) {
@@ -55,18 +197,75 @@ export function LecturesPage() {
     setSearchParams(nextSearchParams, { replace: true });
   }
 
+  function handleAssessmentSelect(assessmentId: string) {
+    const nextSearchParams = new URLSearchParams(searchParams);
+
+    nextSearchParams.delete('tab');
+    nextSearchParams.set('assessment', assessmentId);
+    setSearchParams(nextSearchParams, { replace: true });
+  }
+
+  function handleCourseAssessmentComplete(
+    assessment: CourseAssessmentContent,
+    result: { correctCount: number; totalCount: number; percent: number },
+  ) {
+    const wasComplete = Boolean(state.courseAssessmentResults[assessment.id]?.completedAt);
+    const nextCompletedCount = lectureModuleProgress.completedCount + (wasComplete ? 0 : 1);
+
+    recordCourseAssessmentResult({
+      assessmentId: assessment.id,
+      correctCount: result.correctCount,
+      totalCount: result.totalCount,
+      percent: result.percent,
+    });
+    recordQuizResult({
+      id: `${assessment.id}-${Date.now()}`,
+      label: assessment.title,
+      moduleId: 'lectures',
+      correctCount: result.correctCount,
+      totalCount: result.totalCount,
+      percent: result.percent,
+    });
+    setModuleProgress(
+      'lectures',
+      getProgressPercent(nextCompletedCount, lectureModuleProgress.totalCount),
+      nextCompletedCount >= lectureModuleProgress.totalCount,
+    );
+  }
+
+  function handleSurveySubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!canSubmitSurvey || !surveyUnlocked) {
+      return;
+    }
+
+    const nextCompletedCount = lectureModuleProgress.completedCount + (surveyComplete ? 0 : 1);
+
+    submitCourseSurvey(surveyResponses);
+    setModuleProgress(
+      'lectures',
+      getProgressPercent(nextCompletedCount, lectureModuleProgress.totalCount),
+      nextCompletedCount >= lectureModuleProgress.totalCount,
+    );
+  }
+
   return (
     <div className="page-stack">
       <section className="section-card">
         <div className="section-card__heading">
           <div>
-            <div className="eyebrow">Video library</div>
-            <h2>Course videos and additional AABIP viewing</h2>
-            <p>Keep the core lecture set separate from the optional procedural playlist while still playing everything inside the app.</p>
+            <div className="eyebrow">Lecture module</div>
+            <h2>Course videos, post-lecture quizzes, and final post-test</h2>
+            <p>
+              Complete each lecture to unlock its quiz in place. The next lecture opens after the required quiz or
+              post-test step is submitted.
+            </p>
           </div>
           <div className="tag-row">
             <span className="tag">{lectureManifest.length} course videos</span>
-            <span className="tag">{aabipProceduralVideoLibrary.videos.length} AABIP videos</span>
+            <span className="tag">{completedAssessments}/{courseAssessments.length} assessments</span>
+            <span className="tag">Current: {nextCourseStep?.title ?? 'Complete'}</span>
           </div>
         </div>
         <div aria-label="Video library tabs" className="button-row button-row--wrap" role="tablist">
@@ -99,8 +298,8 @@ export function LecturesPage() {
                 <div className="eyebrow">Lecture manifest</div>
                 <h2>Prep window: {courseInfo.prepWindow}</h2>
                 <p>
-                  Start with the welcome video. The pre-test, post-lecture quizzes, post-test, survey, answers, and
-                  certificate unlock in sequence as each required step is completed.
+                  Start with the welcome video. The pre-test, practice modules, lecture quizzes, final post-test,
+                  survey, answers, and certificate unlock in sequence as each required step is completed.
                 </p>
               </div>
             </div>
@@ -117,30 +316,183 @@ export function LecturesPage() {
             <div className="section-card__heading">
               <div>
                 <div className="eyebrow">Progress</div>
-                <h2>{reviewedCount} of {lectureManifest.length} lectures marked reviewed</h2>
-                {nextCourseStep ? <p>Current step: {nextCourseStep.title}</p> : <p>All course steps are complete.</p>}
+                <h2>{lectureModuleProgress.completedCount} of {lectureModuleProgress.totalCount} lecture-module steps complete</h2>
+                <p>
+                  {reviewedCount} of {lectureManifest.length} lectures marked reviewed.{' '}
+                  {nextCourseStep ? `Current step: ${nextCourseStep.title}` : 'All course steps are complete.'}
+                </p>
               </div>
               <div className="tag-row">
-                <span className="tag">Core course only</span>
+                <span className="tag">{lectureModuleProgress.percent}% complete</span>
               </div>
             </div>
             <div className="stack-list">
               {lectureManifest.map((lecture) => {
                 const workflowStatus = getLectureWorkflowStatus(state, lecture.id, { admin: adminSessionActive });
+                const lectureAssessments = assessmentsByTrailingLectureId[lecture.id] ?? [];
 
                 return (
-                  <LectureCard
-                    key={lecture.id}
-                    lecture={lecture}
-                    locked={!workflowStatus?.unlocked}
-                    lockedReason={workflowStatus?.lockedReason}
-                    onUpdateWatchState={handleLectureUpdate}
-                    watchState={state.lectureWatchStatus[lecture.id]}
-                  />
+                  <div key={lecture.id} className="lecture-workflow-item">
+                    <LectureCard
+                      lecture={lecture}
+                      locked={!workflowStatus?.unlocked}
+                      lockedReason={workflowStatus?.lockedReason}
+                      onUpdateWatchState={handleLectureUpdate}
+                      watchState={state.lectureWatchStatus[lecture.id]}
+                    />
+                    {lectureAssessments.map((assessment) => {
+                      const workflow = getAssessmentWorkflowStatus(state, assessment, { admin: adminSessionActive });
+                      const progress = getCourseAssessmentProgress(state, assessment.id);
+                      const active = activeAssessmentId === assessment.id;
+
+                      return (
+                        <div key={assessment.id} className="lecture-assessment-stack">
+                          <CourseAssessmentSummary
+                            active={active}
+                            assessment={assessment}
+                            onSelect={() => handleAssessmentSelect(assessment.id)}
+                            progress={progress}
+                            workflow={workflow}
+                          />
+                          {active && workflow?.unlocked ? (
+                            <QuizCard
+                              key={`${assessment.id}-${progress?.attemptCount ?? 0}`}
+                              deferFeedbackUntilComplete
+                              label={assessment.title}
+                              onComplete={(result) => handleCourseAssessmentComplete(assessment, result)}
+                              questions={assessment.questions}
+                              revealAnswers={assessment.kind !== 'post-test' || completionArtifactsUnlocked}
+                              showRunningScore={false}
+                            />
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
                 );
               })}
             </div>
           </section>
+
+          <section className="section-card">
+            <div className="section-card__heading">
+              <div>
+                <div className="eyebrow">Course completion</div>
+                <h2>Post-course survey, post-test answers, and certificate</h2>
+                <p>
+                  These open after the final post-test, so the whole course assessment path stays inside the lecture
+                  module.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {surveyUnlocked ? (
+            <section className="section-card">
+              <div className="section-card__heading">
+                <div>
+                  <div className="eyebrow">Post-course survey</div>
+                  <h2>{surveyComplete ? 'Survey submitted' : 'Submit the survey to unlock answers and certificate'}</h2>
+                  <p>Survey status: {formatTimestamp(state.courseSurvey.submittedAt)}</p>
+                </div>
+              </div>
+              {surveyComplete ? (
+                <div className="feedback-banner feedback-banner--success">
+                  <strong>Post-test answers and certificate are unlocked.</strong>
+                  <p>
+                    {adminSessionActive && !surveyComplete
+                      ? 'Admin preview is active without changing learner survey status.'
+                      : 'Your survey response is saved in local progress and included in the synced learner snapshot when login-backed sync is enabled.'}
+                  </p>
+                </div>
+              ) : (
+                <form className="survey-form" onSubmit={handleSurveySubmit}>
+                  {surveyItems.map((item) => (
+                    <fieldset key={item.id} className="survey-fieldset">
+                      <legend>{item.label}</legend>
+                      <div className="button-row button-row--wrap">
+                        {item.options.map((option) => (
+                          <label key={option} className="control-pill">
+                            <input
+                              checked={surveyResponses[item.id] === option}
+                              name={item.id}
+                              onChange={() => setSurveyResponses((current) => ({ ...current, [item.id]: option }))}
+                              type="radio"
+                            />
+                            <span>{option}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                  ))}
+                  <label className="field">
+                    <span>Optional course note</span>
+                    <textarea
+                      onChange={(event) =>
+                        setSurveyResponses((current) => ({ ...current, courseNote: event.target.value }))
+                      }
+                      rows={4}
+                      value={surveyResponses.courseNote ?? ''}
+                    />
+                  </label>
+                  <button className="button" disabled={!canSubmitSurvey} type="submit">
+                    Submit survey
+                  </button>
+                </form>
+              )}
+            </section>
+          ) : null}
+
+          {completionArtifactsUnlocked && finalPostTestAssessment ? (
+            <section className="section-card">
+              <div className="section-card__heading">
+                <div>
+                  <div className="eyebrow">Post-test answers</div>
+                  <h2>Answer key and teaching explanations</h2>
+                </div>
+                <div className="tag-row">
+                  <span className="tag">{postTestProgress?.percent ?? 0}% post-test score</span>
+                </div>
+              </div>
+              <div className="stack-list">
+                {finalPostTestAssessment.questions.map((question, index) => {
+                  const correctLabels = question.correctOptionIds
+                    .map((optionId) => question.options.find((option) => option.id === optionId)?.label ?? optionId)
+                    .join(', ');
+
+                  return (
+                    <article key={question.id} className="mini-card">
+                      <strong>
+                        {index + 1}. {correctLabels}
+                      </strong>
+                      <p>{question.explanation}</p>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          {completionArtifactsUnlocked ? (
+            <section className="section-card certificate-card">
+              <div className="eyebrow">Certificate of completion</div>
+              <h2>{certificateName}</h2>
+              <p>
+                {adminSessionActive && !surveyComplete
+                  ? 'Admin preview of the certificate workflow unlocked after learner completion.'
+                  : 'has completed the SoCal EBUS Prep online curriculum, pre-test, lecture quizzes, final post-test, and post-course survey.'}
+              </p>
+              <div className="tag-row">
+                <span className="tag">
+                  {adminSessionActive && !surveyComplete ? 'Admin preview' : `Completed ${formatTimestamp(state.courseSurvey.submittedAt)}`}
+                </span>
+                <span className="tag">SoCal EBUS Prep 2026</span>
+              </div>
+              <button className="button button--ghost" onClick={() => window.print()} type="button">
+                Print certificate
+              </button>
+            </section>
+          ) : null}
         </div>
       ) : (
         <AabipVideoLibrary labelledBy="lectures-tab-aabip-videos" panelId="lectures-panel-aabip-videos" />

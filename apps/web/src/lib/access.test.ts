@@ -73,8 +73,8 @@ describe('course access helpers', () => {
     expect(isCourseAdminSessionActive(createAdminStorage('EBUS_2026'))).toBe(true);
     expect(isCourseAdminSessionActive(createAdminStorage('wrong'))).toBe(false);
     expect(canAccessRoute('pretest', state, { admin: true })).toBe(true);
-    expect(canAccessRoute('quiz', state, { admin: true })).toBe(true);
-    expect(getLockedRoutePath('quiz', '/quiz', state, { admin: true })).toBe('/quiz');
-    expect(getRouteLockReason('quiz', state, { admin: true })).toBeNull();
+    expect(canAccessRoute('simulator', state, { admin: true })).toBe(true);
+    expect(getLockedRoutePath('simulator', '/simulator', state, { admin: true })).toBe('/simulator');
+    expect(getRouteLockReason('simulator', state, { admin: true })).toBeNull();
   });
 });

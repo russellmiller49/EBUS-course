@@ -16,7 +16,6 @@ import { StationsQuizPage } from '@/app/routes/stations/StationsQuizPage';
 import { KnobologyPage } from '@/app/routes/KnobologyPage';
 import { LecturesPage } from '@/app/routes/LecturesPage';
 import { PretestPage } from '@/app/routes/PretestPage';
-import { QuizPage } from '@/app/routes/QuizPage';
 import { Case001Page } from '@/app/routes/Case001Page';
 import { SimulatorPage } from '@/app/routes/SimulatorPage';
 import { TnmStagingPage } from '@/app/routes/TnmStagingPage';
@@ -38,7 +37,6 @@ const navItems: NavigationItem[] = [
   { id: 'tnm-staging', label: 'TNM-9', icon: '◆', path: '/tnm-staging' },
   { id: 'case-001', label: '3D Anatomy', icon: '◫', path: '/cases/case-001' },
   { id: 'simulator', label: 'Simulator', icon: '◌', path: '/simulator' },
-  { id: 'quiz', label: 'Quiz', icon: '✎', path: '/quiz' },
 ];
 
 const adminNavItem: NavigationItem = { id: 'admin', label: 'Dashboard', icon: '▣', path: '/admin' };
@@ -76,10 +74,6 @@ function resolveRouteId(pathname: string): AppRouteId | null {
     return 'lectures';
   }
 
-  if (pathname.startsWith('/quiz')) {
-    return 'quiz';
-  }
-
   if (pathname.startsWith('/cases/case-001')) {
     return 'case-001';
   }
@@ -110,10 +104,6 @@ function getTrackedModuleId(pathname: string) {
 
   if (pathname.startsWith('/tnm-staging')) {
     return 'tnm-staging';
-  }
-
-  if (pathname.startsWith('/quiz')) {
-    return 'quiz';
   }
 
   if (pathname.startsWith('/cases/case-001')) {
@@ -300,7 +290,7 @@ export function App() {
         <Route element={<KnobologyPage />} path="/knobology" />
         <Route element={<TnmStagingPage />} path="/tnm-staging" />
         <Route element={<LecturesPage />} path="/lectures" />
-        <Route element={<QuizPage />} path="/quiz" />
+        <Route element={<Navigate replace to="/lectures" />} path="/quiz" />
         <Route element={<Case001Page />} path="/cases/case-001" />
         <Route element={<SimulatorPage />} path="/simulator" />
         <Route element={<NotFoundPage />} path="*" />

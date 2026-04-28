@@ -12,6 +12,7 @@ describe('buildHomeProgressModel', () => {
     expect(learningSteps[0]?.id).toBe('lectures');
     expect(learningSteps.map((step) => step.id)).toContain('simulator');
     expect(learningSteps.map((step) => step.id)).toContain('tnm-staging');
+    expect(learningSteps.map((step) => step.id)).not.toContain('quiz');
     expect(resumeModule?.id).toBe('lectures');
   });
 

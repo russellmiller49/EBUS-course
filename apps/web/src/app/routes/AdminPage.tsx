@@ -17,7 +17,7 @@ import { isSupabaseConfigured } from '@/lib/supabase';
 
 type AdminFilter = 'pending' | 'approved' | 'all';
 
-const moduleOrder = ['pretest', 'lectures', 'knobology', 'stations', 'tnm-staging', 'case-001', 'simulator', 'quiz'];
+const moduleOrder = ['pretest', 'lectures', 'knobology', 'stations', 'tnm-staging', 'case-001', 'simulator'];
 const moduleLabels: Record<string, string> = {
   pretest: 'Pretest',
   lectures: 'Lectures',
@@ -26,7 +26,6 @@ const moduleLabels: Record<string, string> = {
   'tnm-staging': 'TNM-9',
   'case-001': '3D Anatomy',
   simulator: 'Simulator',
-  quiz: 'Quiz',
 };
 
 function formatDate(value: string | null) {

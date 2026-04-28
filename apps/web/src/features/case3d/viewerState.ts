@@ -37,6 +37,7 @@ export interface CaseViewerState {
 export type CaseViewerAction =
   | { type: 'select-station'; stationId: string; targetId: string; world: Vector3Tuple; manifest: RuntimeCaseManifest }
   | { type: 'select-target'; stationId: string; targetId: string; world: Vector3Tuple; manifest: RuntimeCaseManifest }
+  | { type: 'set-crosshair-world'; world: Vector3Tuple; manifest: RuntimeCaseManifest }
   | { type: 'set-plane-axis-index'; plane: CasePlane; axisIndex: number; manifest: RuntimeCaseManifest }
   | { type: 'set-plane-visibility'; plane: CasePlane; visible: boolean }
   | { type: 'set-three-d-plane-visibility'; visible: boolean }
@@ -92,8 +93,8 @@ export function createInitialViewerState(manifest: RuntimeCaseManifest): CaseVie
       coronal: true,
       sagittal: true,
     },
-    threeDOrthogonalPlanesVisible: false,
-    orthogonalPlaneOpacity: 0.2,
+    threeDOrthogonalPlanesVisible: true,
+    orthogonalPlaneOpacity: 0.28,
     orthogonalClip: {
       mode: 'none',
       plane: 'axial',
@@ -131,6 +132,15 @@ export function caseViewerReducer(state: CaseViewerState, action: CaseViewerActi
           ...state.cutPlane,
           origin: action.world,
           initialOrigin: action.world,
+        },
+      };
+    case 'set-crosshair-world':
+      return {
+        ...state,
+        crosshairVoxel: selectWorld(action.manifest, action.world),
+        cutPlane: {
+          ...state.cutPlane,
+          origin: action.world,
         },
       };
     case 'set-plane-axis-index': {

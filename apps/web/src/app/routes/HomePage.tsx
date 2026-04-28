@@ -25,7 +25,7 @@ export function HomePage() {
   const pretestUnlocked = adminSessionActive || isCoursePretestUnlocked(state, { admin: adminSessionActive });
   const nextCourseStep = getNextCourseStep(state, { admin: adminSessionActive });
   const reviewedLectures = Object.values(state.lectureWatchStatus).filter((lecture) => lecture.completed).length;
-  const lastQuiz = state.quizScoreHistory[0];
+  const lastAssessment = state.quizScoreHistory[0];
   const pretestTag =
     state.pretest.submittedAt && state.pretest.totalQuestions > 0
       ? `Pretest ${Math.round(((state.pretest.score ?? 0) / state.pretest.totalQuestions) * 100)}%`
@@ -34,7 +34,7 @@ export function HomePage() {
     pretestTag,
     `${state.bookmarkedStations.length} bookmarked stations`,
     `${reviewedLectures} reviewed lectures`,
-    lastQuiz ? `Latest quiz ${lastQuiz.percent}%` : 'No quiz saved yet',
+    lastAssessment ? `Latest assessment ${lastAssessment.percent}%` : 'No assessment saved yet',
   ];
   const resumePath = nextCourseStep?.path ?? resumeModule?.path ?? '/lectures';
   const resumeLabel = nextCourseStep ? `Continue: ${nextCourseStep.title}` : resumeModule ? `Resume ${resumeModule.title}` : 'Start the prep path';
@@ -140,7 +140,7 @@ export function HomePage() {
           </div>
           <p>
             The course now follows the sequence used by the online curriculum: welcome video, pre-test, practice
-            modules, lecture quizzes, final post-test, survey, answers, and certificate.
+            modules, in-lecture quizzes, final post-test, survey, answers, and certificate.
           </p>
           <div className="button-row button-row--wrap">
             <Link className="button" to={pretestUnlocked ? '/pretest' : '/lectures'}>
@@ -291,7 +291,7 @@ export function HomePage() {
           <div>
             <div className="eyebrow">Digital prep workspace</div>
             <h2>The app mirrors the course flow so fellows can study in sequence before the live event.</h2>
-            <p>Use the pretest, lecture library, knobology labs, station tools, and case review to arrive ready for the sim day.</p>
+            <p>Use the pretest, lecture module, knobology labs, station tools, and case review to arrive ready for the sim day.</p>
           </div>
         </div>
 

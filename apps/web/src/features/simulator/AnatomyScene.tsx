@@ -32,6 +32,7 @@ const GLB_SCENE_TO_WEB_MM_MATRIX = new THREE.Matrix4().set(
   0,
   1,
 );
+const AIRWAY_TRANSLUCENCY_REDUCTION = 0.15;
 
 type GlbAsset = Pick<SimulatorCleanModelAsset, 'asset'> | Pick<SimulatorScopeModelAsset, 'asset'>;
 
@@ -146,9 +147,11 @@ function cleanModelColor(structureId: string, colorMap: Record<string, string>):
 }
 
 function cleanModelOpacity(layer: keyof SimulatorLayerState, highlighted: boolean, teachingView: boolean): number {
+  const airwayOpacity = (opacity: number) => opacity + (1 - opacity) * AIRWAY_TRANSLUCENCY_REDUCTION;
+
   if (teachingView && !highlighted) {
     const muted: Partial<Record<keyof SimulatorLayerState, number>> = {
-      airway: 0.1,
+      airway: airwayOpacity(0.1),
       vessels: 0.12,
       heart: 0.22,
       stations: 0.08,
@@ -159,7 +162,7 @@ function cleanModelOpacity(layer: keyof SimulatorLayerState, highlighted: boolea
 
   if (highlighted) {
     if (layer === 'airway') {
-      return 0.22;
+      return airwayOpacity(0.22);
     }
 
     if (layer === 'heart') {
@@ -170,7 +173,7 @@ function cleanModelOpacity(layer: keyof SimulatorLayerState, highlighted: boolea
   }
 
   const opacityByLayer: Partial<Record<keyof SimulatorLayerState, number>> = {
-    airway: 0.16,
+    airway: airwayOpacity(0.16),
     vessels: 0.58,
     heart: 0.48,
     stations: 0.36,
@@ -456,7 +459,7 @@ export function AnatomyScene({
             new THREE.MeshStandardMaterial({
               color: caseData.color_map.airway ?? '#22c7c9',
               metalness: 0.02,
-              opacity: 0.34,
+              opacity: 0.34 + (1 - 0.34) * AIRWAY_TRANSLUCENCY_REDUCTION,
               roughness: 0.66,
               side: THREE.DoubleSide,
               transparent: true,
@@ -593,7 +596,7 @@ export function AnatomyScene({
 
     if (layers.fan) {
       const maxDepth = caseData.render_defaults.max_depth_mm;
-      const fanDepth = layers.cutPlane ? Math.max(maxDepth, sceneRadius * 0.85) : maxDepth;
+      const fanDepth = maxDepth;
       const halfWidth = fanDepth * Math.tan(THREE.MathUtils.degToRad(caseData.render_defaults.sector_angle_deg / 2));
       const imageAxis = cephalicImageAxis(pose);
       const apex = pose.position;

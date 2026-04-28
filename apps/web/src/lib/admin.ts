@@ -141,13 +141,15 @@ export function normalizeAdminLearnerOverview(candidate: unknown): AdminLearnerO
 }
 
 export function getLearnerAverageProgress(learner: Pick<AdminLearnerOverview, 'moduleProgress'>) {
-  if (learner.moduleProgress.length === 0) {
+  const activeModuleProgress = learner.moduleProgress.filter((module) => module.moduleId !== 'quiz');
+
+  if (activeModuleProgress.length === 0) {
     return 0;
   }
 
-  const total = learner.moduleProgress.reduce((sum, module) => sum + module.percentComplete, 0);
+  const total = activeModuleProgress.reduce((sum, module) => sum + module.percentComplete, 0);
 
-  return Math.round(total / learner.moduleProgress.length);
+  return Math.round(total / activeModuleProgress.length);
 }
 
 export function buildAdminProgressSummary(learners: AdminLearnerOverview[]): AdminProgressSummary {
