@@ -94,7 +94,7 @@ export function createSegmentationSurfaceActor(
   segments: SegmentSelection[],
   color: [number, number, number],
   opacity: number,
-  clippingPlane?: vtkPlane,
+  clippingPlanes?: vtkPlane | vtkPlane[],
 ) {
   if (segments.length === 0) {
     return null;
@@ -136,8 +136,9 @@ export function createSegmentationSurfaceActor(
   const mapper = vtkMapper.newInstance();
   mapper.setInputData(polyData);
 
-  if (clippingPlane) {
-    mapper.addClippingPlane(clippingPlane);
+  if (clippingPlanes) {
+    const planes = Array.isArray(clippingPlanes) ? clippingPlanes : [clippingPlanes];
+    planes.forEach((plane) => mapper.addClippingPlane(plane));
   }
 
   const actor = vtkActor.newInstance();

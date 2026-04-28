@@ -9,11 +9,12 @@ import type { RuntimeCaseManifest } from '../../../../../features/case3d/types';
 const manifest = runtimeData as unknown as RuntimeCaseManifest;
 
 describe('caseViewerReducer', () => {
-  it('starts with helper planes and cut plane hidden for a cleaner 3D view', () => {
+  it('starts with helper planes visible and cut plane hidden for the full-field 3D view', () => {
     const initialState = createInitialViewerState(manifest);
 
-    expect(initialState.threeDOrthogonalPlanesVisible).toBe(false);
-    expect(initialState.orthogonalPlaneOpacity).toBeCloseTo(0.2, 3);
+    expect(initialState.threeDOrthogonalPlanesVisible).toBe(true);
+    expect(initialState.orthogonalPlaneOpacity).toBeCloseTo(0.28, 3);
+    expect(initialState.orthogonalClip).toEqual({ mode: 'none', plane: 'axial' });
     expect(initialState.sliceSegmentationVisible).toBe(false);
     expect(initialState.cutPlane.visible).toBe(false);
     expect(initialState.cutPlane.opacity).toBeCloseTo(0.48, 3);
@@ -49,6 +50,21 @@ describe('caseViewerReducer', () => {
     expect(nextState.crosshairVoxel[2]).toBe(80);
     expect(nextState.crosshairVoxel[0]).toBe(initialState.crosshairVoxel[0]);
     expect(nextState.crosshairVoxel[1]).toBe(initialState.crosshairVoxel[1]);
+  });
+
+  it('moves CT slices to a picked world position without changing the selected target', () => {
+    const initialState = createInitialViewerState(manifest);
+    const target = manifest.targets.find((entry) => entry.id === 'landmark_carina') ?? manifest.targets[0];
+
+    const nextState = caseViewerReducer(initialState, {
+      type: 'set-crosshair-world',
+      manifest,
+      world: target.world.position,
+    });
+
+    expect(nextState.selectedTargetId).toBe(initialState.selectedTargetId);
+    expect(nextState.crosshairVoxel[2]).toBeCloseTo(target.derived.continuousVoxel[2], 3);
+    expect(nextState.cutPlane.origin).toEqual(target.world.position);
   });
 
   it('clamps the 3D orthogonal plane opacity into a valid range', () => {
@@ -88,5 +104,42 @@ describe('caseViewerReducer', () => {
 
     expect(hiddenState.hiddenSegmentIds).toContain(segmentId);
     expect(restoredState.hiddenSegmentIds).not.toContain(segmentId);
+  });
+
+  it('can hide and restore node segments as a batch', () => {
+    const initialState = createInitialViewerState(manifest);
+    const nodeSegmentIds = manifest.segmentation.segments
+      .filter((segment) => segment.groupId === 'nodes')
+      .slice(0, 3)
+      .map((segment) => segment.id);
+
+    const hiddenState = caseViewerReducer(initialState, {
+      type: 'set-segments-visibility',
+      segmentIds: nodeSegmentIds,
+      visible: false,
+    });
+    const restoredState = caseViewerReducer(hiddenState, {
+      type: 'set-segments-visibility',
+      segmentIds: [nodeSegmentIds[1]],
+      visible: true,
+    });
+
+    expect(hiddenState.hiddenSegmentIds).toEqual(expect.arrayContaining(nodeSegmentIds));
+    expect(restoredState.hiddenSegmentIds).not.toContain(nodeSegmentIds[1]);
+    expect(restoredState.hiddenSegmentIds).toEqual(expect.arrayContaining([nodeSegmentIds[0], nodeSegmentIds[2]]));
+  });
+
+  it('tracks the orthogonal CT plane clipping choice', () => {
+    const initialState = createInitialViewerState(manifest);
+    const clippedState = caseViewerReducer(initialState, {
+      type: 'set-orthogonal-clip-mode',
+      mode: 'hide-above',
+    });
+    const sagittalState = caseViewerReducer(clippedState, {
+      type: 'set-orthogonal-clip-plane',
+      plane: 'sagittal',
+    });
+
+    expect(sagittalState.orthogonalClip).toEqual({ mode: 'hide-above', plane: 'sagittal' });
   });
 });

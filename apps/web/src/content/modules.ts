@@ -8,7 +8,7 @@ export const homeModuleCards: AppModuleCard[] = [
   {
     id: 'pretest',
     title: 'Course Pretest',
-    description: '42-question baseline assessment with hidden answers and demo-only local score logging.',
+    description: '20-question baseline assessment with hidden answers and course progression logging.',
     accent: 'var(--accent-rose)',
     icon: '◇',
     path: '/pretest',
@@ -16,7 +16,7 @@ export const homeModuleCards: AppModuleCard[] = [
   {
     id: 'lectures',
     title: 'Pre-Course Lectures',
-    description: 'Manifest-driven lecture cards with poster and video slots ready for local media.',
+    description: 'Sequential videos with in-module post-lecture quizzes, final post-test, survey, and certificate.',
     accent: 'var(--accent-gold)',
     icon: '▶',
     path: '/lectures',
@@ -38,6 +38,14 @@ export const homeModuleCards: AppModuleCard[] = [
     path: '/stations/explore',
   },
   {
+    id: 'tnm-staging',
+    title: 'TNM-9 Staging',
+    description: 'IASLC 9th-edition T/N/M reference, stage matrix, descriptor builders, N map, and case practice.',
+    accent: 'var(--accent-gold)',
+    icon: '◆',
+    path: '/tnm-staging',
+  },
+  {
     id: 'case-001',
     title: '3D Anatomy',
     description:
@@ -53,14 +61,6 @@ export const homeModuleCards: AppModuleCard[] = [
     accent: 'var(--accent-green)',
     icon: '◌',
     path: '/simulator',
-  },
-  {
-    id: 'quiz',
-    title: 'Knowledge Check',
-    description: 'Mixed question bank across knobology, station recognition, and explorer logic.',
-    accent: 'var(--accent-rose)',
-    icon: '✎',
-    path: '/quiz',
   },
 ];
 

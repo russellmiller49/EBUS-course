@@ -3,20 +3,20 @@
     "id": "pretest",
     "slug": "pretest",
     "shortTitle": "Pretest",
-    "title": "EBUS Course Pretest",
-    "summary": "Baseline course assessment with hidden answers and demo-only local score logging.",
-    "overview": "This module captures a pre-course score, keeps correct answers hidden, and stores the latest demo submission locally until authenticated logging is added.",
+    "title": "EBUS 2026 Pre-Test",
+    "summary": "Baseline 20-question course assessment with hidden answers and local course progression logging.",
+    "overview": "This module captures a pre-course score, keeps correct answers hidden, and unlocks the practice modules and lecture 2 after submission.",
     "estimatedMinutes": 25,
     "featureFolder": "features/pretest",
     "route": "/modules/pretest",
     "goals": [
       "Collect a pre-course baseline without revealing correct answers.",
-      "Persist in-progress responses and the latest saved score locally for the demo.",
-      "Keep the submission flow ready for future login-backed score logging."
+      "Persist in-progress responses and the latest saved score locally.",
+      "Unlock the next course step after completion."
     ],
     "plannedExperiences": [
       "Briefing",
-      "42-question assessment",
+      "20-question assessment",
       "Demo submission summary"
     ],
     "assetPlaceholders": [
@@ -164,6 +164,49 @@
         "label": "Ultrasound placeholder panel",
         "folder": "assets/ultrasound",
         "note": "Reserve for future EBUS view assets."
+      }
+    ],
+    "relatedStationIds": [
+      "2R",
+      "2L",
+      "4R",
+      "4L",
+      "7",
+      "10R",
+      "10L",
+      "11Rs",
+      "11Ri",
+      "11L"
+    ]
+  },
+  {
+    "id": "tnm-staging",
+    "slug": "tnm-staging",
+    "shortTitle": "TNM-9",
+    "title": "IASLC 9th Edition TNM Staging",
+    "summary": "Teach T, N, M descriptors and stage grouping through a searchable reference, interactive stager, visual builders, station-map integration, and cases.",
+    "overview": "This module translates IASLC 9th-edition lung cancer TNM staging into a touch-friendly educational workflow for EBUS learners. It is not a diagnostic device.",
+    "estimatedMinutes": 30,
+    "featureFolder": "features/tnm-staging",
+    "route": "/tnm-staging",
+    "goals": [
+      "Apply T, N, and M descriptors with a consistent 9th-edition stage matrix.",
+      "Distinguish N2a from N2b and M1c1 from M1c2.",
+      "Connect positive EBUS/PET stations to cN while preserving laterality and systematic staging context."
+    ],
+    "plannedExperiences": [
+      "Searchable reference cards",
+      "Interactive TNM stager",
+      "Visual T-descriptor builder",
+      "N descriptor map",
+      "Case-based staging scenarios"
+    ],
+    "assetPlaceholders": [
+      {
+        "key": "tnm-lung-schematic",
+        "label": "App-owned lung schematic",
+        "folder": "features/tnm-staging",
+        "note": "Rendered as local SVG/CSS for educational staging practice."
       }
     ],
     "relatedStationIds": [

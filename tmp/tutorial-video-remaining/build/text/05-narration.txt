@@ -1,0 +1,1 @@
+The N map connects staging logic back to the station map. Learners choose the primary side, mark stations as unassessed, sampled negative, or positive, and see the computed N descriptor update by laterality. In this example, multiple ipsilateral mediastinal or subcarinal positives produce N2b. The systematic staging reminder keeps 4R, 4L, and 7 visible in the workflow.

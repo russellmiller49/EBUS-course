@@ -1,14 +1,23 @@
-export type RootModuleId = 'pretest' | 'knobology' | 'station-map' | 'station-explorer' | 'case-3d-explorer';
+export type RootModuleId =
+  | 'pretest'
+  | 'knobology'
+  | 'station-map'
+  | 'station-explorer'
+  | 'case-3d-explorer'
+  | 'tnm-staging';
 export type AppRouteId =
   | 'home'
+  | 'admin'
+  | 'sponsors'
   | 'pretest'
   | 'stations'
   | 'knobology'
   | 'lectures'
   | 'quiz'
   | 'case-001'
-  | 'simulator';
-export type TrackedLearningRouteId = Exclude<AppRouteId, 'home'>;
+  | 'simulator'
+  | 'tnm-staging';
+export type TrackedLearningRouteId = Exclude<AppRouteId, 'home' | 'admin' | 'sponsors'>;
 export type StationZoneKey = 'upper' | 'subcarinal' | 'hilar';
 export type ExplorerViewId = 'ct' | 'bronchoscopy' | 'ultrasound';
 export type LessonSectionKind =
@@ -39,6 +48,125 @@ export type KnobologyControlId =
   | 'calipers'
   | 'freeze'
   | 'save';
+export type TnmPrimarySide = 'right' | 'left';
+export type TnmStageableTCategory = 'T1a' | 'T1b' | 'T1c' | 'T2a' | 'T2b' | 'T3' | 'T4';
+export type TnmTCategory = 'TX' | 'T0' | 'Tis' | 'T1mi' | TnmStageableTCategory;
+export type TnmStageableNCategory = 'N0' | 'N1' | 'N2a' | 'N2b' | 'N3';
+export type TnmNCategory = 'NX' | TnmStageableNCategory;
+export type TnmMCategory = 'M0' | 'M1a' | 'M1b' | 'M1c1' | 'M1c2';
+export type TnmStageGroup =
+  | '0'
+  | 'IA1'
+  | 'IA2'
+  | 'IA3'
+  | 'IB'
+  | 'IIA'
+  | 'IIB'
+  | 'IIIA'
+  | 'IIIB'
+  | 'IIIC'
+  | 'IVA'
+  | 'IVB';
+export type TnmReferenceCategory = 'T' | 'N' | 'M' | 'Stage';
+export type TnmStationStatusValue = 'unassessed' | 'sampled-negative' | 'positive';
+export type TnmSeparateNoduleRuleId = 'none' | 'same-lobe' | 'different-ipsilateral-lobe' | 'contralateral-lobe';
+export type TnmTumorLocationId = 'peripheral' | 'central' | 'pleural' | 'mediastinal' | 'diaphragmatic';
+
+export interface TnmSelection {
+  t: TnmStageableTCategory;
+  n: TnmStageableNCategory;
+  m: TnmMCategory;
+}
+
+export interface TnmReferenceCard {
+  id: string;
+  category: TnmReferenceCategory;
+  title: string;
+  summary: string;
+  bullets: string[];
+  changedFrom8th: string;
+}
+
+export interface TnmCategoryOption<TValue extends string> {
+  id: TValue;
+  label: string;
+  descriptor: string;
+}
+
+export interface TnmStageMatrixRow {
+  t: TnmStageableTCategory;
+  descriptor: string;
+  stages: Record<TnmStageableNCategory, TnmStageGroup>;
+}
+
+export interface TnmStageMatrixContent {
+  sourceLabel: string;
+  tCategories: Array<TnmCategoryOption<TnmStageableTCategory>>;
+  nCategories: Array<TnmCategoryOption<TnmStageableNCategory>>;
+  mCategories: Array<TnmCategoryOption<TnmMCategory>>;
+  mStageOverrides: Partial<Record<TnmMCategory, TnmStageGroup>>;
+  rows: TnmStageMatrixRow[];
+}
+
+export interface TnmTBuilderLocation {
+  id: TnmTumorLocationId;
+  label: string;
+  summary: string;
+}
+
+export interface TnmTBuilderInvasionRule {
+  id: string;
+  label: string;
+  t: TnmStageableTCategory;
+  summary: string;
+}
+
+export interface TnmTBuilderSeparateNoduleRule {
+  id: TnmSeparateNoduleRuleId;
+  label: string;
+  t?: TnmStageableTCategory;
+  m?: TnmMCategory;
+  summary: string;
+}
+
+export interface TnmTBuilderContent {
+  locations: TnmTBuilderLocation[];
+  invasionRules: TnmTBuilderInvasionRule[];
+  separateNoduleRules: TnmTBuilderSeparateNoduleRule[];
+  atelectasisNote: string;
+}
+
+export interface TnmBuilderState {
+  primarySide: TnmPrimarySide;
+  sizeCm: number;
+  locationId: TnmTumorLocationId;
+  invasionIds: string[];
+  hasAtelectasisOrPneumonitis: boolean;
+  separateNodule: TnmSeparateNoduleRuleId;
+}
+
+export interface TnmStationRule {
+  stationId: string;
+  label: string;
+  groupId: string;
+  side: TnmPrimarySide | 'midline' | 'external';
+  basin: 'mediastinal' | 'hilar' | 'intrapulmonary' | 'supraclavicular' | 'scalene';
+  external: boolean;
+}
+
+export interface TnmCaseContent {
+  id: string;
+  title: string;
+  difficulty: QuizDifficulty;
+  focusTags: string[];
+  ctFindings: string[];
+  petFindings: string[];
+  ebusFindings: string[];
+  expected: TnmSelection & {
+    stage: TnmStageGroup;
+  };
+  feedback: string;
+}
 
 export interface ModuleContent {
   id: RootModuleId;
@@ -98,6 +226,17 @@ export interface QuizQuestionContent {
   tags: string[];
   caseTitle?: string;
   caseSummary?: string;
+}
+
+export type CourseAssessmentKind = 'post-lecture-quiz' | 'post-test';
+
+export interface CourseAssessmentContent {
+  id: string;
+  kind: CourseAssessmentKind;
+  title: string;
+  sourceFile: string;
+  requiredLectureIds: string[];
+  questions: QuizQuestionContent[];
 }
 
 export interface CourseInfoQuickFact {
@@ -457,6 +596,8 @@ export interface LectureManifestItem {
   poster?: string;
   video?: string;
   embedUrl?: string;
+  resourceUrl?: string;
+  resourceLabel?: string;
   topics: string[];
   status: 'available' | 'locked';
 }
@@ -468,6 +609,13 @@ export interface NavigationItem {
   path: string;
   locked?: boolean;
   lockedReason?: string;
+}
+
+export interface SponsorContent {
+  id: string;
+  name: string;
+  logoSrc: string;
+  websiteUrl: string;
 }
 
 export interface AppModuleCard {

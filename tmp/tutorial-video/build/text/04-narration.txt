@@ -1,0 +1,1 @@
+The Doppler mini-lab adds a safety check. The learner turns color Doppler on, compares flow modes, and then chooses a path that avoids the color-filled vessel. The feedback is immediate. A wrong answer explains that the path still crosses Doppler signal. The safe answer reinforces the habit: use Doppler to notice flow before committing to a trajectory.

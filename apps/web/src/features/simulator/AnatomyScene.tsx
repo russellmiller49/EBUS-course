@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 import { simulatorCaseAssetUrl } from './paths';
-import { cephalicImageAxis, toVector, type SimulatorProbePose } from './pose';
+import { cephalicImageAxis, sectorPlaneNormal, toVector, type SimulatorProbePose } from './pose';
 import type {
   SimulatorCaseManifest,
   SimulatorCleanModelAsset,
@@ -32,6 +32,7 @@ const GLB_SCENE_TO_WEB_MM_MATRIX = new THREE.Matrix4().set(
   0,
   1,
 );
+const AIRWAY_TRANSLUCENCY_REDUCTION = 0.15;
 
 type GlbAsset = Pick<SimulatorCleanModelAsset, 'asset'> | Pick<SimulatorScopeModelAsset, 'asset'>;
 
@@ -146,9 +147,11 @@ function cleanModelColor(structureId: string, colorMap: Record<string, string>):
 }
 
 function cleanModelOpacity(layer: keyof SimulatorLayerState, highlighted: boolean, teachingView: boolean): number {
+  const airwayOpacity = (opacity: number) => opacity + (1 - opacity) * AIRWAY_TRANSLUCENCY_REDUCTION;
+
   if (teachingView && !highlighted) {
     const muted: Partial<Record<keyof SimulatorLayerState, number>> = {
-      airway: 0.1,
+      airway: airwayOpacity(0.1),
       vessels: 0.12,
       heart: 0.22,
       stations: 0.08,
@@ -159,7 +162,7 @@ function cleanModelOpacity(layer: keyof SimulatorLayerState, highlighted: boolea
 
   if (highlighted) {
     if (layer === 'airway') {
-      return 0.22;
+      return airwayOpacity(0.22);
     }
 
     if (layer === 'heart') {
@@ -170,7 +173,7 @@ function cleanModelOpacity(layer: keyof SimulatorLayerState, highlighted: boolea
   }
 
   const opacityByLayer: Partial<Record<keyof SimulatorLayerState, number>> = {
-    airway: 0.16,
+    airway: airwayOpacity(0.16),
     vessels: 0.58,
     heart: 0.48,
     stations: 0.36,
@@ -178,6 +181,14 @@ function cleanModelOpacity(layer: keyof SimulatorLayerState, highlighted: boolea
   };
 
   return opacityByLayer[layer] ?? 0.5;
+}
+
+function withClipping<T extends THREE.Material>(material: T, clippingPlanes: THREE.Plane[] | null): T {
+  if (clippingPlanes) {
+    material.clippingPlanes = clippingPlanes;
+  }
+
+  return material;
 }
 
 function isTeachingFocus(
@@ -358,6 +369,15 @@ export function AnatomyScene({
     );
     camera.lookAt(focus);
 
+    const cutPlane = layers.cutPlane
+      ? new THREE.Plane().setFromNormalAndCoplanarPoint(sectorPlaneNormal(pose), pose.position)
+      : null;
+    if (cutPlane && cutPlane.distanceToPoint(camera.position) > 0) {
+      cutPlane.negate();
+    }
+    const anatomyClippingPlanes = cutPlane ? [cutPlane] : null;
+    renderer.localClippingEnabled = Boolean(anatomyClippingPlanes);
+
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.copy(focus);
     controls.enableDamping = true;
@@ -406,13 +426,16 @@ export function AnatomyScene({
 
             const highlighted = isTeachingFocus(structureId, selectedPreset, intersectedStructureIds, activeStructure);
             mesh.userData.sharedAssetGeometry = true;
-            mesh.material = new THREE.MeshBasicMaterial({
-              color: cleanModelColor(structureId, caseData.color_map),
-              depthWrite: false,
-              opacity: cleanModelOpacity(layer, highlighted, teachingView),
-              side: THREE.DoubleSide,
-              transparent: true,
-            });
+            mesh.material = withClipping(
+              new THREE.MeshBasicMaterial({
+                color: cleanModelColor(structureId, caseData.color_map),
+                depthWrite: false,
+                opacity: cleanModelOpacity(layer, highlighted, teachingView),
+                side: THREE.DoubleSide,
+                transparent: true,
+              }),
+              anatomyClippingPlanes,
+            );
             mesh.userData.generatedMaterial = true;
             mesh.renderOrder = layer === 'airway' || layer === 'context' ? 0 : 1;
           });
@@ -432,14 +455,17 @@ export function AnatomyScene({
       scene.add(
         new THREE.Mesh(
           geometry,
-          new THREE.MeshStandardMaterial({
-            color: caseData.color_map.airway ?? '#22c7c9',
-            metalness: 0.02,
-            opacity: 0.34,
-            roughness: 0.66,
-            side: THREE.DoubleSide,
-            transparent: true,
-          }),
+          withClipping(
+            new THREE.MeshStandardMaterial({
+              color: caseData.color_map.airway ?? '#22c7c9',
+              metalness: 0.02,
+              opacity: 0.34 + (1 - 0.34) * AIRWAY_TRANSLUCENCY_REDUCTION,
+              roughness: 0.66,
+              side: THREE.DoubleSide,
+              transparent: true,
+            }),
+            anatomyClippingPlanes,
+          ),
         ),
       );
     }
@@ -448,11 +474,14 @@ export function AnatomyScene({
       const group = new THREE.Group();
       for (const polyline of assets.centerlines.polylines) {
         const geometry = new THREE.BufferGeometry().setFromPoints(polyline.points.map(toVector));
-        const material = new THREE.LineBasicMaterial({
-          color: polyline.line_index === selectedPreset.line_index ? '#eef4f2' : '#56666a',
-          opacity: polyline.line_index === selectedPreset.line_index ? 0.82 : 0.28,
-          transparent: true,
-        });
+        const material = withClipping(
+          new THREE.LineBasicMaterial({
+            color: polyline.line_index === selectedPreset.line_index ? '#eef4f2' : '#56666a',
+            opacity: polyline.line_index === selectedPreset.line_index ? 0.82 : 0.28,
+            transparent: true,
+          }),
+          anatomyClippingPlanes,
+        );
         group.add(new THREE.Line(geometry, material));
       }
       scene.add(group);
@@ -469,13 +498,16 @@ export function AnatomyScene({
         scene.add(
           new THREE.Points(
             new THREE.BufferGeometry().setFromPoints(points.map(toVector)),
-            new THREE.PointsMaterial({
-              color: station.color,
-              depthWrite: false,
-              opacity: highlighted ? 0.9 : teachingView ? 0.1 : 0.48,
-              size: highlighted ? 2.5 : 1.55,
-              transparent: true,
-            }),
+            withClipping(
+              new THREE.PointsMaterial({
+                color: station.color,
+                depthWrite: false,
+                opacity: highlighted ? 0.9 : teachingView ? 0.1 : 0.48,
+                size: highlighted ? 2.5 : 1.55,
+                transparent: true,
+              }),
+              anatomyClippingPlanes,
+            ),
           ),
         );
       }
@@ -492,13 +524,16 @@ export function AnatomyScene({
         scene.add(
           new THREE.Points(
             new THREE.BufferGeometry().setFromPoints(points.map(toVector)),
-            new THREE.PointsMaterial({
-              color: vessel.color,
-              depthWrite: false,
-              opacity: highlighted ? 0.9 : teachingView ? 0.12 : 0.4,
-              size: highlighted ? 2.25 : 1.2,
-              transparent: true,
-            }),
+            withClipping(
+              new THREE.PointsMaterial({
+                color: vessel.color,
+                depthWrite: false,
+                opacity: highlighted ? 0.9 : teachingView ? 0.12 : 0.4,
+                size: highlighted ? 2.25 : 1.2,
+                transparent: true,
+              }),
+              anatomyClippingPlanes,
+            ),
           ),
         );
       }
@@ -511,12 +546,15 @@ export function AnatomyScene({
           activeStructure === node.key;
         const sphere = new THREE.Mesh(
           new THREE.SphereGeometry(active ? node.radius_mm * 1.1 : node.radius_mm, 18, 12),
-          new THREE.MeshStandardMaterial({
-            color: node.color,
-            opacity: active ? 0.94 : teachingView ? 0.08 : 0.46,
-            roughness: 0.5,
-            transparent: true,
-          }),
+          withClipping(
+            new THREE.MeshStandardMaterial({
+              color: node.color,
+              opacity: active ? 0.94 : teachingView ? 0.08 : 0.46,
+              roughness: 0.5,
+              transparent: true,
+            }),
+            anatomyClippingPlanes,
+          ),
         );
         sphere.position.copy(toVector(node.position));
         scene.add(sphere);
@@ -558,10 +596,11 @@ export function AnatomyScene({
 
     if (layers.fan) {
       const maxDepth = caseData.render_defaults.max_depth_mm;
-      const halfWidth = maxDepth * Math.tan(THREE.MathUtils.degToRad(caseData.render_defaults.sector_angle_deg / 2));
+      const fanDepth = maxDepth;
+      const halfWidth = fanDepth * Math.tan(THREE.MathUtils.degToRad(caseData.render_defaults.sector_angle_deg / 2));
       const imageAxis = cephalicImageAxis(pose);
       const apex = pose.position;
-      const farCenter = apex.clone().add(pose.depthAxis.clone().multiplyScalar(maxDepth));
+      const farCenter = apex.clone().add(pose.depthAxis.clone().multiplyScalar(fanDepth));
       const left = farCenter.clone().add(imageAxis.clone().multiplyScalar(-halfWidth));
       const right = farCenter.clone().add(imageAxis.clone().multiplyScalar(halfWidth));
       const fanGeometry = new THREE.BufferGeometry().setFromPoints([apex, left, right]);
@@ -572,7 +611,7 @@ export function AnatomyScene({
         new THREE.MeshBasicMaterial({
           color: '#8bd4ff',
           depthWrite: false,
-          opacity: 0.18,
+          opacity: layers.cutPlane ? 0.12 : 0.18,
           side: THREE.DoubleSide,
           transparent: true,
         }),

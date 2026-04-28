@@ -1,0 +1,1 @@
+The detail view adds the deeper curriculum. Learners can review access notes, boundary definitions, what they should see on CT, bronchoscopy, and ultrasound, and memory aids for common confusion pairs. The important product choice is that these fields come from local structured content, so future approved images can replace placeholders without rewriting the component.

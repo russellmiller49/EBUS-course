@@ -2,6 +2,8 @@ import { axisNameToIndex, worldToContinuousVoxel } from '../../../../../features
 
 import type { CasePlane, RuntimeCaseManifest, Vector3Tuple } from '../../../../../features/case3d/types';
 
+export type OrthogonalClipMode = 'none' | 'hide-above' | 'hide-below';
+
 export interface CaseViewerState {
   selectedStationId: string;
   selectedTargetId: string;
@@ -9,6 +11,10 @@ export interface CaseViewerState {
   planeVisibility: Record<CasePlane, boolean>;
   threeDOrthogonalPlanesVisible: boolean;
   orthogonalPlaneOpacity: number;
+  orthogonalClip: {
+    mode: OrthogonalClipMode;
+    plane: CasePlane;
+  };
   sliceSegmentationVisible: boolean;
   overlayOpacity: number;
   hiddenSegmentIds: string[];
@@ -31,14 +37,18 @@ export interface CaseViewerState {
 export type CaseViewerAction =
   | { type: 'select-station'; stationId: string; targetId: string; world: Vector3Tuple; manifest: RuntimeCaseManifest }
   | { type: 'select-target'; stationId: string; targetId: string; world: Vector3Tuple; manifest: RuntimeCaseManifest }
+  | { type: 'set-crosshair-world'; world: Vector3Tuple; manifest: RuntimeCaseManifest }
   | { type: 'set-plane-axis-index'; plane: CasePlane; axisIndex: number; manifest: RuntimeCaseManifest }
   | { type: 'set-plane-visibility'; plane: CasePlane; visible: boolean }
   | { type: 'set-three-d-plane-visibility'; visible: boolean }
   | { type: 'set-three-d-plane-opacity'; value: number }
+  | { type: 'set-orthogonal-clip-mode'; mode: OrthogonalClipMode }
+  | { type: 'set-orthogonal-clip-plane'; plane: CasePlane }
   | { type: 'set-slice-segmentation-visibility'; visible: boolean }
   | { type: 'set-overlay-opacity'; value: number }
   | { type: 'set-overlay-group'; key: keyof CaseViewerState['overlayGroups']; value: boolean }
   | { type: 'set-segment-visibility'; segmentId: string; visible: boolean }
+  | { type: 'set-segments-visibility'; segmentIds: string[]; visible: boolean }
   | { type: 'set-cut-plane-visibility'; visible: boolean }
   | { type: 'set-cut-plane-opacity'; value: number }
   | { type: 'set-cut-plane'; origin: Vector3Tuple; normal: Vector3Tuple }
@@ -83,8 +93,12 @@ export function createInitialViewerState(manifest: RuntimeCaseManifest): CaseVie
       coronal: true,
       sagittal: true,
     },
-    threeDOrthogonalPlanesVisible: false,
-    orthogonalPlaneOpacity: 0.2,
+    threeDOrthogonalPlanesVisible: true,
+    orthogonalPlaneOpacity: 0.28,
+    orthogonalClip: {
+      mode: 'none',
+      plane: 'axial',
+    },
     sliceSegmentationVisible: false,
     overlayOpacity: 0.68,
     hiddenSegmentIds: [],
@@ -120,6 +134,15 @@ export function caseViewerReducer(state: CaseViewerState, action: CaseViewerActi
           initialOrigin: action.world,
         },
       };
+    case 'set-crosshair-world':
+      return {
+        ...state,
+        crosshairVoxel: selectWorld(action.manifest, action.world),
+        cutPlane: {
+          ...state.cutPlane,
+          origin: action.world,
+        },
+      };
     case 'set-plane-axis-index': {
       const axisMap = action.manifest.volumeGeometry.axisMap;
       const nextVoxel = [...state.crosshairVoxel] as Vector3Tuple;
@@ -152,6 +175,22 @@ export function caseViewerReducer(state: CaseViewerState, action: CaseViewerActi
         ...state,
         orthogonalPlaneOpacity: clampPlaneOpacity(action.value),
       };
+    case 'set-orthogonal-clip-mode':
+      return {
+        ...state,
+        orthogonalClip: {
+          ...state.orthogonalClip,
+          mode: action.mode,
+        },
+      };
+    case 'set-orthogonal-clip-plane':
+      return {
+        ...state,
+        orthogonalClip: {
+          ...state.orthogonalClip,
+          plane: action.plane,
+        },
+      };
     case 'set-slice-segmentation-visibility':
       return {
         ...state,
@@ -178,6 +217,22 @@ export function caseViewerReducer(state: CaseViewerState, action: CaseViewerActi
       } else {
         hiddenSet.add(action.segmentId);
       }
+
+      return {
+        ...state,
+        hiddenSegmentIds: [...hiddenSet],
+      };
+    }
+    case 'set-segments-visibility': {
+      const hiddenSet = new Set(state.hiddenSegmentIds);
+
+      action.segmentIds.forEach((segmentId) => {
+        if (action.visible) {
+          hiddenSet.delete(segmentId);
+        } else {
+          hiddenSet.add(segmentId);
+        }
+      });
 
       return {
         ...state,

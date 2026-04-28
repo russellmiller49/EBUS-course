@@ -1,0 +1,1 @@
+This second tutorial covers the remaining practice modules in SoCal EBUS Prep: TNM-9 staging, 3D Anatomy, and the EBUS Anatomy Correlation Simulator. These modules come after the foundational knobology and station-map work. They are meant to help learners move from station recognition into staging decisions, patient-space anatomy, and simulated scope orientation.

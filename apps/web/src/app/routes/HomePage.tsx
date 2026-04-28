@@ -5,6 +5,8 @@ import { ModuleCard } from '@/components/ModuleCard';
 import { courseInfo } from '@/content/course';
 import { homeModuleCards } from '@/content/modules';
 import { canAccessRoute, getLockedRoutePath, getRouteLockReason, isPretestComplete } from '@/lib/access';
+import { useCourseAdminSessionActive } from '@/lib/adminSession';
+import { getNextCourseStep, isCoursePretestUnlocked } from '@/lib/courseWorkflow';
 import { useLearnerProgress } from '@/lib/progress';
 
 function ProgressMeter({ percent }: { percent: number }) {
@@ -17,10 +19,13 @@ function ProgressMeter({ percent }: { percent: number }) {
 
 export function HomePage() {
   const { state } = useLearnerProgress();
+  const adminSessionActive = useCourseAdminSessionActive();
   const { learningSteps, resumeModule } = buildHomeProgressModel(state);
-  const pretestReady = isPretestComplete(state);
+  const pretestReady = adminSessionActive || isPretestComplete(state);
+  const pretestUnlocked = adminSessionActive || isCoursePretestUnlocked(state, { admin: adminSessionActive });
+  const nextCourseStep = getNextCourseStep(state, { admin: adminSessionActive });
   const reviewedLectures = Object.values(state.lectureWatchStatus).filter((lecture) => lecture.completed).length;
-  const lastQuiz = state.quizScoreHistory[0];
+  const lastAssessment = state.quizScoreHistory[0];
   const pretestTag =
     state.pretest.submittedAt && state.pretest.totalQuestions > 0
       ? `Pretest ${Math.round(((state.pretest.score ?? 0) / state.pretest.totalQuestions) * 100)}%`
@@ -29,10 +34,10 @@ export function HomePage() {
     pretestTag,
     `${state.bookmarkedStations.length} bookmarked stations`,
     `${reviewedLectures} reviewed lectures`,
-    lastQuiz ? `Latest quiz ${lastQuiz.percent}%` : 'No quiz saved yet',
+    lastAssessment ? `Latest assessment ${lastAssessment.percent}%` : 'No assessment saved yet',
   ];
-  const resumePath = resumeModule?.path ?? '/pretest';
-  const resumeLabel = resumeModule ? `Resume ${resumeModule.title}` : 'Start the prep path';
+  const resumePath = nextCourseStep?.path ?? resumeModule?.path ?? '/lectures';
+  const resumeLabel = nextCourseStep ? `Continue: ${nextCourseStep.title}` : resumeModule ? `Resume ${resumeModule.title}` : 'Start the prep path';
 
   return (
     <div className="page-stack page-stack--course-overview">
@@ -126,16 +131,20 @@ export function HomePage() {
           <div className="section-card__heading">
             <div>
               <div className="eyebrow">Course unlock</div>
-              <h2>Finish the baseline pretest before the lecture, anatomy, and quiz modules open.</h2>
+              <h2>
+                {pretestUnlocked
+                  ? 'Finish the baseline pre-test before the practice modules and lecture 2 open.'
+                  : 'Start with the welcome video to unlock the baseline pre-test.'}
+              </h2>
             </div>
           </div>
           <p>
-            The pretest submission now acts as the course gate. After you save it once, the rest of the prep path and
-            learner tracking unlock automatically.
+            The course now follows the sequence used by the online curriculum: welcome video, pre-test, practice
+            modules, in-lecture quizzes, final post-test, survey, answers, and certificate.
           </p>
           <div className="button-row button-row--wrap">
-            <Link className="button" to="/pretest">
-              Complete the pretest
+            <Link className="button" to={pretestUnlocked ? '/pretest' : '/lectures'}>
+              {pretestUnlocked ? 'Complete the pre-test' : 'Open lecture 1'}
             </Link>
           </div>
         </section>
@@ -282,7 +291,7 @@ export function HomePage() {
           <div>
             <div className="eyebrow">Digital prep workspace</div>
             <h2>The app mirrors the course flow so fellows can study in sequence before the live event.</h2>
-            <p>Use the pretest, lecture library, knobology labs, station tools, and case review to arrive ready for the sim day.</p>
+            <p>Use the pretest, lecture module, knobology labs, station tools, and case review to arrive ready for the sim day.</p>
           </div>
         </div>
 
@@ -303,8 +312,8 @@ export function HomePage() {
               {learningSteps.map((step, index) => (
                 <Link
                   key={step.id}
-                  className={`course-step${canAccessRoute(step.id, state) ? '' : ' course-step--locked'}`}
-                  to={getLockedRoutePath(step.id, step.path, state)}
+                  className={`course-step${canAccessRoute(step.id, state, { admin: adminSessionActive }) ? '' : ' course-step--locked'}`}
+                  to={getLockedRoutePath(step.id, step.path, state, { admin: adminSessionActive })}
                 >
                   <span className={`course-step__marker${step.percent >= 100 ? ' course-step__marker--done' : ''}`}>
                     {step.percent >= 100 ? '✓' : index + 1}
@@ -312,7 +321,9 @@ export function HomePage() {
                   <div className="course-step__body">
                     <strong>{step.title}</strong>
                     <ProgressMeter percent={step.percent} />
-                    {!canAccessRoute(step.id, state) ? <p>{getRouteLockReason(step.id, state)}</p> : null}
+                    {!canAccessRoute(step.id, state, { admin: adminSessionActive }) ? (
+                      <p>{getRouteLockReason(step.id, state, { admin: adminSessionActive })}</p>
+                    ) : null}
                   </div>
                   <span className="course-step__percent">{step.percent}%</span>
                 </Link>
@@ -333,8 +344,8 @@ export function HomePage() {
               {homeModuleCards.map((module) => (
                 <ModuleCard
                   key={module.id}
-                  locked={!canAccessRoute(module.id, state)}
-                  lockedReason={getRouteLockReason(module.id, state)}
+                  locked={!canAccessRoute(module.id, state, { admin: adminSessionActive })}
+                  lockedReason={getRouteLockReason(module.id, state, { admin: adminSessionActive })}
                   module={module}
                 />
               ))}

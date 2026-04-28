@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { LearnerProgressState, LectureWatchState } from '@/lib/progress';
 
 export interface ModuleSessionRecordInput {
-  moduleId: 'pretest' | 'lectures' | 'knobology' | 'stations' | 'quiz' | 'case-001' | 'simulator';
+  moduleId: 'pretest' | 'lectures' | 'knobology' | 'stations' | 'tnm-staging' | 'case-001' | 'simulator';
   routePath: string;
   startedAt: string;
   endedAt: string;
@@ -99,6 +99,14 @@ function toTrackedModuleRows(userId: string, state: LearnerProgressState) {
     },
     {
       learner_id: userId,
+      module_id: 'tnm-staging',
+      percent_complete: state.moduleProgress['tnm-staging'].percentComplete,
+      visited_at: state.moduleProgress['tnm-staging'].visitedAt,
+      completed_at: state.moduleProgress['tnm-staging'].completedAt,
+      time_spent_seconds: state.engagement['tnm-staging'].totalSeconds,
+    },
+    {
+      learner_id: userId,
       module_id: 'case-001',
       percent_complete: state.moduleProgress['case-001'].percentComplete,
       visited_at: state.moduleProgress['case-001'].visitedAt,
@@ -112,14 +120,6 @@ function toTrackedModuleRows(userId: string, state: LearnerProgressState) {
       visited_at: state.moduleProgress.simulator.visitedAt,
       completed_at: state.moduleProgress.simulator.completedAt,
       time_spent_seconds: state.engagement.simulator.totalSeconds,
-    },
-    {
-      learner_id: userId,
-      module_id: 'quiz',
-      percent_complete: state.moduleProgress.quiz.percentComplete,
-      visited_at: state.moduleProgress.quiz.visitedAt,
-      completed_at: state.moduleProgress.quiz.completedAt,
-      time_spent_seconds: state.engagement.quiz.totalSeconds,
     },
   ].map((row) => ({
     ...row,

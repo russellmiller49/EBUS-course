@@ -216,4 +216,5 @@ export interface SimulatorLayerState {
   context: boolean;
   centerline: boolean;
   fan: boolean;
+  cutPlane: boolean;
 }

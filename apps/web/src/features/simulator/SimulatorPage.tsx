@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLearnerProgress } from '@/lib/progress';
 
 import { AnatomyScene } from './AnatomyScene';
-import { computeSimulatorPose, projectToSector, type SimulatorProbePose } from './pose';
+import { clamp, computeSimulatorPose, projectToSector, type SimulatorProbePose } from './pose';
 import { SectorView } from './SectorView';
 import { resolveSimulatorSectorSource, shouldUseSnapshotSectorItems, simulatorSectorSourceLabel } from './sectorSource';
 import { formatSimulatorStation } from './stationIds';
@@ -21,22 +21,87 @@ import type {
 } from './types';
 import { useSimulatorCase, useSimulatorSectorSnapshot } from './useSimulatorCase';
 
-const SIMULATOR_STATE_STORAGE_KEY = 'socal-ebus-prep:simulator-state:v1';
+const SIMULATOR_STATE_STORAGE_KEY = 'socal-ebus-prep:simulator-state:v2';
 const SNAP_TARGET_SLAB_HALF_THICKNESS_MM = 18;
+const LIVE_CAPTURE_HALF_THICKNESS_MM = {
+  node: 6,
+  vessel: 18,
+} as const;
+const LIVE_KERNEL_SIGMA_MM = {
+  node: 3,
+  vessel: 5,
+} as const;
+const LIVE_CORE_WEIGHT_THRESHOLD = {
+  node: 0.35,
+  vessel: 0.28,
+} as const;
+const LIVE_MINIMUM_POINTS = {
+  node: 8,
+  vessel: 6,
+} as const;
+const LIVE_MINIMUM_CORE_POINTS = {
+  node: 4,
+  vessel: 3,
+} as const;
+const LIVE_PLANE_INTERSECTION_EPSILON_MM = {
+  node: 0.5,
+  vessel: 0.5,
+} as const;
+const LIVE_PLANE_RENDER_HALF_THICKNESS_MM = {
+  node: 18,
+  vessel: 42,
+} as const;
+const LIVE_PLANE_RENDER_SIGMA_MM = {
+  node: 8,
+  vessel: 16,
+} as const;
+const LIVE_NEAR_PLANE_SIGMA_MM = {
+  node: 1.8,
+  vessel: 2.4,
+} as const;
+const LIVE_PLANE_RENDER_RADIUS_PX = {
+  node: 4.8,
+  vessel: 4.2,
+} as const;
+const ROLL_MIN_DEG = -180;
+const ROLL_MAX_DEG = 180;
 
 const DEFAULT_LAYERS: SimulatorLayerState = {
   airway: true,
   vessels: true,
   heart: true,
-  nodes: true,
+  nodes: false,
   stations: true,
   context: false,
-  centerline: true,
+  centerline: false,
   fan: true,
+  cutPlane: false,
 };
 
+const SIMULATOR_LAYER_LABELS: Record<keyof SimulatorLayerState, string> = {
+  airway: 'airway',
+  vessels: 'vessels',
+  heart: 'heart',
+  nodes: 'nodes',
+  stations: 'Lymph nodes',
+  context: 'context',
+  centerline: 'centerline',
+  fan: 'fan',
+  cutPlane: 'cut plane',
+};
+
+const VIEWABLE_LAYER_KEYS: Array<keyof SimulatorLayerState> = [
+  'airway',
+  'vessels',
+  'heart',
+  'stations',
+  'context',
+  'fan',
+  'cutPlane',
+];
+
 interface PersistedSimulatorState {
-  layers?: SimulatorLayerState;
+  layers?: Partial<SimulatorLayerState>;
   lineIndex?: number;
   rollDeg?: number;
   sMm?: number;
@@ -59,6 +124,19 @@ function writePersistedState(value: PersistedSimulatorState) {
   } catch {
     // Local persistence is a convenience for the module, not a runtime requirement.
   }
+}
+
+function normalizeSimulatorLayers(layers: Partial<SimulatorLayerState> | null | undefined): SimulatorLayerState {
+  return {
+    ...DEFAULT_LAYERS,
+    ...(layers ?? {}),
+    nodes: false,
+    centerline: false,
+  };
+}
+
+function clampProbeRollDeg(value: number): number {
+  return clamp(value, ROLL_MIN_DEG, ROLL_MAX_DEG);
 }
 
 function volumeLabelToSectorItem(label: SimulatorVolumeSectorLabel): SimulatorSectorItem {
@@ -89,6 +167,95 @@ interface ProjectedSectorPoint {
   depthMm: number;
   lateralMm: number;
   outOfPlaneMm: number;
+  inPlaneWeight: number;
+}
+
+interface FanSectorPoint {
+  depthMm: number;
+  lateralMm: number;
+  outOfPlaneMm: number;
+}
+
+function planeProximityWeight(outOfPlaneMm: number, captureHalfThicknessMm: number, kernelSigmaMm: number) {
+  const absoluteDistance = Math.abs(outOfPlaneMm);
+  const captureRatio = clamp(absoluteDistance / captureHalfThicknessMm, 0, 1);
+  const gaussian = Math.exp(-0.5 * (absoluteDistance / kernelSigmaMm) ** 2);
+  const edgeTaper = 1 - captureRatio * captureRatio;
+
+  return gaussian * edgeTaper;
+}
+
+function rasterCoordinatesForProjectedPoint(
+  point: Pick<ProjectedSectorPoint, 'depthMm' | 'lateralMm'>,
+  width: number,
+  height: number,
+  maxDepthMm: number,
+  sectorAngleDeg: number,
+) {
+  if (point.depthMm <= 0.5) {
+    return null;
+  }
+
+  const halfWidthMm = Math.max(
+    point.depthMm * Math.tan((sectorAngleDeg * Math.PI) / 360),
+    0.5,
+  );
+  const x = ((point.lateralMm / halfWidthMm + 1) / 2) * (width - 1);
+  const y = (point.depthMm / maxDepthMm) * (height - 1);
+
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    return null;
+  }
+
+  return { x, y };
+}
+
+function addWeightedDisc(
+  alpha: Float32Array,
+  width: number,
+  height: number,
+  x: number,
+  y: number,
+  radius: number,
+  weight: number,
+) {
+  if (weight <= 0 || x < -radius || x > width - 1 + radius || y < -radius || y > height - 1 + radius) {
+    return;
+  }
+
+  const minX = Math.max(0, Math.floor(x - radius));
+  const maxX = Math.min(width - 1, Math.ceil(x + radius));
+  const minY = Math.max(0, Math.floor(y - radius));
+  const maxY = Math.min(height - 1, Math.ceil(y + radius));
+
+  for (let yy = minY; yy <= maxY; yy += 1) {
+    for (let xx = minX; xx <= maxX; xx += 1) {
+      const dx = (xx - x) / radius;
+      const dy = (yy - y) / radius;
+      const distanceSq = dx * dx + dy * dy;
+
+      if (distanceSq > 1) {
+        continue;
+      }
+
+      const falloff = (1 - distanceSq) * (1 - distanceSq);
+      const index = yy * width + xx;
+      alpha[index] = Math.max(alpha[index], falloff * weight);
+    }
+  }
+}
+
+function hasFanPlaneIntersection(points: FanSectorPoint[], kind: 'node' | 'vessel'): boolean {
+  if (points.length < LIVE_MINIMUM_POINTS[kind]) {
+    return false;
+  }
+
+  const outOfPlaneValues = points.map((point) => point.outOfPlaneMm);
+  const minimum = Math.min(...outOfPlaneValues);
+  const maximum = Math.max(...outOfPlaneValues);
+  const epsilon = LIVE_PLANE_INTERSECTION_EPSILON_MM[kind];
+
+  return minimum <= -epsilon && maximum >= epsilon;
 }
 
 function convexHull(points: Vec2[]): Vec2[] {
@@ -159,8 +326,8 @@ function smoothAlphaMask(alpha: Float32Array, width: number, height: number) {
   return source;
 }
 
-function rasterMaskFromProjectedPoints(
-  points: ProjectedSectorPoint[],
+function rasterMaskFromPlaneCrossingPoints(
+  points: FanSectorPoint[],
   {
     kind,
     maxDepthMm,
@@ -171,49 +338,58 @@ function rasterMaskFromProjectedPoints(
     sectorAngleDeg: number;
   },
 ): SimulatorSectorRasterMask | null {
-  const width = 96;
-  const height = 96;
-  const tanHalf = Math.tan((sectorAngleDeg * Math.PI) / 360);
-  const alpha = new Float32Array(width * height);
-  const radius = kind === 'node' ? 3.4 : 2.5;
-  const alphaBoost = kind === 'node' ? 44 : 36;
+  const width = 160;
+  const height = 160;
+  const negative = new Float32Array(width * height);
+  const positive = new Float32Array(width * height);
+  const nearPlane = new Float32Array(width * height);
+  const searchHalfThicknessMm = LIVE_PLANE_RENDER_HALF_THICKNESS_MM[kind];
+  const searchSigmaMm = LIVE_PLANE_RENDER_SIGMA_MM[kind];
+  const nearSigmaMm = LIVE_NEAR_PLANE_SIGMA_MM[kind];
+  const epsilon = LIVE_PLANE_INTERSECTION_EPSILON_MM[kind];
+  const radius = LIVE_PLANE_RENDER_RADIUS_PX[kind];
 
   for (const point of points) {
-    if (point.depthMm <= 0.5) {
+    const coordinates = rasterCoordinatesForProjectedPoint(point, width, height, maxDepthMm, sectorAngleDeg);
+
+    if (!coordinates) {
       continue;
     }
 
-    const halfWidthMm = Math.max(point.depthMm * tanHalf, 0.5);
-    const x = ((point.lateralMm / halfWidthMm + 1) / 2) * (width - 1);
-    const y = (point.depthMm / maxDepthMm) * (height - 1);
-
-    if (!Number.isFinite(x) || !Number.isFinite(y) || x < -radius || x > width - 1 + radius || y < -radius || y > height - 1 + radius) {
+    const absoluteDistance = Math.abs(point.outOfPlaneMm);
+    if (absoluteDistance > searchHalfThicknessMm) {
       continue;
     }
 
-    const minX = Math.max(0, Math.floor(x - radius));
-    const maxX = Math.min(width - 1, Math.ceil(x + radius));
-    const minY = Math.max(0, Math.floor(y - radius));
-    const maxY = Math.min(height - 1, Math.ceil(y + radius));
+    const distanceRatio = clamp(absoluteDistance / searchHalfThicknessMm, 0, 1);
+    const crossingWeight = Math.exp(-0.5 * (absoluteDistance / searchSigmaMm) ** 2) * (1 - distanceRatio * distanceRatio * 0.55);
+    const nearWeight = Math.exp(-0.5 * (absoluteDistance / nearSigmaMm) ** 2);
 
-    for (let yy = minY; yy <= maxY; yy += 1) {
-      for (let xx = minX; xx <= maxX; xx += 1) {
-        const dx = (xx - x) / radius;
-        const dy = (yy - y) / radius;
-        const distanceSq = dx * dx + dy * dy;
-
-        if (distanceSq > 1) {
-          continue;
-        }
-
-        const index = yy * width + xx;
-        alpha[index] = Math.min(255, alpha[index] + alphaBoost * (1 - distanceSq));
-      }
+    if (point.outOfPlaneMm <= -epsilon) {
+      addWeightedDisc(negative, width, height, coordinates.x, coordinates.y, radius, crossingWeight);
+    } else if (point.outOfPlaneMm >= epsilon) {
+      addWeightedDisc(positive, width, height, coordinates.x, coordinates.y, radius, crossingWeight);
     }
+
+    addWeightedDisc(nearPlane, width, height, coordinates.x, coordinates.y, radius * 0.72, nearWeight);
   }
 
-  const smoothed = smoothAlphaMask(alpha, width, height);
-  const values = Array.from(smoothed, (value) => Math.round(value < 10 ? 0 : Math.min(255, value)));
+  const smoothedNegative = smoothAlphaMask(negative, width, height);
+  const smoothedPositive = smoothAlphaMask(positive, width, height);
+  const smoothedNear = smoothAlphaMask(nearPlane, width, height);
+  const values = Array.from(smoothedNegative, (_, index) => {
+    const crossing = Math.min(smoothedNegative[index], smoothedPositive[index]);
+    const near = smoothedNear[index];
+    const raw = crossing * 1.9 + near * 0.38;
+
+    if (raw < 0.045) {
+      return 0;
+    }
+
+    const t = clamp((raw - 0.045) / 0.34, 0, 1);
+    const ramp = t * t * (3 - 2 * t);
+    return Math.round(ramp * 255);
+  });
 
   if (!values.some((value) => value > 0)) {
     return null;
@@ -223,7 +399,7 @@ function rasterMaskFromProjectedPoints(
     width,
     height,
     alpha: values,
-    source: 'browser_point_cloud',
+    source: 'browser_point_cloud_plane_crossing',
     depth_samples: height,
     lateral_samples: width,
   };
@@ -249,29 +425,55 @@ function projectedPointCloudSectorItem({
   sectorAngleDeg: number;
 }): SimulatorSectorItem | null {
   const projected: ProjectedSectorPoint[] = [];
-  const slabHalfThicknessMm = kind === 'node' ? 8 : 6;
+  const fanPoints: FanSectorPoint[] = [];
+  const captureHalfThicknessMm = LIVE_CAPTURE_HALF_THICKNESS_MM[kind];
+  const kernelSigmaMm = LIVE_KERNEL_SIGMA_MM[kind];
 
   for (const point of points) {
-    const projection = projectToSector(point, pose, maxDepthMm, sectorAngleDeg, slabHalfThicknessMm);
+    const fanProjection = projectToSector(point, pose, maxDepthMm, sectorAngleDeg, Number.POSITIVE_INFINITY);
 
-    if (projection.visible) {
-      projected.push(projection);
+    if (!fanProjection.visible) {
+      continue;
+    }
+
+    fanPoints.push({
+      depthMm: fanProjection.depthMm,
+      lateralMm: fanProjection.lateralMm,
+      outOfPlaneMm: fanProjection.outOfPlaneMm,
+    });
+
+    if (Math.abs(fanProjection.outOfPlaneMm) <= captureHalfThicknessMm) {
+      const weight = planeProximityWeight(fanProjection.outOfPlaneMm, captureHalfThicknessMm, kernelSigmaMm);
+      projected.push({
+        depthMm: fanProjection.depthMm,
+        lateralMm: fanProjection.lateralMm,
+        outOfPlaneMm: fanProjection.outOfPlaneMm,
+        inPlaneWeight: weight,
+      });
     }
   }
 
-  const minimumPoints = kind === 'node' ? 12 : 18;
-  if (projected.length < minimumPoints) {
+  if (!hasFanPlaneIntersection(fanPoints, kind)) {
     return null;
   }
 
-  const lateralValues = projected.map((point) => point.lateralMm);
-  const depthValues = projected.map((point) => point.depthMm);
-  const meanLateral = lateralValues.reduce((sum, value) => sum + value, 0) / projected.length;
-  const meanDepth = depthValues.reduce((sum, value) => sum + value, 0) / projected.length;
+  if (projected.length < LIVE_MINIMUM_POINTS[kind]) {
+    return null;
+  }
+
+  const corePoints = projected.filter((point) => point.inPlaneWeight >= LIVE_CORE_WEIGHT_THRESHOLD[kind]);
+  if (corePoints.length < LIVE_MINIMUM_CORE_POINTS[kind]) {
+    return null;
+  }
+
+  const lateralValues = corePoints.map((point) => point.lateralMm);
+  const depthValues = corePoints.map((point) => point.depthMm);
+  const meanLateral = lateralValues.reduce((sum, value) => sum + value, 0) / corePoints.length;
+  const meanDepth = depthValues.reduce((sum, value) => sum + value, 0) / corePoints.length;
   const lateralExtentMm: [number, number] = [Math.min(...lateralValues), Math.max(...lateralValues)];
   const depthExtentMm: [number, number] = [Math.min(...depthValues), Math.max(...depthValues)];
-  const hull = convexHull(projected.map((point) => [point.lateralMm, point.depthMm]));
-  const rasterMask = rasterMaskFromProjectedPoints(projected, { kind, maxDepthMm, sectorAngleDeg });
+  const hull = convexHull(corePoints.map((point) => [point.lateralMm, point.depthMm]));
+  const rasterMask = rasterMaskFromPlaneCrossingPoints(fanPoints, { kind, maxDepthMm, sectorAngleDeg });
 
   if (!rasterMask) {
     return null;
@@ -310,7 +512,7 @@ function isAtSnapshotPose(
   );
 }
 
-function buildPointCloudSectorItems({
+export function buildPointCloudSectorItems({
   assets,
   caseData,
   lineIndex,
@@ -457,8 +659,12 @@ export function SimulatorPage() {
     setSelectedKey(first.preset_key);
     setLineIndex(typeof persisted?.lineIndex === 'number' ? persisted.lineIndex : first.line_index);
     setSMm(typeof persisted?.sMm === 'number' ? persisted.sMm : first.centerline_s_mm);
-    setRollDeg(typeof persisted?.rollDeg === 'number' ? persisted.rollDeg : caseData.render_defaults.roll_deg);
-    setLayers(persisted?.layers ?? DEFAULT_LAYERS);
+    setRollDeg(
+      typeof persisted?.rollDeg === 'number'
+        ? clampProbeRollDeg(persisted.rollDeg)
+        : clampProbeRollDeg(caseData.render_defaults.roll_deg),
+    );
+    setLayers(normalizeSimulatorLayers(persisted?.layers));
     setTeachingView(typeof persisted?.teachingView === 'boolean' ? persisted.teachingView : true);
   }, [caseData, selectedKey]);
 
@@ -607,7 +813,7 @@ export function SimulatorPage() {
     setSelectedKey(preset.preset_key);
     setLineIndex(preset.line_index);
     setSMm(preset.centerline_s_mm);
-    setRollDeg(caseData.render_defaults.roll_deg);
+    setRollDeg(clampProbeRollDeg(caseData.render_defaults.roll_deg));
     setActiveStructure(preset.station_key);
     setModuleProgress('simulator', 55);
   };
@@ -679,17 +885,17 @@ export function SimulatorPage() {
           />
         </label>
         <label>
-          <span>Roll</span>
+          <span>Roll ({Math.round(rollDeg)} deg)</span>
           <input
-            max={45}
-            min={-45}
+            max={ROLL_MAX_DEG}
+            min={ROLL_MIN_DEG}
             onChange={(event) => {
-              setRollDeg(Number(event.target.value));
+              setRollDeg(clampProbeRollDeg(Number(event.target.value)));
               setModuleProgress('simulator', 45);
             }}
             step={1}
             type="range"
-            value={rollDeg}
+            value={clampProbeRollDeg(rollDeg)}
           />
         </label>
         <div className="simulator-layer-toggles" aria-label="Anatomy layers">
@@ -697,10 +903,10 @@ export function SimulatorPage() {
             <input checked={teachingView} onChange={() => setTeachingView((current) => !current)} type="checkbox" />
             <span>teaching</span>
           </label>
-          {(Object.keys(layers) as Array<keyof SimulatorLayerState>).map((key) => (
+          {VIEWABLE_LAYER_KEYS.map((key) => (
             <label key={key}>
               <input checked={layers[key]} onChange={() => updateLayer(key)} type="checkbox" />
-              <span>{key}</span>
+              <span>{SIMULATOR_LAYER_LABELS[key]}</span>
             </label>
           ))}
         </div>
@@ -711,7 +917,7 @@ export function SimulatorPage() {
           <div className="simulator-pane-header">
             <div>
               <span className="eyebrow">External anatomy</span>
-              <h2>Scope, airway, vessels, nodes, and fan</h2>
+              <h2>Scope, airway, vessels, lymph nodes, and fan</h2>
             </div>
             <button className="simulator-button" onClick={() => snapToPreset(selectedPreset)} type="button">
               Snap

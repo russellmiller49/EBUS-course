@@ -23,6 +23,106 @@ function hexToRgb(color: string) {
   };
 }
 
+function rgbToHsl(r: number, g: number, b: number) {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const l = (max + min) / 2;
+  let h = 0;
+  let s = 0;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === rn) {
+      h = (gn - bn) / d + (gn < bn ? 6 : 0);
+    } else if (max === gn) {
+      h = (bn - rn) / d + 2;
+    } else {
+      h = (rn - gn) / d + 4;
+    }
+    h /= 6;
+  }
+
+  return { h, s, l };
+}
+
+function hslToRgb(h: number, s: number, l: number) {
+  if (s === 0) {
+    const v = Math.round(l * 255);
+    return { r: v, g: v, b: v };
+  }
+
+  const hue2rgb = (p: number, q: number, t: number) => {
+    let tt = t;
+    if (tt < 0) tt += 1;
+    if (tt > 1) tt -= 1;
+    if (tt < 1 / 6) return p + (q - p) * 6 * tt;
+    if (tt < 1 / 2) return q;
+    if (tt < 2 / 3) return p + (q - p) * (2 / 3 - tt) * 6;
+    return p;
+  };
+
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+
+  return {
+    r: Math.round(hue2rgb(p, q, h + 1 / 3) * 255),
+    g: Math.round(hue2rgb(p, q, h) * 255),
+    b: Math.round(hue2rgb(p, q, h - 1 / 3) * 255),
+  };
+}
+
+function smoothstep(edge0: number, edge1: number, x: number) {
+  const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
+}
+
+function adjustHsl(color: string, saturation: number, lightness: number) {
+  const { r, g, b } = hexToRgb(color);
+  const hsl = rgbToHsl(r, g, b);
+  const out = hslToRgb(hsl.h, clamp(saturation, 0, 1), clamp(lightness, 0, 1));
+  return `rgb(${out.r}, ${out.g}, ${out.b})`;
+}
+
+function tintForKind(kind: 'node' | 'vessel', alphaRatio: number, baseColor: string) {
+  const base = hexToRgb(baseColor);
+
+  if (kind === 'vessel') {
+    const lowR = 10;
+    const lowG = 13;
+    const lowB = 16;
+    const rimWeight = 4 * alphaRatio * (1 - alphaRatio);
+    const tintMix = 0.28 + rimWeight * 0.36;
+    return {
+      r: Math.round(lerp(lowR, base.r, tintMix)),
+      g: Math.round(lerp(lowG, base.g, tintMix)),
+      b: Math.round(lerp(lowB, base.b, tintMix)),
+      opacity: 0.84,
+    };
+  }
+
+  const hsl = rgbToHsl(base.r, base.g, base.b);
+  const high = hslToRgb(hsl.h, 0.28, 0.42);
+  const lowMixT = 0.12;
+  const lowR = lerp(0x1a, base.r, lowMixT);
+  const lowG = lerp(0x1f, base.g, lowMixT);
+  const lowB = lerp(0x1d, base.b, lowMixT);
+  const t = smoothstep(0.15, 0.85, alphaRatio);
+  return {
+    r: Math.round(lerp(lowR, high.r, t)),
+    g: Math.round(lerp(lowG, high.g, t)),
+    b: Math.round(lerp(lowB, high.b, t)),
+    opacity: 0.62,
+  };
+}
+
 function drawFanClip(ctx: CanvasRenderingContext2D, width: number, height: number) {
   const sx = width / 100;
   const sy = height / 100;
@@ -31,6 +131,25 @@ function drawFanClip(ctx: CanvasRenderingContext2D, width: number, height: numbe
   ctx.lineTo(10 * sx, 92 * sy);
   ctx.quadraticCurveTo(50 * sx, 99 * sy, 90 * sx, 92 * sy);
   ctx.closePath();
+}
+
+function hash2(ix: number, iy: number) {
+  const s = Math.sin(ix * 127.1 + iy * 311.7) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+function valueNoise2D(x: number, y: number) {
+  const ix = Math.floor(x);
+  const iy = Math.floor(y);
+  const fx = x - ix;
+  const fy = y - iy;
+  const u = fx * fx * (3 - 2 * fx);
+  const v = fy * fy * (3 - 2 * fy);
+  const a = hash2(ix, iy);
+  const b = hash2(ix + 1, iy);
+  const c = hash2(ix, iy + 1);
+  const d = hash2(ix + 1, iy + 1);
+  return lerp(lerp(a, b, u), lerp(c, d, u), v);
 }
 
 function drawSectorTexture(ctx: CanvasRenderingContext2D, width: number, height: number) {
@@ -49,17 +168,21 @@ function drawSectorTexture(ctx: CanvasRenderingContext2D, width: number, height:
   ctx.fillRect(0, 0, width, height);
 
   const noise = document.createElement('canvas');
-  noise.width = 160;
-  noise.height = 160;
+  noise.width = 240;
+  noise.height = 240;
   const noiseCtx = noise.getContext('2d');
 
   if (noiseCtx) {
     const image = noiseCtx.createImageData(noise.width, noise.height);
+    const baseScale = 0.045;
     for (let y = 0; y < noise.height; y += 1) {
       for (let x = 0; x < noise.width; x += 1) {
         const index = (y * noise.width + x) * 4;
-        const seed = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-        const value = 34 + Math.floor((seed - Math.floor(seed)) * 52);
+        const n1 = valueNoise2D(x * baseScale, y * baseScale);
+        const n2 = valueNoise2D(x * baseScale * 2, y * baseScale * 2);
+        const n3 = valueNoise2D(x * baseScale * 4, y * baseScale * 4);
+        const summed = (n1 * 0.6 + n2 * 0.3 + n3 * 0.15) / (0.6 + 0.3 + 0.15);
+        const value = 28 + Math.floor(summed * 38);
         image.data[index] = value;
         image.data[index + 1] = value;
         image.data[index + 2] = value;
@@ -67,10 +190,26 @@ function drawSectorTexture(ctx: CanvasRenderingContext2D, width: number, height:
       }
     }
     noiseCtx.putImageData(image, 0, 0);
-    ctx.globalAlpha = 0.38;
+    ctx.globalAlpha = 0.32;
     ctx.drawImage(noise, 0, 0, width, height);
     ctx.globalAlpha = 1;
   }
+
+  const vignette = ctx.createRadialGradient(width * 0.5, 0, 0, width * 0.5, height, height * 1.15);
+  vignette.addColorStop(0, 'rgba(0,0,0,0)');
+  vignette.addColorStop(1, 'rgba(0,0,0,0.28)');
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, width, height);
+  ctx.globalCompositeOperation = 'source-over';
+
+  const bloom = ctx.createLinearGradient(0, (7 * height) / 100, 0, (25 * height) / 100);
+  bloom.addColorStop(0, 'rgba(255,255,255,0.05)');
+  bloom.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.globalCompositeOperation = 'screen';
+  ctx.fillStyle = bloom;
+  ctx.fillRect(0, 0, width, (25 * height) / 100);
+  ctx.globalCompositeOperation = 'source-over';
 
   ctx.restore();
 }
@@ -82,7 +221,6 @@ function drawRasterMask(
   width: number,
   height: number,
 ) {
-  const { r, g, b } = hexToRgb(item.color);
   const maskCanvas = document.createElement('canvas');
   maskCanvas.width = rasterMask.width;
   maskCanvas.height = rasterMask.height;
@@ -92,15 +230,16 @@ function drawRasterMask(
     return;
   }
 
-  const opacity = item.kind === 'vessel' ? 0.82 : 0.48;
+  const kind: 'node' | 'vessel' = item.kind === 'vessel' ? 'vessel' : 'node';
   const image = maskCtx.createImageData(rasterMask.width, rasterMask.height);
   for (let index = 0; index < rasterMask.alpha.length && index < rasterMask.width * rasterMask.height; index += 1) {
     const alpha = clamp(Number(rasterMask.alpha[index]) || 0, 0, 255);
     const offset = index * 4;
-    image.data[offset] = r;
-    image.data[offset + 1] = g;
-    image.data[offset + 2] = b;
-    image.data[offset + 3] = Math.round(alpha * opacity);
+    const tint = tintForKind(kind, alpha / 255, item.color);
+    image.data[offset] = tint.r;
+    image.data[offset + 1] = tint.g;
+    image.data[offset + 2] = tint.b;
+    image.data[offset + 3] = Math.round(alpha * tint.opacity);
   }
   maskCtx.putImageData(image, 0, 0);
 
@@ -138,7 +277,7 @@ function drawRasterMask(
   ctx.save();
   drawFanClip(ctx, width, height);
   ctx.clip();
-  ctx.filter = item.kind === 'vessel' ? 'blur(1.15px)' : 'blur(0.8px)';
+  ctx.filter = item.kind === 'vessel' ? 'blur(2.2px)' : 'blur(1.6px)';
   ctx.drawImage(warpedCanvas, 0, 0, width, height);
   ctx.filter = 'none';
   ctx.restore();
@@ -198,9 +337,42 @@ export function SectorView({
 
     const closed = isClosedContour(points) || forceClosed;
     const mapped = points.map(sectorPoint);
-    const path = mapped.map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
 
-    return `${path}${closed ? ' Z' : ''}`;
+    if (mapped.length < 3) {
+      const fallback = mapped
+        .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+        .join(' ');
+      return `${fallback}${closed ? ' Z' : ''}`;
+    }
+
+    const get = (index: number) => {
+      if (closed) {
+        return mapped[((index % mapped.length) + mapped.length) % mapped.length];
+      }
+      return mapped[Math.max(0, Math.min(mapped.length - 1, index))];
+    };
+
+    const segCount = closed ? mapped.length : mapped.length - 1;
+    const tension = 0.5;
+    let d = `M${mapped[0].x.toFixed(2)} ${mapped[0].y.toFixed(2)}`;
+
+    for (let i = 0; i < segCount; i += 1) {
+      const p0 = get(i - 1);
+      const p1 = get(i);
+      const p2 = get(i + 1);
+      const p3 = get(i + 2);
+      const cp1x = p1.x + ((p2.x - p0.x) * tension) / 3;
+      const cp1y = p1.y + ((p2.y - p0.y) * tension) / 3;
+      const cp2x = p2.x - ((p3.x - p1.x) * tension) / 3;
+      const cp2y = p2.y - ((p3.y - p1.y) * tension) / 3;
+      d += ` C${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+    }
+
+    if (closed) {
+      d += ' Z';
+    }
+
+    return d;
   }
 
   function itemShape(item: SimulatorSectorItem) {
@@ -239,10 +411,38 @@ export function SectorView({
     };
   }
 
+  function itemArea(item: SimulatorSectorItem) {
+    const lateralSpan = item.lateralExtentMm ? Math.abs(item.lateralExtentMm[1] - item.lateralExtentMm[0]) : 0;
+    const depthSpan = item.depthExtentMm ? Math.abs(item.depthExtentMm[1] - item.depthExtentMm[0]) : 0;
+    const fromExtents = lateralSpan * depthSpan;
+    const fromAxes = (item.majorAxisMm ?? 0) * (item.minorAxisMm ?? 0);
+    return Math.max(fromExtents, fromAxes, 1);
+  }
+
   const renderItems = [...visibleItems].sort((a, b) => {
-    const order = { node: 0, vessel: 1, airway: 2, contact: 3 };
-    return order[a.kind] - order[b.kind] || a.depthMm - b.depthMm || a.label.localeCompare(b.label);
+    const kindOrder = { vessel: 0, node: 1, airway: 2, contact: 3 };
+    const kindDiff = kindOrder[a.kind] - kindOrder[b.kind];
+    if (kindDiff !== 0) return kindDiff;
+    const areaDiff = itemArea(b) - itemArea(a);
+    if (areaDiff !== 0) return areaDiff;
+    return b.depthMm - a.depthMm;
   });
+  const activeItem = renderItems.find((item) => item.id === activeStructure && item.kind !== 'contact') ?? null;
+  const activeItemPosition = activeItem ? itemPosition(activeItem) : null;
+  const activeCalloutSide = activeItemPosition && activeItemPosition.x <= 50 ? 'left' : 'right';
+  const activeCalloutAnchor = activeItemPosition
+    ? {
+        x: activeCalloutSide === 'left' ? 13 : 87,
+        y: clamp(activeItemPosition.y, 14, 86),
+      }
+    : null;
+  const activeKindLabel = activeItem?.kind === 'node'
+    ? 'lymph node'
+    : activeItem?.kind === 'vessel'
+      ? 'vessel'
+      : activeItem?.kind === 'airway'
+        ? 'airway'
+        : '';
 
   useEffect(() => {
     const canvas = rasterCanvasRef.current;
@@ -275,14 +475,8 @@ export function SectorView({
       ctx.save();
       ctx.translate(viewOffsetX, viewOffsetY);
       drawSectorTexture(ctx, viewSize, viewSize);
-      const rasterItems = [...visibleItems]
-        .filter((item) => (item.kind === 'node' || item.kind === 'vessel') && item.rasterMask?.alpha?.length)
-        .sort((a, b) => {
-          const order = { vessel: 0, node: 1 };
-          return order[a.kind as 'node' | 'vessel'] - order[b.kind as 'node' | 'vessel'] || a.depthMm - b.depthMm;
-        });
-      for (const item of rasterItems) {
-        if (item.rasterMask) {
+      for (const item of renderItems) {
+        if ((item.kind === 'node' || item.kind === 'vessel') && item.rasterMask?.alpha?.length) {
           drawRasterMask(ctx, item, item.rasterMask, viewSize, viewSize);
         }
       }
@@ -293,7 +487,7 @@ export function SectorView({
     const observer = new ResizeObserver(draw);
     observer.observe(parent);
     return () => observer.disconnect();
-  }, [visibleItems, maxDepth]);
+  }, [renderItems, maxDepth]);
 
   return (
     <section className="simulator-sector-pane" aria-label="Labeled EBUS sector" data-sector-source={source}>
@@ -318,6 +512,16 @@ export function SectorView({
             <clipPath id="simulatorFanClip">
               <path d="M50 7 L10 92 Q50 99 90 92 Z" />
             </clipPath>
+            <filter id="sectorEdgeSoften" x="-10%" y="-10%" width="120%" height="120%">
+              <feGaussianBlur stdDeviation="0.35" />
+            </filter>
+            <filter id="sectorActiveGlow" x="-25%" y="-25%" width="150%" height="150%">
+              <feGaussianBlur stdDeviation="0.7" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
           <path d="M50 7 L10 92 Q50 99 90 92 Z" fill="none" stroke="#d5dde0" strokeOpacity="0.76" strokeWidth="0.55" />
           <g clipPath="url(#simulatorFanClip)">
@@ -327,14 +531,16 @@ export function SectorView({
               const active = activeStructure === item.id;
 
               if (item.kind === 'airway') {
+                const airwayStroke = adjustHsl(item.color, 0.55, active ? 0.78 : 0.6);
                 return (
                   <path
                     key={item.id}
                     d="M45.8 14.2 C48.5 16.3, 51.5 16.3, 54.2 14.2"
                     onMouseEnter={() => setActiveStructure(item.id)}
                     onMouseLeave={() => setActiveStructure(null)}
-                    stroke={active ? '#fff5c2' : item.color}
-                    strokeWidth={active ? 2.2 : 1.5}
+                    stroke={airwayStroke}
+                    strokeOpacity={active ? 0.92 : 0.78}
+                    strokeWidth={active ? 2.0 : 1.4}
                     fill="none"
                   />
                 );
@@ -349,6 +555,13 @@ export function SectorView({
                 closed: item.contourClosed?.[index] ?? isClosedContour(contour),
                 path: contourPath(contour),
               })).filter((contour) => contour.path.length > 0);
+              const baseHsl = (() => {
+                const { r, g, b } = hexToRgb(item.color);
+                return rgbToHsl(r, g, b);
+              })();
+              const rimColor = adjustHsl(item.color, clamp(baseHsl.s * 0.9, 0, 1), clamp(baseHsl.l * 0.55, 0.12, 0.5));
+              const activeRim = adjustHsl(item.color, baseHsl.s, 0.88);
+              const strokeColor = active ? activeRim : rimColor;
 
               return (
                 <g
@@ -361,42 +574,49 @@ export function SectorView({
                   onMouseLeave={() => setActiveStructure(null)}
                   onFocus={() => setActiveStructure(item.id)}
                   onBlur={() => setActiveStructure(null)}
+                  filter={active ? 'url(#sectorActiveGlow)' : undefined}
                 >
                   {contourPaths.length > 0 ? (
                     contourPaths.map((contour, index) => (
                       <path
                         key={`${item.id}-contour-${index}`}
                         d={contour.path}
-                        fill={contour.closed && !item.rasterMask?.alpha?.length ? item.color : 'none'}
-                        fillOpacity={item.kind === 'vessel' ? 0.66 : 0.5}
-                        stroke={active ? '#dcffd0' : item.kind === 'node' ? '#9cf0a2' : item.color}
-                        strokeOpacity={active ? 0.9 : 0.62}
-                        strokeWidth={active ? 0.8 : 0.42}
+                        fill={contour.closed ? item.color : 'none'}
+                        fillOpacity={contour.closed ? (active ? 0.98 : 0.92) : 0}
+                        stroke={strokeColor}
+                        strokeOpacity={active ? 0.95 : 0.7}
+                        strokeWidth={active ? 0.6 : 0.35}
+                        strokeLinejoin="round"
+                        filter="url(#sectorEdgeSoften)"
                       />
                     ))
                   ) : (
                     <ellipse
                       cx={position.x}
                       cy={position.y}
-                      rx={active ? shape.rx * 1.08 : shape.rx}
-                      ry={active ? shape.ry * 1.08 : shape.ry}
+                      rx={active ? shape.rx * 1.06 : shape.rx}
+                      ry={active ? shape.ry * 1.06 : shape.ry}
                       transform={`rotate(${shape.angleDeg.toFixed(1)} ${position.x.toFixed(2)} ${position.y.toFixed(2)})`}
                       fill={item.color}
-                      fillOpacity={item.kind === 'node' ? 0.58 : 0.66}
-                      stroke={active ? '#dcffd0' : item.color}
-                      strokeOpacity={active ? 0.96 : 0.82}
-                      strokeWidth={active ? 1.0 : 0.5}
+                      fillOpacity={active ? 0.98 : 0.92}
+                      stroke={strokeColor}
+                      strokeOpacity={active ? 0.95 : 0.7}
+                      strokeWidth={active ? 0.6 : 0.35}
+                      filter="url(#sectorEdgeSoften)"
                     />
                   )}
-                  {active ? (
-                    <text x={clamp(position.x + 3.2, 15, 85)} y={clamp(position.y - 4.5, 14, 88)} fill="#d9f0ee" fontSize="2.8">
-                      {item.label}
-                    </text>
-                  ) : null}
                 </g>
               );
             })}
           </g>
+          {activeItem && activeItemPosition && activeCalloutAnchor ? (
+            <g className="simulator-sector-label-leader" pointerEvents="none">
+              <path
+                d={`M${activeItemPosition.x.toFixed(2)} ${activeItemPosition.y.toFixed(2)} L${activeCalloutAnchor.x.toFixed(2)} ${activeCalloutAnchor.y.toFixed(2)}`}
+              />
+              <circle cx={activeItemPosition.x} cy={activeItemPosition.y} r="0.8" />
+            </g>
+          ) : null}
           <line x1="94" y1="10" x2="94" y2="91" stroke="#758086" strokeOpacity="0.34" strokeWidth="0.5" />
           {[0, 10, 20, 30, 40].map((tick) => (
             <g key={tick}>
@@ -413,6 +633,21 @@ export function SectorView({
             cephalic
           </text>
         </svg>
+        {activeItem && activeCalloutAnchor ? (
+          <div
+            className={`simulator-sector-callout simulator-sector-callout--${activeCalloutSide}`}
+            style={{
+              left: `${activeCalloutAnchor.x}%`,
+              top: `${activeCalloutAnchor.y}%`,
+            }}
+          >
+            <span className="simulator-sector-callout__swatch" style={{ backgroundColor: activeItem.color }} />
+            <span className="simulator-sector-callout__text">
+              <span>{activeItem.label}</span>
+              <span>{activeKindLabel}</span>
+            </span>
+          </div>
+        ) : null}
       </div>
       <div className="simulator-structure-list">
         {visibleItems.filter((item) => item.kind !== 'contact').map((item) => (

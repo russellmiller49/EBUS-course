@@ -1,0 +1,1 @@
+The visual T builder helps learners reason from tumor features toward a T descriptor. Size, side, location, invasion features, atelectasis or pneumonitis, and separate tumor nodules all feed the computed T category. The lung schematic is intentionally app-owned teaching art. It supports practice without presenting itself as a diagnostic image.

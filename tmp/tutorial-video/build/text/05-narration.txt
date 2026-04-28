@@ -1,0 +1,1 @@
+The station map module teaches recognition through the core EBUS stations: 2R, 2L, 4R, 4L, 7, 10R, 10L, and the 11-level stations. Learners tap the map and immediately see station identity, grouping, laterality, and memory cues. The map is not just decoration. It is the shared anchor for detail cards, bookmarks, flashcards, and the pin-the-station quiz.

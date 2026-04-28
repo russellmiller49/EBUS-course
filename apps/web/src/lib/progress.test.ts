@@ -55,6 +55,26 @@ describe('learnerProgressReducer', () => {
     expect(next.moduleProgress.simulator.visitedAt).toEqual(expect.any(String));
   });
 
+  it('tracks TNM staging progress and case tag performance', () => {
+    const initial = createInitialLearnerProgress();
+    const visited = learnerProgressReducer(initial, {
+      type: 'visitModule',
+      moduleId: 'tnm-staging',
+    });
+    const attempted = learnerProgressReducer(visited, {
+      type: 'recordTnmCaseAttempt',
+      caseId: 'tnm-case-01',
+      tags: ['T1c', 'N0'],
+      correct: true,
+    });
+
+    expect(attempted.version).toBe(7);
+    expect(attempted.moduleProgress['tnm-staging'].percentComplete).toBe(15);
+    expect(attempted.tnmCaseStats['tnm-case-01']).toMatchObject({ attempts: 1, correct: 1 });
+    expect(attempted.tnmTagStats.T1c).toMatchObject({ attempts: 1, correct: 1 });
+    expect(attempted.lastViewedTnmCaseId).toBe('tnm-case-01');
+  });
+
   it('normalizes malformed persisted state back to defaults', () => {
     const normalized = normalizeLearnerProgress({
       moduleProgress: {
@@ -68,9 +88,40 @@ describe('learnerProgressReducer', () => {
 
     expect(normalized.moduleProgress.knobology.percentComplete).toBe(100);
     expect(normalized.moduleProgress.simulator.percentComplete).toBe(0);
+    expect(normalized.moduleProgress['tnm-staging'].percentComplete).toBe(0);
     expect(normalized.moduleProgress.knobology.visitedAt).toBeNull();
     expect(normalized.bookmarkedStations).toEqual(['4R']);
     expect(normalized.engagement.lectures.totalSeconds).toBe(0);
+    expect(normalized.engagement['tnm-staging'].totalSeconds).toBe(0);
+    expect(normalized.courseAssessmentResults).toEqual({});
+    expect(normalized.courseSurvey.submittedAt).toBeNull();
+  });
+
+  it('stores course assessment results and survey completion for the gated course path', () => {
+    const initial = createInitialLearnerProgress();
+    const assessed = learnerProgressReducer(initial, {
+      type: 'recordCourseAssessmentResult',
+      assessmentId: 'post-lecture-02',
+      correctCount: 4,
+      totalCount: 5,
+      percent: 80,
+    });
+    const surveyed = learnerProgressReducer(assessed, {
+      type: 'submitCourseSurvey',
+      responses: {
+        confidence: 'More confident with cpEBUS fundamentals',
+      },
+    });
+
+    expect(assessed.courseAssessmentResults['post-lecture-02']).toMatchObject({
+      correctCount: 4,
+      totalCount: 5,
+      percent: 80,
+      attemptCount: 1,
+      completedAt: expect.any(String),
+    });
+    expect(surveyed.courseSurvey.submittedAt).toEqual(expect.any(String));
+    expect(surveyed.courseSurvey.responses.confidence).toBe('More confident with cpEBUS fundamentals');
   });
 
   it('stores and submits the web pretest locally', () => {
@@ -86,16 +137,16 @@ describe('learnerProgressReducer', () => {
     });
     const submitted = learnerProgressReducer(indexed, {
       type: 'submitPretest',
-      score: 31,
-      answeredCount: 42,
-      totalQuestions: 42,
+      score: 16,
+      answeredCount: 20,
+      totalQuestions: 20,
     });
 
     expect(submitted.pretest.answers['pretest-01']).toBe('b');
     expect(submitted.pretest.currentQuestionIndex).toBe(9);
-    expect(submitted.pretest.score).toBe(31);
-    expect(submitted.pretest.answeredCount).toBe(42);
-    expect(submitted.pretest.totalQuestions).toBe(42);
+    expect(submitted.pretest.score).toBe(16);
+    expect(submitted.pretest.answeredCount).toBe(20);
+    expect(submitted.pretest.totalQuestions).toBe(20);
     expect(submitted.pretest.attemptCount).toBe(1);
     expect(submitted.pretest.submittedAt).toEqual(expect.any(String));
   });

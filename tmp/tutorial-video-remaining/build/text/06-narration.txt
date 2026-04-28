@@ -1,0 +1,1 @@
+The cases tab changes the task from lookup to application. Each local case gives CT, PET, and EBUS findings, then asks the learner to assign T, N, and M before checking the rationale. The tags let learners focus on traps such as effusion, separate nodules, N2 subgroups, or oligometastatic disease.
