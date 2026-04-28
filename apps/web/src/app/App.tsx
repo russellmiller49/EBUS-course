@@ -21,7 +21,7 @@ import { SimulatorPage } from '@/app/routes/SimulatorPage';
 import { TnmStagingPage } from '@/app/routes/TnmStagingPage';
 import { NotFoundPage } from '@/app/routes/NotFoundPage';
 import { canAccessRoute, getLockedRoutePath, getRouteLockReason } from '@/lib/access';
-import { useCourseAdminSessionActive } from '@/lib/adminSession';
+import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
 import { useAuth } from '@/lib/auth';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useLearnerProgress } from '@/lib/progress';
@@ -122,6 +122,12 @@ export function App() {
   const { hydrated, recordModuleEngagement, state, visitRoute } = useLearnerProgress();
   const { isLoading: authLoading, isPasswordRecoverySession, isSupabaseEnabled, profile, user } = useAuth();
   const adminSessionActive = useCourseAdminSessionActive();
+  const vendorSessionActive = useCourseVendorSessionActive();
+  const previewSessionActive = adminSessionActive || vendorSessionActive;
+  const accessOptions = useMemo(
+    () => ({ admin: adminSessionActive, preview: vendorSessionActive }),
+    [adminSessionActive, vendorSessionActive],
+  );
   const sessionRef = useRef<{
     moduleId: ReturnType<typeof getTrackedModuleId>;
     path: string;
@@ -136,11 +142,11 @@ export function App() {
   const gatedNavItems = useMemo(() => {
     return activeNavItems.map((item) => ({
       ...item,
-      locked: !canAccessRoute(item.id, state, { admin: adminSessionActive }),
-      lockedReason: getRouteLockReason(item.id, state, { admin: adminSessionActive }) ?? undefined,
-      path: getLockedRoutePath(item.id, item.path, state, { admin: adminSessionActive }),
+      locked: !canAccessRoute(item.id, state, accessOptions),
+      lockedReason: getRouteLockReason(item.id, state, accessOptions) ?? undefined,
+      path: getLockedRoutePath(item.id, item.path, state, accessOptions),
     }));
-  }, [activeNavItems, adminSessionActive, state]);
+  }, [accessOptions, activeNavItems, state]);
 
   useEffect(() => {
     if (routeId) {
@@ -232,7 +238,7 @@ export function App() {
     };
   }, [isSupabaseEnabled, recordModuleEngagement, user]);
 
-  if (!hydrated || (isSupabaseEnabled && authLoading)) {
+  if (!hydrated || (isSupabaseEnabled && authLoading && !previewSessionActive)) {
     return (
       <AppShell navItems={gatedNavItems}>
         <div className="page-stack">
@@ -245,30 +251,30 @@ export function App() {
     );
   }
 
-  if (isSupabaseEnabled && !user && !adminSessionActive && !isAuthPath && !isAdminPath) {
+  if (isSupabaseEnabled && !user && !previewSessionActive && !isAuthPath && !isAdminPath) {
     const next = `${location.pathname}${location.search}`;
 
     return <Navigate replace to={`/auth?next=${encodeURIComponent(next)}`} />;
   }
 
-  if (isSupabaseEnabled && user && isPasswordRecoverySession && !adminSessionActive && !isAuthPath && !isAdminPath) {
+  if (isSupabaseEnabled && user && isPasswordRecoverySession && !previewSessionActive && !isAuthPath && !isAdminPath) {
     return <Navigate replace to="/auth?mode=reset-password" />;
   }
 
-  if (isSupabaseEnabled && user && profile?.mustSetPassword && !adminSessionActive && !isAuthPath && !isAdminPath) {
+  if (isSupabaseEnabled && user && profile?.mustSetPassword && !previewSessionActive && !isAuthPath && !isAdminPath) {
     const next = `${location.pathname}${location.search}`;
 
     return <Navigate replace to={`/auth?next=${encodeURIComponent(next)}`} />;
   }
 
-  if (isSupabaseEnabled && user && profile?.approvalStatus === 'pending' && !adminSessionActive && !isAuthPath && !isAdminPath) {
+  if (isSupabaseEnabled && user && profile?.approvalStatus === 'pending' && !previewSessionActive && !isAuthPath && !isAdminPath) {
     const next = `${location.pathname}${location.search}`;
 
     return <Navigate replace to={`/auth?next=${encodeURIComponent(next)}`} />;
   }
 
-  if (routeId && !canAccessRoute(routeId, state, { admin: adminSessionActive })) {
-    return <Navigate replace to={getLockedRoutePath(routeId, location.pathname, state, { admin: adminSessionActive })} />;
+  if (routeId && !canAccessRoute(routeId, state, accessOptions)) {
+    return <Navigate replace to={getLockedRoutePath(routeId, location.pathname, state, accessOptions)} />;
   }
 
   return (

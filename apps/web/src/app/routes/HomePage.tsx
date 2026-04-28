@@ -5,7 +5,7 @@ import { ModuleCard } from '@/components/ModuleCard';
 import { courseInfo } from '@/content/course';
 import { homeModuleCards } from '@/content/modules';
 import { canAccessRoute, getLockedRoutePath, getRouteLockReason, isPretestComplete } from '@/lib/access';
-import { useCourseAdminSessionActive } from '@/lib/adminSession';
+import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
 import { getNextCourseStep, isCoursePretestUnlocked } from '@/lib/courseWorkflow';
 import { useLearnerProgress } from '@/lib/progress';
 
@@ -20,10 +20,13 @@ function ProgressMeter({ percent }: { percent: number }) {
 export function HomePage() {
   const { state } = useLearnerProgress();
   const adminSessionActive = useCourseAdminSessionActive();
+  const vendorSessionActive = useCourseVendorSessionActive();
+  const previewSessionActive = adminSessionActive || vendorSessionActive;
+  const accessOptions = { admin: adminSessionActive, preview: vendorSessionActive };
   const { learningSteps, resumeModule } = buildHomeProgressModel(state);
-  const pretestReady = adminSessionActive || isPretestComplete(state);
-  const pretestUnlocked = adminSessionActive || isCoursePretestUnlocked(state, { admin: adminSessionActive });
-  const nextCourseStep = getNextCourseStep(state, { admin: adminSessionActive });
+  const pretestReady = previewSessionActive || isPretestComplete(state);
+  const pretestUnlocked = previewSessionActive || isCoursePretestUnlocked(state, accessOptions);
+  const nextCourseStep = getNextCourseStep(state, accessOptions);
   const reviewedLectures = Object.values(state.lectureWatchStatus).filter((lecture) => lecture.completed).length;
   const lastAssessment = state.quizScoreHistory[0];
   const pretestTag =
@@ -312,8 +315,8 @@ export function HomePage() {
               {learningSteps.map((step, index) => (
                 <Link
                   key={step.id}
-                  className={`course-step${canAccessRoute(step.id, state, { admin: adminSessionActive }) ? '' : ' course-step--locked'}`}
-                  to={getLockedRoutePath(step.id, step.path, state, { admin: adminSessionActive })}
+                  className={`course-step${canAccessRoute(step.id, state, accessOptions) ? '' : ' course-step--locked'}`}
+                  to={getLockedRoutePath(step.id, step.path, state, accessOptions)}
                 >
                   <span className={`course-step__marker${step.percent >= 100 ? ' course-step__marker--done' : ''}`}>
                     {step.percent >= 100 ? '✓' : index + 1}
@@ -321,8 +324,8 @@ export function HomePage() {
                   <div className="course-step__body">
                     <strong>{step.title}</strong>
                     <ProgressMeter percent={step.percent} />
-                    {!canAccessRoute(step.id, state, { admin: adminSessionActive }) ? (
-                      <p>{getRouteLockReason(step.id, state, { admin: adminSessionActive })}</p>
+                    {!canAccessRoute(step.id, state, accessOptions) ? (
+                      <p>{getRouteLockReason(step.id, state, accessOptions)}</p>
                     ) : null}
                   </div>
                   <span className="course-step__percent">{step.percent}%</span>
@@ -344,8 +347,8 @@ export function HomePage() {
               {homeModuleCards.map((module) => (
                 <ModuleCard
                   key={module.id}
-                  locked={!canAccessRoute(module.id, state, { admin: adminSessionActive })}
-                  lockedReason={getRouteLockReason(module.id, state, { admin: adminSessionActive })}
+                  locked={!canAccessRoute(module.id, state, accessOptions)}
+                  lockedReason={getRouteLockReason(module.id, state, accessOptions)}
                   module={module}
                 />
               ))}

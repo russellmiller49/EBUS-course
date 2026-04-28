@@ -9,7 +9,7 @@ import type { CourseAssessmentContent } from '@/content/types';
 import { AabipVideoLibrary } from '@/features/lectures/AabipVideoLibrary';
 import { LectureCard } from '@/features/lectures/LectureCard';
 import { QuizCard } from '@/features/quiz/QuizCard';
-import { useCourseAdminSessionActive } from '@/lib/adminSession';
+import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
 import { useAuth } from '@/lib/auth';
 import {
   getAssessmentWorkflowStatus,
@@ -132,11 +132,18 @@ export function LecturesPage() {
   } = useLearnerProgress();
   const { profile, user } = useAuth();
   const adminSessionActive = useCourseAdminSessionActive();
+  const vendorSessionActive = useCourseVendorSessionActive();
+  const previewSessionActive = adminSessionActive || vendorSessionActive;
+  const accessOptions = useMemo(
+    () => ({ admin: adminSessionActive, preview: vendorSessionActive }),
+    [adminSessionActive, vendorSessionActive],
+  );
+  const previewLabel = vendorSessionActive ? 'Sponsor preview' : 'Admin preview';
   const reviewedCount = Object.values(state.lectureWatchStatus).filter((lecture) => lecture.completed).length;
   const activeTab = searchParams.get('tab') === 'aabip-videos' ? 'aabip-videos' : 'course-videos';
   const selectedAssessmentParam = searchParams.get('assessment');
   const selectedCourseAssessmentId = selectedAssessmentParam && getCourseAssessmentById(selectedAssessmentParam) ? selectedAssessmentParam : null;
-  const nextCourseStep = getNextCourseStep(state, { admin: adminSessionActive });
+  const nextCourseStep = getNextCourseStep(state, accessOptions);
   const activeAssessmentId = selectedCourseAssessmentId ?? nextCourseStep?.assessmentId ?? null;
   const lectureModuleProgress = getLectureModuleProgressSummary(state);
   const completedAssessments = courseAssessments.filter(
@@ -146,8 +153,8 @@ export function LecturesPage() {
     ? getCourseAssessmentProgress(state, finalPostTestAssessment.id)
     : null;
   const surveyComplete = isCourseSurveyComplete(state);
-  const surveyUnlocked = adminSessionActive || Boolean(postTestProgress?.completedAt);
-  const completionArtifactsUnlocked = adminSessionActive || surveyComplete;
+  const surveyUnlocked = previewSessionActive || Boolean(postTestProgress?.completedAt);
+  const completionArtifactsUnlocked = previewSessionActive || surveyComplete;
   const certificateName = profile?.fullName || user?.email || 'EBUS learner';
   const [surveyResponses, setSurveyResponses] = useState<Record<string, string>>({});
   const canSubmitSurvey = surveyItems.every((item) => surveyResponses[item.id]);
@@ -169,7 +176,7 @@ export function LecturesPage() {
 
   const handleLectureUpdate = useCallback(
     (lectureId: string, update: { watchedSeconds?: number; completed?: boolean; opened?: boolean }) => {
-      const wasCompleted = getLectureWorkflowStatus(state, lectureId, { admin: adminSessionActive })?.completed ?? false;
+      const wasCompleted = getLectureWorkflowStatus(state, lectureId, accessOptions)?.completed ?? false;
       const nextCompletedCount = lectureModuleProgress.completedCount + (!wasCompleted && update.completed ? 1 : 0);
 
       setLectureState(lectureId, update);
@@ -182,7 +189,7 @@ export function LecturesPage() {
         );
       }
     },
-    [adminSessionActive, lectureModuleProgress.completedCount, lectureModuleProgress.totalCount, setLectureState, setModuleProgress, state],
+    [accessOptions, lectureModuleProgress.completedCount, lectureModuleProgress.totalCount, setLectureState, setModuleProgress, state],
   );
 
   function handleTabChange(nextTab: VideoTabId) {
@@ -328,7 +335,7 @@ export function LecturesPage() {
             </div>
             <div className="stack-list">
               {lectureManifest.map((lecture) => {
-                const workflowStatus = getLectureWorkflowStatus(state, lecture.id, { admin: adminSessionActive });
+                const workflowStatus = getLectureWorkflowStatus(state, lecture.id, accessOptions);
                 const lectureAssessments = assessmentsByTrailingLectureId[lecture.id] ?? [];
 
                 return (
@@ -341,7 +348,7 @@ export function LecturesPage() {
                       watchState={state.lectureWatchStatus[lecture.id]}
                     />
                     {lectureAssessments.map((assessment) => {
-                      const workflow = getAssessmentWorkflowStatus(state, assessment, { admin: adminSessionActive });
+                      const workflow = getAssessmentWorkflowStatus(state, assessment, accessOptions);
                       const progress = getCourseAssessmentProgress(state, assessment.id);
                       const active = activeAssessmentId === assessment.id;
 
@@ -400,8 +407,8 @@ export function LecturesPage() {
                 <div className="feedback-banner feedback-banner--success">
                   <strong>Post-test answers and certificate are unlocked.</strong>
                   <p>
-                    {adminSessionActive && !surveyComplete
-                      ? 'Admin preview is active without changing learner survey status.'
+                    {previewSessionActive && !surveyComplete
+                      ? `${previewLabel} is active without changing learner survey status.`
                       : 'Your survey response is saved in local progress and included in the synced learner snapshot when login-backed sync is enabled.'}
                   </p>
                 </div>
@@ -478,13 +485,13 @@ export function LecturesPage() {
               <div className="eyebrow">Certificate of completion</div>
               <h2>{certificateName}</h2>
               <p>
-                {adminSessionActive && !surveyComplete
-                  ? 'Admin preview of the certificate workflow unlocked after learner completion.'
+                {previewSessionActive && !surveyComplete
+                  ? `${previewLabel} of the certificate workflow unlocked after learner completion.`
                   : 'has completed the SoCal EBUS Prep online curriculum, pre-test, lecture quizzes, final post-test, and post-course survey.'}
               </p>
               <div className="tag-row">
                 <span className="tag">
-                  {adminSessionActive && !surveyComplete ? 'Admin preview' : `Completed ${formatTimestamp(state.courseSurvey.submittedAt)}`}
+                  {previewSessionActive && !surveyComplete ? previewLabel : `Completed ${formatTimestamp(state.courseSurvey.submittedAt)}`}
                 </span>
                 <span className="tag">SoCal EBUS Prep 2026</span>
               </div>

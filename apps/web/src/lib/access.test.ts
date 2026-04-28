@@ -5,8 +5,10 @@ import {
   getLockedRoutePath,
   getRouteLockReason,
   isCourseAdminSessionActive,
+  isCourseVendorSessionActive,
   routeRequiresPretest,
   validateCourseAdminPasscode,
+  validateCourseVendorPasscode,
   validatePretestAdminPasscode,
 } from '@/lib/access';
 import { createInitialLearnerProgress } from '@/lib/progress';
@@ -76,5 +78,18 @@ describe('course access helpers', () => {
     expect(canAccessRoute('simulator', state, { admin: true })).toBe(true);
     expect(getLockedRoutePath('simulator', '/simulator', state, { admin: true })).toBe('/simulator');
     expect(getRouteLockReason('simulator', state, { admin: true })).toBeNull();
+  });
+
+  it('unlocks learning routes for vendor preview without activating admin access', () => {
+    const state = createInitialLearnerProgress();
+
+    expect(validateCourseVendorPasscode('SoCal_EBUS_Sponsor')).toBe(true);
+    expect(validateCourseVendorPasscode('EBUS_2026')).toBe(false);
+    expect(isCourseVendorSessionActive(createAdminStorage('SoCal_EBUS_Sponsor'))).toBe(true);
+    expect(isCourseAdminSessionActive(createAdminStorage('SoCal_EBUS_Sponsor'))).toBe(false);
+    expect(canAccessRoute('pretest', state, { preview: true })).toBe(true);
+    expect(canAccessRoute('simulator', state, { preview: true })).toBe(true);
+    expect(getLockedRoutePath('simulator', '/simulator', state, { preview: true })).toBe('/simulator');
+    expect(getRouteLockReason('simulator', state, { preview: true })).toBeNull();
   });
 });

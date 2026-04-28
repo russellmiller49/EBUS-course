@@ -1,7 +1,7 @@
 {
   "id": "pretest",
   "title": "EBUS 2026 Pre-Test",
-  "summary": "Baseline 20-question assessment from the 2026 pre-course test set. Scores are recorded before the practice modules and lecture sequence unlock.",
+  "summary": "Baseline 25-question assessment from the updated 2026 pre-course test set. Scores are recorded before the practice modules and lecture sequence unlock.",
   "instructions": [
     "Complete the full pre-test after the welcome and course introduction video.",
     "Correct answers are intentionally hidden during the pre-test experience.",
@@ -11,158 +11,133 @@
   "questions": [
     {
       "id": "pretest-01",
-      "prompt": "A 64-year-old woman with heavy smoking history has a 4.2 cm spiculated peripheral right upper lobe lung mass. PET/CT shows multiple mediastinal nodes that are all subcentimeter in size and without significant FDG avidity. She is an operative candidate. Which is the best next step in management?",
+      "prompt": "A 72-year-old man with a drug-eluting coronary stent placed 6 weeks ago has a positron emission tomography-avid subcarinal lymph node that requires tissue confirmation. He is taking aspirin and clopidogrel. Which preparation plan is most appropriate?",
       "type": "scenario",
       "imageAssetKey": null,
       "options": [
         {
           "id": "a",
-          "label": "CT-guided transthoracic needle biopsy of the lung mass"
+          "label": "Stop both medications for 7 days"
         },
         {
           "id": "b",
-          "label": "Proceed to right upper lobectomy"
+          "label": "Continue aspirin; clopidogrel may be continued after cardiology input if thrombosis risk exceeds bleeding risk"
         },
         {
           "id": "c",
-          "label": "Systematic cpEBUS-TBNA mediastinal staging"
+          "label": "Bridge with low-molecular-weight heparin and stop both medications"
         },
         {
           "id": "d",
-          "label": "Mediastinoscopy for directed mediastinal staging"
+          "label": "Stop aspirin and continue clopidogrel"
+        }
+      ],
+      "correctOptionId": "b"
+    },
+    {
+      "id": "pretest-02",
+      "prompt": "While imaging a right paratracheal lymph node, multiple bright parallel lines suddenly appear on the ultrasound image. What is the best next step?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Increase suction through the working channel"
+        },
+        {
+          "id": "b",
+          "label": "Adjust the saline-filled balloon to improve contact with the airway wall"
+        },
+        {
+          "id": "c",
+          "label": "Advance the needle to stabilize the scope"
+        },
+        {
+          "id": "d",
+          "label": "Activate elastography"
+        }
+      ],
+      "correctOptionId": "b"
+    },
+    {
+      "id": "pretest-03",
+      "prompt": "A patient with a left upper lobe lung cancer has a suspicious lymph node located along the left lateral tracheal wall above the superior border of the aortic arch and below the thoracic inlet. Which lymph node station is most consistent with this description?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Station 5"
+        },
+        {
+          "id": "b",
+          "label": "Station 1L"
+        },
+        {
+          "id": "c",
+          "label": "Station 2L"
+        },
+        {
+          "id": "d",
+          "label": "Station 4L"
         }
       ],
       "correctOptionId": "c"
     },
     {
-      "id": "pretest-02",
-      "prompt": "While imaging a right paratracheal node, multiple bright parallel lines at regular intervals suddenly appear on the EBUS monitor. Which next step is best?",
-      "type": "single-best-answer",
-      "imageAssetKey": null,
-      "options": [
-        {
-          "id": "a",
-          "label": "Adjust the saline-filled balloon against the airway wall"
-        },
-        {
-          "id": "b",
-          "label": "Increase suction through the working channel"
-        },
-        {
-          "id": "c",
-          "label": "Activate elastography before re-imaging"
-        },
-        {
-          "id": "d",
-          "label": "Advance the needle to anchor the scope"
-        }
-      ],
-      "correctOptionId": "a"
-    },
-    {
-      "id": "pretest-03",
-      "prompt": "A 45-year-old woman with suspected stage I/II sarcoidosis has isolated station 4L, 5 and 7 lymphadenopathy. During a prior bronchoscopy, she had repeated agitation and desaturation despite moderate sedation. Which is the best next approach if moderate sedation must be used again?",
-      "type": "scenario",
-      "imageAssetKey": null,
-      "options": [
-        {
-          "id": "a",
-          "label": "cpEBUS using intranodal forceps or cryobiopsy"
-        },
-        {
-          "id": "b",
-          "label": "EUS-B-FNA of station 4L and/or 7"
-        },
-        {
-          "id": "c",
-          "label": "cpEBUS using a 19G needle"
-        },
-        {
-          "id": "d",
-          "label": "cpEBUS with transvascular TBNA"
-        }
-      ],
-      "correctOptionId": "b"
-    },
-    {
       "id": "pretest-04",
-      "prompt": "A 72-year-old man with a drug-eluting coronary stent placed 6 weeks ago requires cpEBUS-TBNA. He is on aspirin and clopidogrel. What is the best preparation plan?",
+      "prompt": "Before puncturing a small hilar structure, ultrasound is used to determine the direction of blood flow relative to the transducer. Which ultrasound mode is being used?",
       "type": "scenario",
       "imageAssetKey": null,
       "options": [
         {
           "id": "a",
-          "label": "Stop both agents for 7 days"
+          "label": "Elastography"
         },
         {
           "id": "b",
-          "label": "Continue aspirin; consider continuing clopidogrel with cardiology input"
+          "label": "Power Doppler"
         },
         {
           "id": "c",
-          "label": "Stop aspirin and continue clopidogrel"
+          "label": "Motion mode"
         },
         {
           "id": "d",
-          "label": "Bridge with low-molecular-weight heparin"
+          "label": "Color Doppler"
         }
       ],
-      "correctOptionId": "b"
+      "correctOptionId": "d"
     },
     {
       "id": "pretest-05",
-      "prompt": "A patient with a left upper lobe primary lung cancer has a node above the aortic arch and below the thoracic inlet along the left lateral tracheal wall. Which station is this?",
+      "prompt": "During staging, rapid on-site evaluation from a lymph node shows malignant cells. What is the best next step?",
       "type": "scenario",
       "imageAssetKey": null,
       "options": [
         {
           "id": "a",
-          "label": "4L"
+          "label": "Stop the procedure"
         },
         {
           "id": "b",
-          "label": "2L"
+          "label": "Obtain additional passes for cell block preparation"
         },
         {
           "id": "c",
-          "label": "5"
+          "label": "Sample additional nodal stations"
         },
         {
           "id": "d",
-          "label": "1L"
+          "label": "Continue obtaining samples only for on-site evaluation"
         }
       ],
       "correctOptionId": "b"
     },
     {
       "id": "pretest-06",
-      "prompt": "A 63-year-old woman undergoes EBUS-TBNA and ROSE shows malignant cells from an N3 node. What is the best next step?",
-      "type": "single-best-answer",
-      "imageAssetKey": null,
-      "options": [
-        {
-          "id": "a",
-          "label": "Obtain more ROSE samples and stop"
-        },
-        {
-          "id": "b",
-          "label": "Stop the procedure"
-        },
-        {
-          "id": "c",
-          "label": "Sample remaining nodes for staging"
-        },
-        {
-          "id": "d",
-          "label": "Obtain additional passes for cell block"
-        }
-      ],
-      "correctOptionId": "d"
-    },
-    {
-      "id": "pretest-07",
-      "prompt": "A 64-year-old man develops fever and chest pain 8 days after EBUS-TBNA. Imaging shows subtle mediastinal changes. What is the likely diagnosis?",
-      "type": "single-best-answer",
+      "prompt": "A patient presents eight days after a bronchoscopic procedure with fever, pleuritic chest pain, and leukocytosis. Imaging shows subtle widening of the mediastinum. What is the most likely diagnosis?",
+      "type": "scenario",
       "imageAssetKey": null,
       "options": [
         {
@@ -185,189 +160,189 @@
       "correctOptionId": "b"
     },
     {
-      "id": "pretest-08",
-      "prompt": "A novice bronchoscopist struggles with EBUS navigation, scraping airway walls and getting stuck. What is the main reason?",
-      "type": "single-best-answer",
+      "id": "pretest-07",
+      "prompt": "A novice bronchoscopist has difficulty maneuvering the endobronchial ultrasound scope compared with a conventional bronchoscope. What is the primary reason?",
+      "type": "scenario",
       "imageAssetKey": null,
       "options": [
         {
           "id": "a",
-          "label": "Larger scope diameter"
+          "label": "The scope has a larger diameter"
         },
         {
           "id": "b",
-          "label": "Small working channel"
+          "label": "The scope scans in a full circular pattern"
         },
         {
           "id": "c",
-          "label": "Forward-oblique endoscopic view"
+          "label": "The endoscopic view is forward-oblique rather than straight ahead"
         },
         {
           "id": "d",
-          "label": "360-degree scanning transducer"
+          "label": "The working channel is too small"
         }
       ],
       "correctOptionId": "c"
     },
     {
-      "id": "pretest-09",
-      "prompt": "Before puncturing a node, a mode is used to determine that blood flow is away from the probe. Which mode?",
-      "type": "single-best-answer",
+      "id": "pretest-08",
+      "prompt": "Immediately after needle puncture of a lymph node, the ultrasound image disappears due to loss of contact. What is the next step?",
+      "type": "scenario",
       "imageAssetKey": null,
       "options": [
         {
           "id": "a",
-          "label": "Power Doppler"
+          "label": "Adjust image gain"
         },
         {
           "id": "b",
-          "label": "M-mode"
+          "label": "Stabilize the needle and re-anchor the scope against the airway wall"
         },
         {
           "id": "c",
-          "label": "Elastography"
+          "label": "Fully retract the needle"
         },
         {
           "id": "d",
-          "label": "Color Doppler"
-        }
-      ],
-      "correctOptionId": "d"
-    },
-    {
-      "id": "pretest-10",
-      "prompt": "A 71-year-old obese man undergoes combined EBUS and peripheral bronchoscopy without ROSE. What anesthesia approach is best?",
-      "type": "single-best-answer",
-      "imageAssetKey": null,
-      "options": [
-        {
-          "id": "a",
-          "label": "Moderate sedation throughout"
-        },
-        {
-          "id": "b",
-          "label": "Deep sedation/GA for entire case"
-        },
-        {
-          "id": "c",
-          "label": "Moderate sedation then escalate"
-        },
-        {
-          "id": "d",
-          "label": "GA for nodule then de-escalate"
+          "label": "Adjust the sheath depth"
         }
       ],
       "correctOptionId": "b"
     },
     {
-      "id": "pretest-11",
-      "prompt": "A 66-year-old man with reflux undergoes combined cpEBUS and peripheral bronchoscopy. Which airway is best?",
-      "type": "single-best-answer",
+      "id": "pretest-09",
+      "prompt": "A patient requires both mediastinal lymph node sampling and peripheral lung lesion biopsy without rapid on-site evaluation. What is the most appropriate anesthesia approach?",
+      "type": "scenario",
       "imageAssetKey": null,
       "options": [
         {
           "id": "a",
-          "label": "CPAP"
+          "label": "Moderate sedation for the entire procedure"
         },
         {
           "id": "b",
-          "label": "Large endotracheal tube (8.5\u20139.0 mm)"
+          "label": "Moderate sedation first with escalation if needed"
         },
         {
           "id": "c",
-          "label": "Supraglottic airway"
+          "label": "Deep sedation or general anesthesia for the entire procedure"
         },
         {
           "id": "d",
-          "label": "Nasal cannula"
+          "label": "Deep sedation first with later de-escalation"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-10",
+      "prompt": "A patient undergoing combined bronchoscopy with aspiration risk requires airway management. What is the most appropriate airway approach?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Continuous positive airway pressure"
+        },
+        {
+          "id": "b",
+          "label": "Supraglottic airway"
+        },
+        {
+          "id": "c",
+          "label": "Large endotracheal tube"
+        },
+        {
+          "id": "d",
+          "label": "Nasal cannula oxygen"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-11",
+      "prompt": "A patient is undergoing a combined diagnostic procedure with rapid on-site evaluation available. What is the best sequence?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Sample the lung lesion first"
+        },
+        {
+          "id": "b",
+          "label": "Sample mediastinal lymph nodes first"
+        },
+        {
+          "id": "c",
+          "label": "Sample only the lung lesion"
+        },
+        {
+          "id": "d",
+          "label": "Sample only lymph nodes"
         }
       ],
       "correctOptionId": "b"
     },
     {
       "id": "pretest-12",
-      "prompt": "A patient with PET-avid nodes and lung mass is undergoing bronchoscopy with ROSE. What is the best sequence?",
+      "prompt": "Which set of lymph node stations is routinely accessible using endobronchial ultrasound from the airway?",
       "type": "single-best-answer",
       "imageAssetKey": null,
       "options": [
         {
           "id": "a",
-          "label": "PNB first"
+          "label": "Stations 3A, 5, and 9"
         },
         {
           "id": "b",
-          "label": "Either sequence regardless"
+          "label": "Stations 1R, 8, and 11L"
         },
         {
           "id": "c",
-          "label": "cpEBUS first, then PNB if needed"
+          "label": "Stations 4R, 7, and 10L"
         },
         {
           "id": "d",
-          "label": "PNB only"
+          "label": "Stations 5, 6, and 8"
         }
       ],
       "correctOptionId": "c"
     },
     {
       "id": "pretest-13",
-      "prompt": "Which lymph node stations are routinely accessible by EBUS?",
-      "type": "single-best-answer",
+      "prompt": "Cytologic analysis shows small mature lymphocytes with benign bronchial epithelial contamination. What is the best interpretation?",
+      "type": "scenario",
       "imageAssetKey": null,
       "options": [
         {
           "id": "a",
-          "label": "5, 6, 8"
+          "label": "Metastatic carcinoma"
         },
         {
           "id": "b",
-          "label": "3A, 5, 9"
+          "label": "Granulomatous disease"
         },
         {
           "id": "c",
-          "label": "1R, 8, 11L"
+          "label": "Nonrepresentative sample"
         },
         {
           "id": "d",
-          "label": "4R, 7, 10L"
+          "label": "Benign lymph node"
         }
       ],
       "correctOptionId": "d"
     },
     {
       "id": "pretest-14",
-      "prompt": "Cytology shows small lymphocytes with uniform nuclei and bronchial cells with cilia. Interpretation?",
-      "type": "single-best-answer",
+      "prompt": "A tumor demonstrates nuclear molding, high proliferation index, and neuroendocrine markers. What is the most likely diagnosis?",
+      "type": "scenario",
       "imageAssetKey": null,
       "options": [
         {
           "id": "a",
-          "label": "Granulomatous lymphadenitis"
-        },
-        {
-          "id": "b",
-          "label": "Metastatic squamous cell carcinoma"
-        },
-        {
-          "id": "c",
-          "label": "Nonrepresentative aspirate"
-        },
-        {
-          "id": "d",
-          "label": "Benign lymph node with respiratory contamination"
-        }
-      ],
-      "correctOptionId": "d"
-    },
-    {
-      "id": "pretest-15",
-      "prompt": "EBUS-TBNA shows cells with nuclear molding, high mitoses, synaptophysin+, TTF-1+, high Ki-67. Diagnosis?",
-      "type": "single-best-answer",
-      "imageAssetKey": null,
-      "options": [
-        {
-          "id": "a",
-          "label": "Squamous cell carcinoma"
+          "label": "Adenocarcinoma"
         },
         {
           "id": "b",
@@ -375,7 +350,7 @@
         },
         {
           "id": "c",
-          "label": "Adenocarcinoma"
+          "label": "Squamous cell carcinoma"
         },
         {
           "id": "d",
@@ -385,89 +360,89 @@
       "correctOptionId": "b"
     },
     {
+      "id": "pretest-15",
+      "prompt": "Granulomatous inflammation is seen on initial evaluation. What is the best specimen handling strategy?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Place all material in formalin"
+        },
+        {
+          "id": "b",
+          "label": "Use slides only"
+        },
+        {
+          "id": "c",
+          "label": "Place in lymphocyte preservation medium only"
+        },
+        {
+          "id": "d",
+          "label": "Divide material for formalin and saline processing"
+        }
+      ],
+      "correctOptionId": "d"
+    },
+    {
       "id": "pretest-16",
-      "prompt": "Granulomatous inflammation is seen on ROSE. Best specimen handling?",
-      "type": "single-best-answer",
+      "prompt": "A lung tumor measuring 2.6 centimeters with involvement of a single ipsilateral mediastinal lymph node and no metastases corresponds to which stage?",
+      "type": "scenario",
       "imageAssetKey": null,
       "options": [
         {
           "id": "a",
-          "label": "Formalin only"
+          "label": "Stage IIIA"
         },
         {
           "id": "b",
-          "label": "Slides only"
+          "label": "Stage IIB"
         },
         {
           "id": "c",
-          "label": "RPMI only"
+          "label": "Stage IIIB"
         },
         {
           "id": "d",
-          "label": "Formalin and saline"
-        }
-      ],
-      "correctOptionId": "d"
-    },
-    {
-      "id": "pretest-17",
-      "prompt": "A 2.6 cm tumor with 4R node involvement. Correct staging?",
-      "type": "single-best-answer",
-      "imageAssetKey": null,
-      "options": [
-        {
-          "id": "a",
-          "label": "T1cN2M0 Stage IIIA"
-        },
-        {
-          "id": "b",
-          "label": "T1aN1M0 Stage IIA"
-        },
-        {
-          "id": "c",
-          "label": "T1cN3M0 Stage IIIB"
-        },
-        {
-          "id": "d",
-          "label": "T1cN2aM0 Stage IIB"
-        }
-      ],
-      "correctOptionId": "d"
-    },
-    {
-      "id": "pretest-18",
-      "prompt": "For cpEBUS under GA targeting station 2R only, best airway?",
-      "type": "single-best-answer",
-      "imageAssetKey": null,
-      "options": [
-        {
-          "id": "a",
-          "label": "7.5 mm ETT"
-        },
-        {
-          "id": "b",
-          "label": "Supraglottic airway"
-        },
-        {
-          "id": "c",
-          "label": "Rigid bronchoscope"
-        },
-        {
-          "id": "d",
-          "label": "HFNC"
+          "label": "Stage IIA"
         }
       ],
       "correctOptionId": "b"
     },
     {
-      "id": "pretest-19",
-      "prompt": "Nodes 4L, 7, and 8L are positive. What nodal category?",
-      "type": "single-best-answer",
+      "id": "pretest-17",
+      "prompt": "A patient undergoing general anesthesia for lymph node sampling near the upper trachea requires airway management. What is most appropriate?",
+      "type": "scenario",
       "imageAssetKey": null,
       "options": [
         {
           "id": "a",
-          "label": "N2a"
+          "label": "Supraglottic airway"
+        },
+        {
+          "id": "b",
+          "label": "High-flow nasal oxygen"
+        },
+        {
+          "id": "c",
+          "label": "Small endotracheal tube"
+        },
+        {
+          "id": "d",
+          "label": "Rigid bronchoscope"
+        }
+      ],
+      "correctOptionId": "a"
+    },
+    {
+      "id": "pretest-18",
+      "prompt": "Multiple ipsilateral mediastinal lymph node stations are involved with malignancy. What is the classification?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "N1"
         },
         {
           "id": "b",
@@ -475,36 +450,186 @@
         },
         {
           "id": "c",
-          "label": "N2b"
+          "label": "N2a"
         },
         {
           "id": "d",
-          "label": "N1"
+          "label": "N2b"
+        }
+      ],
+      "correctOptionId": "d"
+    },
+    {
+      "id": "pretest-19",
+      "prompt": "A patient has a lung mass greater than 3 centimeters with negative imaging of lymph nodes. What is the best next step?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Proceed directly to surgery"
+        },
+        {
+          "id": "b",
+          "label": "Perform computed tomography-guided biopsy"
+        },
+        {
+          "id": "c",
+          "label": "Perform mediastinoscopy"
+        },
+        {
+          "id": "d",
+          "label": "Perform endobronchial ultrasound-guided staging"
+        }
+      ],
+      "correctOptionId": "d"
+    },
+    {
+      "id": "pretest-20",
+      "prompt": "A patient with suspected lung cancer and mediastinal lymph node involvement undergoes a procedure with rapid on-site evaluation available. What is the best approach?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Sample the lung lesion first"
+        },
+        {
+          "id": "b",
+          "label": "Perform lymph node sampling first"
+        },
+        {
+          "id": "c",
+          "label": "Perform computed tomography-guided biopsy first"
+        },
+        {
+          "id": "d",
+          "label": "Either sequence is equivalent"
+        }
+      ],
+      "correctOptionId": "b"
+    },
+    {
+      "id": "pretest-21",
+      "prompt": "During staging, malignant cells are found in one mediastinal lymph node and another node is enlarged. What is the next step?",
+      "type": "scenario",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Stop the procedure"
+        },
+        {
+          "id": "b",
+          "label": "Refer for mediastinoscopy"
+        },
+        {
+          "id": "c",
+          "label": "Sample the additional lymph node"
+        },
+        {
+          "id": "d",
+          "label": "Sample the lung lesion"
         }
       ],
       "correctOptionId": "c"
     },
     {
-      "id": "pretest-20",
-      "prompt": "Combined lung mass and mediastinal disease suspected. ROSE available. Best sequence?",
+      "id": "pretest-22",
+      "prompt": "Which approach best balances diagnostic yield, safety, and molecular testing capability?",
       "type": "single-best-answer",
       "imageAssetKey": null,
       "options": [
         {
           "id": "a",
-          "label": "CT-TTNB first"
+          "label": "Peripheral cryobiopsy"
         },
         {
           "id": "b",
-          "label": "PNB first"
+          "label": "Endobronchial ultrasound-guided sampling"
         },
         {
           "id": "c",
-          "label": "cpEBUS first"
+          "label": "Computed tomography-guided biopsy"
         },
         {
           "id": "d",
-          "label": "Do both regardless"
+          "label": "Surgical resection"
+        }
+      ],
+      "correctOptionId": "b"
+    },
+    {
+      "id": "pretest-23",
+      "prompt": "When should mediastinal cryobiopsy be used?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "As the default technique"
+        },
+        {
+          "id": "b",
+          "label": "For large lymph nodes"
+        },
+        {
+          "id": "c",
+          "label": "When infection is suspected"
+        },
+        {
+          "id": "d",
+          "label": "After nondiagnostic standard sampling"
+        }
+      ],
+      "correctOptionId": "d"
+    },
+    {
+      "id": "pretest-24",
+      "prompt": "Which lymph node is most likely to yield adequate material for comprehensive molecular testing?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Small lymph node"
+        },
+        {
+          "id": "b",
+          "label": "Necrotic lymph node"
+        },
+        {
+          "id": "c",
+          "label": "Fluorodeoxyglucose-avid lymph node"
+        },
+        {
+          "id": "d",
+          "label": "Any lymph node"
+        }
+      ],
+      "correctOptionId": "c"
+    },
+    {
+      "id": "pretest-25",
+      "prompt": "What is the most appropriate modern biomarker strategy in lung cancer evaluation?",
+      "type": "single-best-answer",
+      "imageAssetKey": null,
+      "options": [
+        {
+          "id": "a",
+          "label": "Use serum markers alone"
+        },
+        {
+          "id": "b",
+          "label": "Replace tissue sampling with plasma testing"
+        },
+        {
+          "id": "c",
+          "label": "Use a multimodal approach combining clinical and molecular data"
+        },
+        {
+          "id": "d",
+          "label": "Use biomarkers only for postoperative monitoring"
         }
       ],
       "correctOptionId": "c"

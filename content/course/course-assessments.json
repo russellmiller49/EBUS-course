@@ -4,7 +4,7 @@
       "id": "post-lecture-02",
       "kind": "post-lecture-quiz",
       "title": "Post-lecture 2 quiz: Physics and knobology",
-      "sourceFile": "Pre-course tests/Post-lecture 2 quiz- physics_knobology.docx",
+      "sourceFile": "Pre-course tests/updatedebuscoursequestions/Post-lecture 2 quiz- physics_knobology.docx",
       "requiredLectureIds": [
         "lecture-02"
       ],
@@ -13,7 +13,7 @@
           "id": "post-lecture-02-q01",
           "moduleId": "knobology",
           "prompt": "While scanning station 4R, a series of bright parallel lines at regular intervals suddenly appears. What is the likely cause of this finding?",
-          "type": "single-best-answer",
+          "type": "case-vignette",
           "options": [
             {
               "id": "a",
@@ -84,34 +84,34 @@
         {
           "id": "post-lecture-02-q03",
           "moduleId": "knobology",
-          "prompt": "Before puncturing a hypoechoic structure near the trachea, the color Doppler is activated and red-orange flow noted. Which statement is most accurate?",
-          "type": "single-best-answer",
+          "prompt": "Before puncturing a small, indistinct hilar target, an attempt is made to distinguish lymph node from possible adjacent vessels. An ultrasound mode is activated and a vessel is identified. The operator surmises that the flow within the vessel is away from the transducer. Which ultrasound mode was used?",
+          "type": "case-vignette",
           "options": [
             {
               "id": "a",
-              "label": "The structure is an artery",
+              "label": "M-mode",
               "rationale": ""
             },
             {
               "id": "b",
-              "label": "Color on Doppler reflects flow direction relative to the transducer",
+              "label": "Power (energy) Doppler",
               "rationale": ""
             },
             {
               "id": "c",
-              "label": "Red-orange indicates absent flow and blue indicates turbulent flow",
+              "label": "Color Doppler",
               "rationale": ""
             },
             {
               "id": "d",
-              "label": "Doppler color is determined primarily by tissue echogenicity",
+              "label": "Elastography",
               "rationale": ""
             }
           ],
           "correctOptionIds": [
-            "b"
+            "c"
           ],
-          "explanation": "In EBUS color Doppler, red-orange and blue describe the direction of flow relative to the transducer, not artery versus vein, so option B is correct and option A incorrect. Option C misstates what the colors mean, and option D is wrong because Doppler depends on motion-related frequency shift rather than gray-scale echogenicity.",
+          "explanation": "Color Doppler is the most appropriate choice when the operator needs to recognize blood flow and interpret its direction relative to the transducer. In standard convention, flow toward the transducer is usually displayed as red/orange and flow away from the transducer as blue. In CP-EBUS, this is especially useful immediately before needle puncture because it helps distinguish a vessel from a lymph node and decreases the chance of inadvertent vascular puncture. When the procedural question is, \"Is this a vessel, and which way is blood moving?\" color Doppler is the best answer. Option A is incorrect because M-mode displays motion over time and is not the routine mode used to map vascular direction before TBNA. Option B is incorrect because power (energy) Doppler reflects the intensity or amount of blood flow and is often more sensitive to low flow, but it does not provide directional information as directly as color Doppler. Option D is incorrect because elastography evaluates tissue stiffness, not vascular flow direction.",
           "difficulty": "intermediate",
           "tags": [
             "Post-lecture 2 quiz: Physics and knobology"
@@ -157,7 +157,7 @@
           "id": "post-lecture-02-q05",
           "moduleId": "knobology",
           "prompt": "Four mediastinal nodes are examined during lung cancer staging. Which node has the highest sonographic probability of malignancy before sampling?",
-          "type": "single-best-answer",
+          "type": "case-vignette",
           "options": [
             {
               "id": "a",
@@ -184,6 +184,42 @@
             "b"
           ],
           "explanation": "Multiple EBUS studies and reviews describe a malignant sonographic profile that includes round shape, larger short-axis size, distinct margins, heterogeneous echotexture, loss of the central hilar structure, and higher-grade or nonhilar vascular patterns. Option B clusters several of those features in the same node, making it the most suspicious choice before tissue sampling. Option A is incorrect because an oval, homogeneous node with minimal hilar flow is more compatible with a benign pattern. Option C is incorrect for the same reason, despite being slightly larger, also indistinct margins suggest a benign histology. Option D is incorrect because the node is small, has indistinct margins and retains a central hilar structure. Importantly, even a strongly suspicious image pattern does not replace sampling. Sonographic morphology can guide target selection and pretest probability, for example when prioritizing a target at a station with multiple nodes. However, cytohistology remains the diagnostic standard.",
+          "difficulty": "intermediate",
+          "tags": [
+            "Post-lecture 2 quiz: Physics and knobology"
+          ]
+        },
+        {
+          "id": "post-lecture-02-q06",
+          "moduleId": "knobology",
+          "prompt": "During CP-EBUS the image of a subcarinal node becomes diffusely overbright, and contrast between the node and surrounding tissue is poor even though balloon contact is good and Doppler is turned off. Which adjustment is most likely to restore useful gray-scale contrast?",
+          "type": "case-vignette",
+          "options": [
+            {
+              "id": "a",
+              "label": "Increase needle excursion.",
+              "rationale": ""
+            },
+            {
+              "id": "b",
+              "label": "Inflate the balloon further until the airway wall indents.",
+              "rationale": ""
+            },
+            {
+              "id": "c",
+              "label": "Switch immediately to ROSE.",
+              "rationale": ""
+            },
+            {
+              "id": "d",
+              "label": "Reduce the overall gain on the ultrasound processor.",
+              "rationale": ""
+            }
+          ],
+          "correctOptionIds": [
+            "d"
+          ],
+          "explanation": "Gain controls the amplification of returning echo signals and therefore the overall brightness of the ultrasound image. When gain is set too high, the image becomes washed out and contrast between the target node and surrounding tissue falls, even if contact and probe position are otherwise good. Lowering the gain is the most direct way to restore useful gray-scale discrimination in this scenario. Option A is incorrect because needle excursion changes puncture depth, not image brightness. Option B is incorrect because overinflating the balloon can distort the airway wall and is not the appropriate solution when contact is already adequate. Option C is incorrect because ROSE is a cytology workflow that occurs after sampling and does not troubleshoot a poor ultrasound image. In practical knobology, fellows should think first of gain when the picture is globally too bright, just as they should think of coupling when they see reverberation from poor contact.",
           "difficulty": "intermediate",
           "tags": [
             "Post-lecture 2 quiz: Physics and knobology"
@@ -1342,7 +1378,7 @@
       "id": "post-lecture-10-11",
       "kind": "post-lecture-quiz",
       "title": "Post-lecture 10-11 quiz: Comprehensive bronchoscopy for lung cancer",
-      "sourceFile": "Pre-course tests/Post-lecture 10-11 quiz-comprehensive bronch for lung ca.docx",
+      "sourceFile": "Pre-course tests/updatedebuscoursequestions/Post-lecture 10-11 quiz-comprehensive bronch for lung ca.docx",
       "requiredLectureIds": [
         "lecture-10",
         "lecture-11"
@@ -1424,7 +1460,7 @@
           "id": "post-lecture-10-11-q03",
           "moduleId": "station-explorer",
           "prompt": "Which statement best reflects current evidence regarding bronchoscopy-guided parenchymal biopsy versus CT-guided percutaneous biopsy for comprehensive molecular biomarker testing in suspected or confirmed lung cancer?",
-          "type": "case-vignette",
+          "type": "single-best-answer",
           "options": [
             {
               "id": "a",
@@ -1527,6 +1563,42 @@
           "tags": [
             "Post-lecture 10-11 quiz: Comprehensive bronchoscopy for lung cancer"
           ]
+        },
+        {
+          "id": "post-lecture-10-11-q06",
+          "moduleId": "station-explorer",
+          "prompt": "Which of the following sets contains only lymph node stations that are directly and routinely accessible by standard linear EBUS-TBNA from the airway?",
+          "type": "single-best-answer",
+          "options": [
+            {
+              "id": "a",
+              "label": "4R, 7, 10L",
+              "rationale": ""
+            },
+            {
+              "id": "b",
+              "label": "5, 6, 8",
+              "rationale": ""
+            },
+            {
+              "id": "c",
+              "label": "3A, 5, 9",
+              "rationale": ""
+            },
+            {
+              "id": "d",
+              "label": "1R, 8, 11L",
+              "rationale": ""
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "Standard linear EBUS-TBNA can routinely access stations including 2R, 2L, 4R, 4L, 7, 10R, 10L, 11R, and 11L. Therefore 4R, 7, and 10L are all accessible (option A). Stations 5 and 6 are not routinely sampled by standard airway EBUS, though in selected situations, station 5 can be approached via transvascular (left pulmonary artery) approach. Stations 8 and 9 are typically accessed from the esophagus with EUS/EUS-B. Stations 3A (retrosternal) and 1R (lower cervical) are not typically accessible endoscopically.",
+          "difficulty": "intermediate",
+          "tags": [
+            "Post-lecture 10-11 quiz: Comprehensive bronchoscopy for lung cancer"
+          ]
         }
       ]
     },
@@ -1534,49 +1606,13 @@
       "id": "post-lecture-12",
       "kind": "post-lecture-quiz",
       "title": "Post-lecture 12 quiz: Molecular markers",
-      "sourceFile": "Pre-course tests/Post-lecture 12 quiz-mol markers.docx",
+      "sourceFile": "Pre-course tests/updatedebuscoursequestions/Post-lecture 12 quiz-mol markers.docx",
       "requiredLectureIds": [
         "lecture-12"
       ],
       "questions": [
         {
           "id": "post-lecture-12-q01",
-          "moduleId": "tnm-staging",
-          "prompt": "A 67-year-old never-smoker presents with mediastinal adenopathy and a right hilar mass. Convex-probe endobronchial ultrasound-guided transbronchial needle aspiration (cpEBUS-TBNA) of station 7 establishes metastatic lung adenocarcinoma. The cytopathologist reports that the specimen is adequate for one coordinated ancillary-testing strategy, but material is limited. Which testing approach is most likely to preserve tissue while maximizing detection of actionable genomic alterations?",
-          "type": "case-vignette",
-          "options": [
-            {
-              "id": "a",
-              "label": "Sequential single-gene testing one assay at a time, starting with EGFR and adding others only if negative",
-              "rationale": ""
-            },
-            {
-              "id": "b",
-              "label": "A broad DNA/RNA next-generation sequencing (NGS) panel coordinated with programmed death ligand 1 (PD-L1) testing",
-              "rationale": ""
-            },
-            {
-              "id": "c",
-              "label": "PD-L1 testing alone because it can guide first-line treatment decisions",
-              "rationale": ""
-            },
-            {
-              "id": "d",
-              "label": "Repeat cpEBUS-TBNA before any molecular testing is sent",
-              "rationale": ""
-            }
-          ],
-          "correctOptionIds": [
-            "b"
-          ],
-          "explanation": "Broad panel-based testing is preferred on limited cpEBUS material because it maximizes actionable information while minimizing repeated consumption of tumor cells by multiple serial assays. In advanced nonsquamous NSCLC, the clinical question is not simply whether one alteration is present, but whether the specimen can efficiently evaluate common mutations and actionable fusions within a single validated workflow. If the current specimen is already adequate, coordinating NGS and PD-L1 from the same acquisition is usually more tissue-sparing than repeating the bronchoscopy. Option A is incorrect because sequential testing can exhaust a small sample and delay comprehensive results. Option C is incorrect because PD-L1 testing answers an immunotherapy question but does not exclude EGFR, ALK, ROS1, RET, or other actionable drivers. Option D is incorrect because repeat sampling is generally reserved for truly inadequate material, not as the first response to a limited but usable specimen.",
-          "difficulty": "intermediate",
-          "tags": [
-            "Post-lecture 12 quiz: Molecular markers"
-          ]
-        },
-        {
-          "id": "post-lecture-12-q02",
           "moduleId": "tnm-staging",
           "prompt": "A 71-year-old man with PET-avid 4R and 7 nodes undergoes cpEBUS-TBNA. The cell block from 4R is scant, but several well-preserved Diff-Quik and alcohol-fixed cytology smears contain abundant tumor. Your laboratory has validated molecular assays on cytology preparations. Which statement is most accurate?",
           "type": "case-vignette",
@@ -1612,7 +1648,7 @@
           ]
         },
         {
-          "id": "post-lecture-12-q03",
+          "id": "post-lecture-12-q02",
           "moduleId": "tnm-staging",
           "prompt": "A 62-year-old woman with suspected stage IIIB lung adenocarcinoma has a single large, fluorodeoxyglucose-avid 4R node and no peripheral lesion suitable for biopsy. No rapid on-site evaluation is available. You expect cpEBUS-TBNA to be the only tissue source for diagnosis, PD-L1 testing, and comprehensive molecular profiling. Which sampling plan is most consistent with current evidence recommendations?",
           "type": "case-vignette",
@@ -1648,7 +1684,7 @@
           ]
         },
         {
-          "id": "post-lecture-12-q04",
+          "id": "post-lecture-12-q03",
           "moduleId": "tnm-staging",
           "prompt": "What are the approximate rates of tissue adequacy for molecular marker analysis provided by cpEBUS-TBNA in advanced non-small cell lung cancer (NSCLC)?",
           "type": "single-best-answer",
@@ -1677,14 +1713,14 @@
           "correctOptionIds": [
             "d"
           ],
-          "explanation": "Published meta-analyses and real-world studies consistently show that cpEBUS-TBNA has high adequacy for common driver testing, with EGFR and ALK success rates around the mid-90% range in pooled analyses. Expanded NGS performance is slightly lower than single-target testing, but still high overall, with pooled yields in the roughly 80% to low-90% range, with clear evidence that sampling strategy matters. This is why cpEBUS-TBNA is now commonly viewed as a central source of biomarker material in advanced NSCLC. Option A is incorrect because it substantially underestimates adequacy. Option B is incorrect because no bronchoscopic sampling method is uniformly 100% successful, and three passes is not a universal guarantee. Option C is incorrect because driver mutation and fusion testing is also highly feasible. Option D best captures the balance between strong performance and real-world limitations.",
+          "explanation": "Published meta-analyses and real-world studies consistently show that cpEBUS-TBNA has high adequacy for common driver testing, with EGFR and ALK success rates around the mid-90% range in pooled analyses. Expanded broad panel-based next generation-sequencing (NGS) testing is preferred on limited cpEBUS material because it maximizes actionable information while minimizing repeated consumption of tumor cells by multiple serial assays. NGS performance is slightly lower than single-target testing, but still high overall, with pooled yields in the roughly 80% to low-90% range, with clear evidence that sampling strategy matters. This is why cpEBUS-TBNA is now commonly viewed as a central source of biomarker material in advanced NSCLC. Option A is incorrect because it substantially underestimates adequacy. Option B is incorrect because no bronchoscopic sampling method is uniformly 100% successful, and three passes is not a universal guarantee. Option C is incorrect because driver mutation and fusion testing is also highly feasible. Option D best captures the balance between strong performance and real-world limitations.",
           "difficulty": "intermediate",
           "tags": [
             "Post-lecture 12 quiz: Molecular markers"
           ]
         },
         {
-          "id": "post-lecture-12-q05",
+          "id": "post-lecture-12-q04",
           "moduleId": "tnm-staging",
           "prompt": "A 45-year-old never-smoker has metastatic NSCLC diagnosed by cpEBUS-TBNA of station 7. Immunohistochemistry shows p40 positivity and little glandular differentiation, so the preliminary impression is squamous cell carcinoma. The oncology team notes that the patient\u2019s age and smoking history are clinically atypical. Which biomarker strategy is most appropriate?",
           "type": "case-vignette",
@@ -1713,7 +1749,7 @@
           "correctOptionIds": [
             "b"
           ],
-          "explanation": ": Although advanced nonsquamous NSCLC is the classic setting for comprehensive profiling, clinically atypical squamous presentations\u2014such as disease in a never-smoker or a younger patient\u2014should still prompt broad molecular testing. This principle is especially important when the only available tissue comes from cpEBUS-TBNA, because there may not be a second chance to obtain a more informative specimen later. The goal is to avoid falsely assuming that morphology alone excludes targetable biology. Option A is incorrect because actionable drivers are less common in squamous disease but not impossible, especially in atypical clinical settings. Option C is incorrect because PD-L1 does not substitute for genomic profiling. Option D is incorrect because single-gene testing is too narrow for a limited specimen when multiple actionable drivers are possible.",
+          "explanation": "Although advanced nonsquamous NSCLC is the classic setting for comprehensive profiling, clinically atypical squamous presentations\u2014such as disease in a never-smoker or a younger patient\u2014should still prompt broad molecular testing. This principle is especially important when the only available tissue comes from cpEBUS-TBNA, because there may not be a second chance to obtain a more informative specimen later. The goal is to avoid falsely assuming that morphology alone excludes targetable biology. Option A is incorrect because actionable drivers are less common in squamous disease but not impossible, especially in atypical clinical settings. Option C is incorrect because PD-L1 does not substitute for genomic profiling. Option D is incorrect because single-gene testing is too narrow for a limited specimen when multiple actionable drivers are possible.",
           "difficulty": "intermediate",
           "tags": [
             "Post-lecture 12 quiz: Molecular markers"
@@ -1725,7 +1761,7 @@
       "id": "post-lecture-13",
       "kind": "post-lecture-quiz",
       "title": "Post-lecture 13 quiz: Biomarkers",
-      "sourceFile": "Pre-course tests/Post-lecture 13 quiz-biomarkers.docx",
+      "sourceFile": "Pre-course tests/updatedebuscoursequestions/Post-lecture 13 quiz-biomarkers.docx",
       "requiredLectureIds": [
         "lecture-13"
       ],
@@ -1833,6 +1869,42 @@
             "d"
           ],
           "explanation": "Circulating abnormal-cell and circulating tumor-cell assays are best understood as emerging adjunctive tools, not definitive diagnostic tools. Minimally invasive biomarkers for indeterminate nodules are promising because they may capture tumor-derived cellular abnormalities from blood, sometimes with improved performance when combined with CT features or other variables. However, validation remains incomplete and clinical integration should be cautious (option D correct). Options A-C are incorrect because most current assays have been/are being studied for nodule etiology discrimination or assessment of tumor genetics in advanced disease rather than mediastinal staging, immunotherapy response, or postoperative surveillance. However, these broader applications may be targets for future biomarkers study and clinical implementation.",
+          "difficulty": "intermediate",
+          "tags": [
+            "Post-lecture 13 quiz: Biomarkers"
+          ]
+        },
+        {
+          "id": "post-lecture-13-q04",
+          "moduleId": "tnm-staging",
+          "prompt": "Which of the following best describes the current role of biomarkers in the assessment of suspected lung cancer and ability to reduce both unnecessary procedures and delays in diagnosis?",
+          "type": "single-best-answer",
+          "options": [
+            {
+              "id": "a",
+              "label": "Models that combine clinical risk, radiomics, and blood-based tests are better than relying on a single assay",
+              "rationale": ""
+            },
+            {
+              "id": "b",
+              "label": "Serum protein markers provide accurate mediastinal staging in lieu of tissue sampling",
+              "rationale": ""
+            },
+            {
+              "id": "c",
+              "label": "Plasma next-generation genomic sequencing has replaced tissue diagnosis",
+              "rationale": ""
+            },
+            {
+              "id": "d",
+              "label": "Biomarkers are most useful for postoperative recurrence surveillance",
+              "rationale": ""
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "No single \u201cmagic bullet\u201d biomarker is likely to dominate the diagnostic and staging landscape of lung cancer. Different biomarker classes capture different aspects of tumor biology or host response: proteins, autoantibodies, methylation, fragmentomics, microRNAs, breath signatures, airway transcriptomics, and radiomics each contribute partial information. Option A is therefore the best answer because multimodal integration is the most plausible path to improving both specificity and sensitivity in real-world practice. This is especially relevant for procedural vs. surveillance triage. Option B is incorrect because protein markers are unlikely to effectively stage a tumor with the granularity currently used with the TNM classification, even after effective diagnosis. Option C is incorrect because plasma sequencing cannot replace tissue diagnosis in all patients, especially early-stage or low-shedding lesions. Option D is incorrect because the greatest unmet need in this context is upfront nodule triage rather than surveillance after definitive treatment.",
           "difficulty": "intermediate",
           "tags": [
             "Post-lecture 13 quiz: Biomarkers"
@@ -2035,7 +2107,7 @@
       "id": "post-lecture-16",
       "kind": "post-lecture-quiz",
       "title": "Post-lecture 16 quiz: Advanced techniques",
-      "sourceFile": "Pre-course tests/Post-lecture 16 quiz-advanced techniques.doc",
+      "sourceFile": "Pre-course tests/updatedebuscoursequestions/Post-lecture 16 quiz-advanced techniques.doc",
       "requiredLectureIds": [
         "lecture-16"
       ],
@@ -2219,6 +2291,78 @@
           "tags": [
             "Post-lecture 16 quiz: Advanced techniques"
           ]
+        },
+        {
+          "id": "post-lecture-16-q06",
+          "moduleId": "tnm-staging",
+          "prompt": "A community teaching hospital has just obtained a mediastinal cryobiopsy system. No bronchoscopist there has previously performed cpEBUS-guided cryobiopsy. Based on current evidence, how should this institution develop their cpEBUS-nodal cryobiopsy program?",
+          "type": "case-vignette",
+          "options": [
+            {
+              "id": "a",
+              "label": "Make cryobiopsy the default for all malignant nodes given its utility for molecular analysis",
+              "rationale": ""
+            },
+            {
+              "id": "b",
+              "label": "Restrict cryobiopsy to nodes larger than 2 cm",
+              "rationale": ""
+            },
+            {
+              "id": "c",
+              "label": "Use cryobiopsy when infection is suspected",
+              "rationale": ""
+            },
+            {
+              "id": "d",
+              "label": "Restrict cryobiopsy to cases with negative ROSE or prior nondiagnostic TBNA.",
+              "rationale": ""
+            }
+          ],
+          "correctOptionIds": [
+            "d"
+          ],
+          "explanation": "Mediastinal cryobiopsy should be selectively and carefully introduced into a new program. Contemporary guidance suggests that it should be performed by experienced operators and is best used in selected scenarios such as negative ROSE, prior nondiagnostic EBUS-TBNA, or when there is strong suspicion for lymphoma, granulomatous disease, or uncommon pathology where larger tissue fragments are likely to add value (option D correct). Option A is incorrect because cryobiopsy is not clearly superior to standard cpEBUS-TBNA for molecular analysis, given the latter techniques high performance in this setting. Option B is incorrect because node size alone is not the indication for making cryobiopsy first-line. Option C is incorrect because TBNA provides adequate material for culture processing. A thoughtful cryobiopsy implementation plan should start with patient selection, operator training, rescue-use cases, and institutional readiness rather than wholesale replacement of standard cpEBUS-TBNA.",
+          "difficulty": "intermediate",
+          "tags": [
+            "Post-lecture 16 quiz: Advanced techniques"
+          ]
+        },
+        {
+          "id": "post-lecture-16-q07",
+          "moduleId": "tnm-staging",
+          "prompt": "A 45-year-old woman with suspected stage I/II sarcoidosis has isolated station 4L, 5 and 7 lymphadenopathy. During a prior bronchoscopy, she had repeated agitation, continuous coughing, and intermittent desaturation despite adequate moderate sedation preventing completion of the procedure. Of the following options, which is the best next approach if moderate sedation must be used again?",
+          "type": "case-vignette",
+          "options": [
+            {
+              "id": "a",
+              "label": "EUS-B-FNA of station 4L and/or 7",
+              "rationale": ""
+            },
+            {
+              "id": "b",
+              "label": "cpEBUS with transvascular TBNA of station 5",
+              "rationale": ""
+            },
+            {
+              "id": "c",
+              "label": "cpEBUS using intranodal forceps or cryobiopsy of station 4L and/or 7",
+              "rationale": ""
+            },
+            {
+              "id": "d",
+              "label": "cpEBUS using a 19G needle of station 4L and/or 7",
+              "rationale": ""
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "For patients whose targets include stations 7 and 4L and have poor tolerance of airway bronchoscopy, EUS-B-FNA, is well supported by randomized data as a reasonable alternative with similar diagnostic yield and better procedural tolerance. Studies comparing EUS-B-FNA with EBUS-TBNA for mediastinal adenopathy and sarcoidosis show broadly comparable yield for these stations, while EUS-B often causes less cough, shorter procedure times, and less oxygen desaturation. Option B is incorrect because transvascular sampling is not a comfort strategy; it is a specialized salvage approach for an otherwise unreachable lesion. Option C is incorrect because intranodal forceps or cryobiopsy are adjunctive tissue-acquisition techniques and may be even more stimulating and poorly tolerated under moderate sedation than TBNA. Option D is incorrect for similar reasons.",
+          "difficulty": "intermediate",
+          "tags": [
+            "Post-lecture 16 quiz: Advanced techniques"
+          ]
         }
       ]
     },
@@ -2226,7 +2370,7 @@
       "id": "post-lecture-17-18",
       "kind": "post-lecture-quiz",
       "title": "Post-lecture 17-18 quiz: Complications and special scenarios",
-      "sourceFile": "Pre-course tests/Post-lecture 17-18 quiz-complications.doc",
+      "sourceFile": "Pre-course tests/updatedebuscoursequestions/Post-lecture 17-18 quiz-complications.doc",
       "requiredLectureIds": [
         "lecture-17",
         "lecture-18"
@@ -2406,7 +2550,43 @@
           "correctOptionIds": [
             "d"
           ],
-          "explanation": "Transient hypoxia is the most common immediate complication reported during EBUS-TBNA. As with routine bronchoscopy, the etiology is likely multifactorial, including sedation- and transient upper airway obstruction-related hypoventilation and regional atelectasis. The short-lived desaturation usually improves with airway repositioning, implementation of naso-oral adjuncts, supplemental oxygen and, when needed, lightening or reversal of sedation. Pneumothorax and pulmonary embolism are exceedingly rare during cpEBUS-TBNA (option A and B incorrect). While respiratory infection may be an underreported complication in real-world practice, it would develop within a few days after, not during, the procedure (option C incorrect). cpEBUS complications MCQs cpEBUS complications MCQs",
+          "explanation": "Transient hypoxia is the most common immediate complication reported during EBUS-TBNA. As with routine bronchoscopy, the etiology is likely multifactorial, including sedation- and transient upper airway obstruction-related hypoventilation and regional atelectasis. The short-lived desaturation usually improves with airway repositioning, implementation of naso-oral adjuncts, supplemental oxygen and, when needed, lightening or reversal of sedation. Pneumothorax and pulmonary embolism are exceedingly rare during cpEBUS-TBNA (option A and B incorrect). While respiratory infection may be an underreported complication in real-world practice, it would develop within a few days after, not during, the procedure (option C incorrect).",
+          "difficulty": "intermediate",
+          "tags": [
+            "Post-lecture 17-18 quiz: Complications and special scenarios"
+          ]
+        },
+        {
+          "id": "post-lecture-17-18-q06",
+          "moduleId": "tnm-staging",
+          "prompt": "A 64-year-old man undergoes EBUS-TBNA of a necrotic station 7 lymph node for lung cancer staging. Eight days later he presents with high fever, pleuritic chest pain, leukocytosis, and worsening retrosternal discomfort. 2-view CXR shows no new lung infiltrate or airspace disease, no pneumothorax or pleural effusion. However, there is subtle increased density and slight widening of the subcarinal space. What is the likely diagnosis?",
+          "type": "case-vignette",
+          "options": [
+            {
+              "id": "a",
+              "label": "Mediastinitis with abscess",
+              "rationale": ""
+            },
+            {
+              "id": "b",
+              "label": "Airway hemorrhage",
+              "rationale": ""
+            },
+            {
+              "id": "c",
+              "label": "Acute pulmonary embolism",
+              "rationale": ""
+            },
+            {
+              "id": "d",
+              "label": "Postprocedure inflammatory fever",
+              "rationale": ""
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "This presentation is consistent with delayed mediastinitis and mediastinal abscess formation after EBUS-TBNA. Infectious complications may declare themselves days to weeks after the procedure rather than immediately, and symptoms such as fever and chest pain should prompt urgent evaluation. Chest imaging should be performed if a diagnosis isn\u2019t obvious by physical exam and history. Necrotic or cystic mediastinal targets appear to carry higher infectious risk because inoculated material may be poorly cleared. Management commonly requires broad-spectrum antibiotics, and some patients need surgical or image-guided drainage. The other options are less likely. Airway hemorrhage does not present 10 days post-procedure and would not typically be accompanied by fever and pleurisy. Acute pulmonary embolism (option C) does not explain the suggestion of a new mediastinal fluid collection, and a high fever is uncommon. Transient inflammatory fever (option D) is usually early, self-limited, and not associated with progressive chest symptoms.",
           "difficulty": "intermediate",
           "tags": [
             "Post-lecture 17-18 quiz: Complications and special scenarios"
@@ -2681,7 +2861,7 @@
       "id": "post-test",
       "kind": "post-test",
       "title": "Final post-test",
-      "sourceFile": "Pre-course tests/Final_Post-test_EBUS 2026.docx",
+      "sourceFile": "Pre-course tests/updatedebuscoursequestions/Post-test_EBUS 2026.docx",
       "requiredLectureIds": [
         "lecture-20"
       ],
@@ -2752,7 +2932,7 @@
           "correctOptionIds": [
             "b"
           ],
-          "explanation": ": Aspirin can be safely continued for EBUS-TBNA, and clopidogrel may be continued when the patient's thrombotic risk is judged to exceed the bleeding risk, especially in patients with recent coronary stenting (option B correct). The overall bleeding risk of EBUS-TBNA is low, but the consequence of prematurely stopping dual antiplatelet therapy (DAPT) in the first weeks after drug-eluting stent placement can be catastrophic. Therefore, the plan should be individualized rather than applying a uniform DAPT interruption strategy. The other options are less appropriate because stopping aspirin and continuing clopidogrel alone (option A) is not the usual evidence-based default. Stopping both agents for 7 days (option C) may expose the patient to unnecessary stent thrombosis risk. Low-molecular-weight heparin does not substitute for P2Y12 inhibition (option D).",
+          "explanation": "Aspirin can be safely continued for EBUS-TBNA, and clopidogrel may be continued when the patient's thrombotic risk is judged to exceed the bleeding risk, especially in patients with recent coronary stenting (option B correct). The overall bleeding risk of EBUS-TBNA is low, but the consequence of prematurely stopping dual antiplatelet therapy (DAPT) in the first weeks after drug-eluting stent placement can be catastrophic. Therefore, the plan should be individualized rather than applying a uniform DAPT interruption strategy. The other options are less appropriate because stopping aspirin and continuing clopidogrel alone (option A) is not the usual evidence-based default. Stopping both agents for 7 days (option C) may expose the patient to unnecessary stent thrombosis risk. Low-molecular-weight heparin does not substitute for P2Y12 inhibition (option D).",
           "difficulty": "intermediate",
           "tags": [
             "Final post-test"
@@ -2762,7 +2942,7 @@
           "id": "post-test-q03",
           "moduleId": "tnm-staging",
           "prompt": "While imaging a right paratracheal node, multiple bright parallel lines at regular intervals suddenly appear on the EBUS monitor. Which next step is best?",
-          "type": "single-best-answer",
+          "type": "case-vignette",
           "options": [
             {
               "id": "a",
@@ -3194,7 +3374,7 @@
           "id": "post-test-q15",
           "moduleId": "tnm-staging",
           "prompt": "A 64-year-old man presenting with dyspnea, weight loss, facial plethora and hyponatremia is found to have SVC syndrome and right mainstem bronchial narrowing related to bulky mediastinal adenopathy and a central lung mass. EBUS-TBNA shows dispersed and loosely cohesive sheets of malignant cells with scant cytoplasm, nuclear molding, and frequent mitotic figures. Immunohistochemistry is positive for synaptophysin and TTF-1, and the Ki-67 proliferation index is very high. Which diagnosis is most likely?",
-          "type": "image-interpretation",
+          "type": "case-vignette",
           "options": [
             {
               "id": "a",
@@ -3544,7 +3724,7 @@
           "correctOptionIds": [
             "c"
           ],
-          "explanation": ": The logic behind comprehensive profiling on cpEBUS material is that advanced NSCLC may harbor several distinct actionable alterations, including point mutations, exon-skipping events, and gene fusions. A broad panel is preferred because it can evaluate multiple relevant biomarkers from the same small specimen rather than forcing the laboratory to spend tissue on separate sequential tests. This is especially important when the mediastinal aspirate is the only diagnostic material available. Option A is incorrect because it is too narrow for contemporary practice. Option B is incorrect because PD-L1 and lineage markers do not replace genomic profiling. Option D is incorrect because focusing on a single common driver would miss several less common but highly actionable targets.",
+          "explanation": "The logic behind comprehensive profiling on cpEBUS material is that advanced NSCLC may harbor several distinct actionable alterations, including point mutations, exon-skipping events, and gene fusions. A broad panel is preferred because it can evaluate multiple relevant biomarkers from the same small specimen rather than forcing the laboratory to spend tissue on separate sequential tests. This is especially important when the mediastinal aspirate is the only diagnostic material available. Option A is incorrect because it is too narrow for contemporary practice. Option B is incorrect because PD-L1 and lineage markers do not replace genomic profiling. Option D is incorrect because focusing on a single common driver would miss several less common but highly actionable targets.",
           "difficulty": "intermediate",
           "tags": [
             "Final post-test"
@@ -3626,7 +3806,7 @@
           "id": "post-test-q27",
           "moduleId": "tnm-staging",
           "prompt": "Which of the following best describes the current role of biomarkers in the assessment of suspected lung cancer and ability to reduce both unnecessary procedures and delays in diagnosis?",
-          "type": "case-vignette",
+          "type": "single-best-answer",
           "options": [
             {
               "id": "a",
@@ -3770,7 +3950,7 @@
           "id": "post-test-q31",
           "moduleId": "tnm-staging",
           "prompt": "During CP-EBUS the image of a subcarinal node becomes diffusely overbright, and contrast between the node and surrounding tissue is poor even though balloon contact is good and Doppler is turned off. Which adjustment is most likely to restore useful gray-scale contrast?",
-          "type": "image-interpretation",
+          "type": "case-vignette",
           "options": [
             {
               "id": "a",

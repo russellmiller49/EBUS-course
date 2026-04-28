@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 
 import { emptyProfileInput, LearnerProfileFields, validateProfileInput } from '@/features/account/LearnerProfileFields';
+import { useCourseVendorSessionActive } from '@/lib/adminSession';
+import { storeCourseVendorPasscode, validateCourseVendorPasscode } from '@/lib/access';
 import type { LearnerProfileInput } from '@/lib/auth';
 import { useAuth } from '@/lib/auth';
 import { getBrowserRecoverySessionTokens } from '@/lib/supabase';
 
-type AuthMode = 'sign-in' | 'sign-up' | 'recover' | 'reset-password';
+type AuthMode = 'sign-in' | 'sign-up' | 'recover' | 'reset-password' | 'vendor';
 
 function normalizeNextPath(candidate: string | null) {
   if (!candidate || !candidate.startsWith('/')) {
@@ -17,7 +19,7 @@ function normalizeNextPath(candidate: string | null) {
 }
 
 function getInitialMode(candidate: string | null): AuthMode {
-  if (candidate === 'sign-up' || candidate === 'recover' || candidate === 'reset-password') {
+  if (candidate === 'sign-up' || candidate === 'recover' || candidate === 'reset-password' || candidate === 'vendor') {
     return candidate;
   }
 
@@ -40,9 +42,11 @@ export function AuthPage() {
     user,
   } = useAuth();
   const [searchParams] = useSearchParams();
+  const vendorSessionActive = useCourseVendorSessionActive();
   const [mode, setMode] = useState<AuthMode>(() => getInitialMode(searchParams.get('mode')));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [vendorPasscode, setVendorPasscode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [signupProfile, setSignupProfile] = useState<LearnerProfileInput>(emptyProfileInput);
@@ -56,9 +60,10 @@ export function AuthPage() {
   const isPendingApproval = Boolean(user && profile?.approvalStatus === 'pending' && !isPasswordForm);
   const hasRecoverySessionTokens = Boolean(getBrowserRecoverySessionTokens());
   const isMissingRecoverySession = mode === 'reset-password' && !requiresPasswordSetup && !user && !hasRecoverySessionTokens;
+  const vendorRedirectPath = nextPath.startsWith('/auth') ? '/' : nextPath;
 
   useEffect(() => {
-    if (routeMode === 'sign-up' || routeMode === 'recover' || routeMode === 'reset-password') {
+    if (routeMode === 'sign-up' || routeMode === 'recover' || routeMode === 'reset-password' || routeMode === 'vendor') {
       setMode(routeMode);
     }
   }, [routeMode]);
@@ -68,8 +73,24 @@ export function AuthPage() {
     setMessage(null);
     setError(null);
     setPassword('');
+    setVendorPasscode('');
     setNewPassword('');
     setConfirmPassword('');
+  }
+
+  function handleVendorLogin(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nextPasscode = vendorPasscode.trim();
+
+    if (!validateCourseVendorPasscode(nextPasscode)) {
+      setError('Enter the sponsor preview password.');
+      return;
+    }
+
+    storeCourseVendorPasscode(nextPasscode);
+    setVendorPasscode('');
+    setMessage('Sponsor preview unlocked for this browser session.');
+    setError(null);
   }
 
   async function handleSignIn(event: React.FormEvent<HTMLFormElement>) {
@@ -181,6 +202,47 @@ export function AuthPage() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (mode === 'vendor') {
+    if (vendorSessionActive) {
+      return <Navigate replace to={vendorRedirectPath} />;
+    }
+
+    return (
+      <div className="page-stack">
+        <section className="hero-card auth-card">
+          <div className="eyebrow">Sponsor access</div>
+          <h2>Open sponsor preview</h2>
+          <p>Use the shared sponsor password to review the prep workspace with all course materials unlocked.</p>
+          {message ? <p className="auth-card__message">{message}</p> : null}
+          {error ? <p className="auth-card__error">{error}</p> : null}
+          <form className="auth-form" onSubmit={handleVendorLogin}>
+            <label className="field">
+              <span>Sponsor password</span>
+              <input
+                autoComplete="current-password"
+                onChange={(event) => {
+                  setVendorPasscode(event.target.value);
+                  setError(null);
+                }}
+                required
+                type="password"
+                value={vendorPasscode}
+              />
+            </label>
+            <div className="button-row button-row--wrap">
+              <button className="button" type="submit">
+                Unlock preview
+              </button>
+              <button className="button button--ghost" onClick={() => switchMode('sign-in')} type="button">
+                Learner sign in
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    );
   }
 
   if (!isSupabaseEnabled) {
@@ -398,6 +460,9 @@ export function AuthPage() {
               </button>
               <button className="button button--ghost" onClick={() => switchMode('recover')} type="button">
                 Forgot password
+              </button>
+              <button className="button button--ghost" onClick={() => switchMode('vendor')} type="button">
+                Vendor Login
               </button>
             </div>
           </form>

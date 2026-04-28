@@ -32,6 +32,11 @@ export interface CourseWorkflowStepModel extends CourseWorkflowStepDefinition {
 
 export interface CourseWorkflowOptions {
   admin?: boolean;
+  preview?: boolean;
+}
+
+function hasFullCoursePreviewAccess(options: CourseWorkflowOptions) {
+  return Boolean(options.admin || options.preview);
 }
 
 function lectureStep(lectureId: string): CourseWorkflowStepDefinition {
@@ -142,7 +147,7 @@ export function isCoursePretestUnlocked(
   state: Pick<LearnerProgressState, 'lectureWatchStatus' | 'pretest'>,
   options: CourseWorkflowOptions = {},
 ) {
-  if (options.admin) {
+  if (hasFullCoursePreviewAccess(options)) {
     return true;
   }
 
@@ -150,7 +155,7 @@ export function isCoursePretestUnlocked(
 }
 
 export function isPracticeGateUnlocked(state: Pick<LearnerProgressState, 'pretest'>, options: CourseWorkflowOptions = {}) {
-  if (options.admin) {
+  if (hasFullCoursePreviewAccess(options)) {
     return true;
   }
 
@@ -241,7 +246,7 @@ function getLockedReason(previousStep: CourseWorkflowStepDefinition | null) {
 }
 
 export function getCourseStepModels(state: LearnerProgressState, options: CourseWorkflowOptions = {}): CourseWorkflowStepModel[] {
-  if (options.admin) {
+  if (hasFullCoursePreviewAccess(options)) {
     return courseWorkflowSteps.map((step) => {
       const completed = isCourseStepComplete(state, step);
 

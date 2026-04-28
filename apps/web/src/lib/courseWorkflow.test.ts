@@ -113,4 +113,15 @@ describe('courseWorkflow', () => {
     expect(getLectureWorkflowStatus(state, 'lecture-20', { admin: true })?.unlocked).toBe(true);
     expect(getAssessmentWorkflowStatus(state, courseAssessments[0]!, { admin: true })?.unlocked).toBe(true);
   });
+
+  it('unlocks the full course workflow for sponsor preview without marking steps complete', () => {
+    const state = createInitialLearnerProgress();
+    const steps = getCourseStepModels(state, { preview: true });
+
+    expect(steps.every((step) => step.unlocked)).toBe(true);
+    expect(steps.find((step) => step.id === 'pretest')?.completed).toBe(false);
+    expect(isCoursePretestUnlocked(state, { preview: true })).toBe(true);
+    expect(getLectureWorkflowStatus(state, 'lecture-20', { preview: true })?.unlocked).toBe(true);
+    expect(getAssessmentWorkflowStatus(state, courseAssessments[0]!, { preview: true })?.unlocked).toBe(true);
+  });
 });
