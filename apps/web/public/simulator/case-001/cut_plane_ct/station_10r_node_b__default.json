@@ -1,0 +1,104 @@
+{
+  "calibration_points": [
+    {
+      "key": "main_carina",
+      "label": "Main carina",
+      "near_plane": true,
+      "out_of_plane_mm": 2.6382133625073907,
+      "pixel": [
+        216,
+        368
+      ],
+      "plane_mm": [
+        -10.60008115278339,
+        2.752408436026552
+      ],
+      "visible": true,
+      "world": [
+        -12.767176630104522,
+        1210.7629090195594,
+        157.77453819821739
+      ],
+      "world_lps": [
+        -12.767176630104522,
+        -157.77453819821739,
+        1210.7629090195594
+      ]
+    }
+  ],
+  "coordinate_frame": "web_xyz_mm_from_lps",
+  "display_lateral_axis_lps": [
+    0.6227139673800045,
+    -0.18691786197119417,
+    0.7597953854202936
+  ],
+  "engine": "localizer",
+  "engine_version": "localizer-v1",
+  "image": "cut_plane_ct/station_10r_node_b__default.png",
+  "image_size": [
+    768,
+    768
+  ],
+  "manifest_path": "tools/ebus-simulator/configs/3d_slicer_files.yaml",
+  "metadata": "cut_plane_ct/station_10r_node_b__default.json",
+  "plane_center": [
+    -22.87805568617643,
+    1214.6739031970696,
+    160.8358927427587
+  ],
+  "plane_center_lps": [
+    -22.87805568617643,
+    -160.8358927427587,
+    1214.6739031970696
+  ],
+  "plane_normal": [
+    0.3273468928740646,
+    -0.4699542289244284,
+    0.819748153057841
+  ],
+  "plane_normal_lps": [
+    0.3273468928740646,
+    -0.819748153057841,
+    -0.4699542289244284
+  ],
+  "raw_shaft_axis_lps": [
+    -0.6227139673800045,
+    0.18691786197119417,
+    -0.7597953854202936
+  ],
+  "schema_version": 1,
+  "slice_thickness_mm": 4.0,
+  "source_coordinate_frame": "LPS_mm",
+  "source_view_kind": "localizer_virtual",
+  "training_use": "Wide CT cut through the CP-EBUS fan plane for troubleshooting orientation; not clinically validated diagnostic ultrasound.",
+  "view_kind": "wide_ct_cut_plane",
+  "x_axis": [
+    -0.7106837035950314,
+    0.44928164330414566,
+    0.5413637210179272
+  ],
+  "x_axis_lps": [
+    -0.7106837035950314,
+    -0.5413637210179272,
+    0.44928164330414566
+  ],
+  "x_range_mm": [
+    -50.0,
+    90.0
+  ],
+  "y_axis": [
+    0.6227139673800045,
+    0.7597953854202936,
+    0.18691786197119417
+  ],
+  "y_axis_anatomical_direction": "cephalic",
+  "y_axis_lps": [
+    0.6227139673800045,
+    -0.18691786197119417,
+    0.7597953854202936
+  ],
+  "y_range_mm": [
+    -70.0,
+    70.0
+  ]
+}

@@ -37,6 +37,7 @@ FLAGGED_BRANCH_SHIFT_MM = (-4.0, 0.0, 4.0)
 FLAGGED_ROLL_DELTA_DEG = (0.0,)
 FLAGGED_AXIS_SIGN_OVERRIDES = ()
 OPTIMIZATION_EPSILON = 1e-9
+SUPERIOR_AXIS_LPS = np.asarray([0.0, 0.0, 1.0], dtype=np.float64)
 _LOCAL_POSE_OPTIMIZATION_CACHE: dict[tuple[object, ...], LocalPoseOptimizationResult] = {}
 
 AIRWAY_LUMEN_COLOR = np.asarray([0.22, 0.92, 0.94], dtype=np.float32)
@@ -269,6 +270,13 @@ def _normalize(vector: np.ndarray) -> np.ndarray | None:
     if norm <= OPTIMIZATION_EPSILON:
         return None
     return np.asarray(vector, dtype=np.float64) / norm
+
+
+def _cephalic_display_axis_lps(axis_lps: np.ndarray) -> np.ndarray:
+    axis = _normalize(np.asarray(axis_lps, dtype=np.float64))
+    if axis is None:
+        raise ValueError("Display axis is undefined.")
+    return axis if float(np.dot(axis, SUPERIOR_AXIS_LPS)) >= 0.0 else -axis
 
 
 def _project_perpendicular(vector: np.ndarray, axis: np.ndarray) -> np.ndarray:

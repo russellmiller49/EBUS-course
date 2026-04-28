@@ -123,6 +123,9 @@ export interface SimulatorCaseManifest {
   };
   color_map: Record<string, string>;
   sector_snapshots?: Record<string, string>;
+  sector_bmode_snapshots?: Record<string, SimulatorSectorBModeSnapshot>;
+  sector_ct_snapshots?: Record<string, SimulatorSectorCtSnapshot>;
+  cut_plane_ct_snapshots?: Record<string, SimulatorCutPlaneCtSnapshot>;
   notes?: Record<string, string>;
 }
 
@@ -183,6 +186,53 @@ export interface SimulatorSectorSnapshot {
     sector_angle_deg: number;
   };
   response: SimulatorVolumeSectorResponse;
+}
+
+export interface SimulatorSectorBModeSnapshot {
+  image: string;
+  metadata: string;
+  image_size: [number, number];
+  engine: 'physics';
+  engine_version: string;
+}
+
+export interface SimulatorSectorCtSnapshot {
+  image: string;
+  metadata: string;
+  image_size: [number, number];
+  engine: 'localizer';
+  engine_version: string;
+  view_kind: 'localizer_virtual' | string;
+}
+
+export interface SimulatorCutPlaneCalibrationPoint {
+  key: string;
+  label: string;
+  world: Vec3;
+  world_lps?: Vec3;
+  plane_mm: Vec2;
+  out_of_plane_mm: number;
+  near_plane?: boolean;
+  visible: boolean;
+  pixel?: Vec2;
+}
+
+export interface SimulatorCutPlaneCtSnapshot {
+  image: string;
+  metadata: string;
+  image_size: [number, number];
+  engine: 'localizer';
+  engine_version: string;
+  view_kind: 'wide_ct_cut_plane' | string;
+  coordinate_frame?: 'web_xyz_mm_from_lps' | 'LPS_mm' | string;
+  plane_center: Vec3;
+  x_axis: Vec3;
+  y_axis: Vec3;
+  plane_normal: Vec3;
+  x_range_mm: [number, number];
+  y_range_mm: [number, number];
+  y_axis_anatomical_direction?: 'cephalic' | string;
+  calibration_points?: SimulatorCutPlaneCalibrationPoint[];
 }
 
 export interface SimulatorSectorItem {

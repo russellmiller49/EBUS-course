@@ -32,6 +32,7 @@ from ebus_simulator.rendering import (
     _apply_contour_overlay,
     _build_cp_context_snapshot,
     _build_sector_grid,
+    _cephalic_display_axis_lps,
     _compose_cp_diagnostic_panel,
     _draw_cross_marker,
     _extract_local_mask_points,
@@ -248,6 +249,7 @@ def render_localizer_preset(
     original_contact_world = np.asarray(device_pose.contact_refinement.original_contact_world, dtype=np.float64)
     target_world = np.asarray(device_pose.target_world, dtype=np.float64)
     shaft_axis = np.asarray(device_pose.shaft_axis_world, dtype=np.float64)
+    display_axis = _cephalic_display_axis_lps(shaft_axis)
     probe_axis = np.asarray(device_pose.probe_axis_world, dtype=np.float64)
     lateral_axis = np.asarray(device_pose.lateral_axis_world, dtype=np.float64)
     station_local = _extract_local_mask_points(
@@ -303,7 +305,7 @@ def render_localizer_preset(
         inverse_affine_lps=render_context.ct_volume.inverse_affine_lps,
         origin_world=contact_world,
         depth_axis=probe_axis,
-        lateral_axis=shaft_axis,
+        lateral_axis=display_axis,
         thickness_axis=lateral_axis,
         depth_max_mm=resolved_source_oblique_size_mm,
         lateral_half_width_mm=(resolved_source_oblique_size_mm / 2.0),
@@ -363,7 +365,7 @@ def render_localizer_preset(
             inverse_affine_lps=mask_volume.inverse_affine_lps,
             origin_world=contact_world,
             depth_axis=probe_axis,
-            lateral_axis=shaft_axis,
+            lateral_axis=display_axis,
             thickness_axis=lateral_axis,
             depth_max_mm=resolved_source_oblique_size_mm,
             lateral_half_width_mm=(resolved_source_oblique_size_mm / 2.0),
@@ -426,7 +428,7 @@ def render_localizer_preset(
         contact_world=contact_world,
         target_world=target_world,
         probe_axis=probe_axis,
-        shaft_axis=shaft_axis,
+        shaft_axis=display_axis,
         max_depth_mm=resolved_max_depth_mm,
         sector_angle_deg=resolved_sector_angle_deg,
         width=resolved_width,
@@ -503,7 +505,7 @@ def render_localizer_preset(
     localizer_ct, _, _, _ = _sample_plane(
         render_context,
         x_axis=probe_axis,
-        y_axis=shaft_axis,
+        y_axis=display_axis,
         thickness_axis=lateral_axis,
         center_world=contact_world,
         x_min_mm=localizer_x_min_mm,
@@ -536,7 +538,7 @@ def render_localizer_preset(
         samples, _, _, _ = _sample_plane(
             render_context,
             x_axis=probe_axis,
-            y_axis=shaft_axis,
+            y_axis=display_axis,
             thickness_axis=lateral_axis,
             center_world=contact_world,
             x_min_mm=localizer_x_min_mm,
@@ -599,7 +601,7 @@ def render_localizer_preset(
         target_offset = target_world - contact_world
         row, column = _plane_point_to_pixel(
             float(np.dot(target_offset, probe_axis)),
-            float(np.dot(target_offset, shaft_axis)),
+            float(np.dot(target_offset, display_axis)),
             x_min_mm=localizer_x_min_mm,
             x_max_mm=localizer_x_max_mm,
             y_min_mm=localizer_y_min_mm,
@@ -633,7 +635,11 @@ def render_localizer_preset(
         panel_layout = ["virtual_ebus", "simulated_ebus", "wide_ct_localizer", "context_3d"]
         view_kind = "diagnostic_panel"
     else:
-        if overlay_config.virtual_ebus_enabled and (_overlay_summary(overlay_config) or overlay_config.mode == "debug"):
+        if overlay_config.virtual_ebus_enabled and (
+            not overlay_config.simulated_ebus_enabled
+            or _overlay_summary(overlay_config)
+            or overlay_config.mode == "debug"
+        ):
             output_image_uint8 = virtual_view
             view_kind = "localizer_virtual"
         else:
@@ -721,6 +727,7 @@ def render_localizer_preset(
             "nB": list(device_pose.shaft_axis_world),
             "nC": list(device_pose.video_axis_world),
             "nUS": list(device_pose.probe_axis_world),
+            "display_lateral": list(display_axis),
             "wall_normal": list(device_pose.wall_normal_world),
         },
         target_in_default_forward_hemisphere=pose.target_in_default_forward_hemisphere,

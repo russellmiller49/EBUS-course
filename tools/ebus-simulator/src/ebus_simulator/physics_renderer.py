@@ -36,6 +36,7 @@ from ebus_simulator.rendering import (
     _annotate_legend_and_labels,
     _apply_contour_overlay,
     _build_sector_grid,
+    _cephalic_display_axis_lps,
     _draw_cross_marker,
     _fan_target_row_col,
     _filter_mask_components,
@@ -537,6 +538,7 @@ def render_physics_preset(
     target_world = np.asarray(device_pose.target_world, dtype=np.float64)
     probe_axis = np.asarray(device_pose.probe_axis_world, dtype=np.float64)
     shaft_axis = np.asarray(device_pose.shaft_axis_world, dtype=np.float64)
+    display_axis = _cephalic_display_axis_lps(shaft_axis)
     lateral_axis = np.asarray(device_pose.lateral_axis_world, dtype=np.float64)
 
     ray_depth_grid_mm, ray_angle_grid_rad = _build_polar_grid(
@@ -547,7 +549,7 @@ def render_physics_preset(
     )
     ray_directions = (
         np.cos(ray_angle_grid_rad)[:, :, None] * probe_axis[None, None, :]
-        + np.sin(ray_angle_grid_rad)[:, :, None] * shaft_axis[None, None, :]
+        + np.sin(ray_angle_grid_rad)[:, :, None] * display_axis[None, None, :]
     )
     ray_points_world = contact_world[None, None, :] + ray_depth_grid_mm[:, :, None] * ray_directions
 
@@ -782,7 +784,7 @@ def render_physics_preset(
             contact_world=contact_world,
             target_world=target_world,
             probe_axis=probe_axis,
-            shaft_axis=shaft_axis,
+            shaft_axis=display_axis,
             max_depth_mm=resolved_max_depth_mm,
             sector_angle_deg=resolved_sector_angle_deg,
             width=resolved_width,
@@ -930,6 +932,7 @@ def render_physics_preset(
             "nB": list(device_pose.shaft_axis_world),
             "nC": list(device_pose.video_axis_world),
             "nUS": list(device_pose.probe_axis_world),
+            "display_lateral": list(display_axis),
             "wall_normal": list(device_pose.wall_normal_world),
         },
         target_in_default_forward_hemisphere=pose.target_in_default_forward_hemisphere,

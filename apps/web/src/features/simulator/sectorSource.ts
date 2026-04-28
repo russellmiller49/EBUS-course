@@ -29,6 +29,26 @@ export function shouldUseSnapshotSectorItems(source: SimulatorSectorSource) {
   return source === 'precomputed_volume_snapshot';
 }
 
+export function shouldUseBModeSnapshotSector({
+  atSnapshotPose,
+  hasBModeSnapshot,
+}: {
+  atSnapshotPose: boolean;
+  hasBModeSnapshot: boolean;
+}) {
+  return atSnapshotPose && hasBModeSnapshot;
+}
+
+export function shouldUseCtSnapshotSector({
+  atSnapshotPose,
+  hasCtSnapshot,
+}: {
+  atSnapshotPose: boolean;
+  hasCtSnapshot: boolean;
+}) {
+  return atSnapshotPose && hasCtSnapshot;
+}
+
 export function simulatorSectorSourceLabel(source: SimulatorSectorSource) {
   switch (source) {
     case 'precomputed_volume_snapshot':

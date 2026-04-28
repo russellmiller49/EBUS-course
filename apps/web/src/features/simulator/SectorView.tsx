@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 import { clamp } from './pose';
@@ -298,6 +298,8 @@ export function SectorView({
   caseData,
   items,
   selectedPreset,
+  sectorBackgroundImageUrl,
+  sectorBackgroundKind,
   setActiveStructure,
   source,
 }: {
@@ -305,13 +307,29 @@ export function SectorView({
   caseData: SimulatorCaseManifest;
   items: SimulatorSectorItem[];
   selectedPreset: SimulatorPreset;
+  sectorBackgroundImageUrl?: string | null;
+  sectorBackgroundKind?: 'ct' | 'bmode' | null;
   setActiveStructure: (value: string | null) => void;
   source: string;
 }) {
   const rasterCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [loadedBackgroundImageUrl, setLoadedBackgroundImageUrl] = useState<string | null>(null);
+  const [failedBackgroundImageUrl, setFailedBackgroundImageUrl] = useState<string | null>(null);
   const maxDepth = caseData.render_defaults.max_depth_mm;
   const halfTan = Math.tan(THREE.MathUtils.degToRad(caseData.render_defaults.sector_angle_deg / 2));
   const visibleItems = items.filter((item) => item.visible || item.kind === 'airway' || item.kind === 'contact');
+  const activeBackgroundImageUrl =
+    sectorBackgroundImageUrl &&
+    loadedBackgroundImageUrl === sectorBackgroundImageUrl &&
+    failedBackgroundImageUrl !== sectorBackgroundImageUrl
+      ? sectorBackgroundImageUrl
+      : null;
+  const sectorBackgroundActive = Boolean(activeBackgroundImageUrl);
+
+  useEffect(() => {
+    setLoadedBackgroundImageUrl(null);
+    setFailedBackgroundImageUrl(null);
+  }, [sectorBackgroundImageUrl]);
 
   function itemPosition(item: SimulatorSectorItem) {
     const depthRatio = clamp(item.depthMm / maxDepth, 0, 1);
@@ -467,6 +485,10 @@ export function SectorView({
 
       ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
       ctx.clearRect(0, 0, width, height);
+      if (activeBackgroundImageUrl) {
+        return;
+      }
+
       ctx.fillStyle = '#020303';
       ctx.fillRect(0, 0, width, height);
       const viewSize = Math.min(width, height);
@@ -487,7 +509,7 @@ export function SectorView({
     const observer = new ResizeObserver(draw);
     observer.observe(parent);
     return () => observer.disconnect();
-  }, [renderItems, maxDepth]);
+  }, [renderItems, maxDepth, activeBackgroundImageUrl]);
 
   return (
     <section className="simulator-sector-pane" aria-label="Labeled EBUS sector" data-sector-source={source}>
@@ -501,6 +523,21 @@ export function SectorView({
         <span className="simulator-chip">{selectedPreset.approach}</span>
       </div>
       <div className="simulator-sector-viewport">
+        {sectorBackgroundImageUrl && failedBackgroundImageUrl !== sectorBackgroundImageUrl ? (
+          <img
+            alt=""
+            aria-hidden="true"
+            className={
+              activeBackgroundImageUrl
+                ? 'simulator-sector-background-image simulator-sector-background-image--loaded'
+                : 'simulator-sector-background-image'
+            }
+            data-sector-background={sectorBackgroundKind ?? 'unknown'}
+            onError={() => setFailedBackgroundImageUrl(sectorBackgroundImageUrl)}
+            onLoad={() => setLoadedBackgroundImageUrl(sectorBackgroundImageUrl)}
+            src={sectorBackgroundImageUrl}
+          />
+        ) : null}
         <canvas
           ref={rasterCanvasRef}
           className="simulator-sector-raster-canvas"
@@ -582,10 +619,10 @@ export function SectorView({
                         key={`${item.id}-contour-${index}`}
                         d={contour.path}
                         fill={contour.closed ? item.color : 'none'}
-                        fillOpacity={contour.closed ? (active ? 0.98 : 0.92) : 0}
+                        fillOpacity={contour.closed ? (sectorBackgroundActive ? (active ? 0.2 : 0.07) : (active ? 0.98 : 0.92)) : 0}
                         stroke={strokeColor}
-                        strokeOpacity={active ? 0.95 : 0.7}
-                        strokeWidth={active ? 0.6 : 0.35}
+                        strokeOpacity={sectorBackgroundActive ? (active ? 0.98 : 0.72) : (active ? 0.95 : 0.7)}
+                        strokeWidth={sectorBackgroundActive ? (active ? 0.9 : 0.48) : (active ? 0.6 : 0.35)}
                         strokeLinejoin="round"
                         filter="url(#sectorEdgeSoften)"
                       />
@@ -598,10 +635,10 @@ export function SectorView({
                       ry={active ? shape.ry * 1.06 : shape.ry}
                       transform={`rotate(${shape.angleDeg.toFixed(1)} ${position.x.toFixed(2)} ${position.y.toFixed(2)})`}
                       fill={item.color}
-                      fillOpacity={active ? 0.98 : 0.92}
+                      fillOpacity={sectorBackgroundActive ? (active ? 0.2 : 0.07) : (active ? 0.98 : 0.92)}
                       stroke={strokeColor}
-                      strokeOpacity={active ? 0.95 : 0.7}
-                      strokeWidth={active ? 0.6 : 0.35}
+                      strokeOpacity={sectorBackgroundActive ? (active ? 0.98 : 0.72) : (active ? 0.95 : 0.7)}
+                      strokeWidth={sectorBackgroundActive ? (active ? 0.9 : 0.48) : (active ? 0.6 : 0.35)}
                       filter="url(#sectorEdgeSoften)"
                     />
                   )}

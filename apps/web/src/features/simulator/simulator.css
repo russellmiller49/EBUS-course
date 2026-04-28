@@ -213,6 +213,7 @@
   overflow: hidden;
 }
 
+.simulator-sector-background-image,
 .simulator-sector-raster-canvas,
 .simulator-sector-svg {
   position: absolute;
@@ -222,12 +223,23 @@
   display: block;
 }
 
+.simulator-sector-background-image {
+  z-index: 1;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.simulator-sector-background-image--loaded {
+  opacity: 1;
+}
+
 .simulator-sector-raster-canvas {
   z-index: 0;
 }
 
 .simulator-sector-svg {
-  z-index: 1;
+  z-index: 2;
   pointer-events: auto;
 }
 

@@ -3,9 +3,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLearnerProgress } from '@/lib/progress';
 
 import { AnatomyScene } from './AnatomyScene';
+import { simulatorCaseAssetUrl } from './paths';
 import { clamp, computeSimulatorPose, projectToSector, type SimulatorProbePose } from './pose';
 import { SectorView } from './SectorView';
-import { resolveSimulatorSectorSource, shouldUseSnapshotSectorItems, simulatorSectorSourceLabel } from './sectorSource';
+import {
+  resolveSimulatorSectorSource,
+  shouldUseBModeSnapshotSector,
+  shouldUseCtSnapshotSector,
+  shouldUseSnapshotSectorItems,
+  simulatorSectorSourceLabel,
+} from './sectorSource';
 import { formatSimulatorStation } from './stationIds';
 import './simulator.css';
 import type {
@@ -21,7 +28,7 @@ import type {
 } from './types';
 import { useSimulatorCase, useSimulatorSectorSnapshot } from './useSimulatorCase';
 
-const SIMULATOR_STATE_STORAGE_KEY = 'socal-ebus-prep:simulator-state:v2';
+const SIMULATOR_STATE_STORAGE_KEY = 'socal-ebus-prep:simulator-state:v3';
 const SNAP_TARGET_SLAB_HALF_THICKNESS_MM = 18;
 const LIVE_CAPTURE_HALF_THICKNESS_MM = {
   node: 6,
@@ -75,7 +82,7 @@ const DEFAULT_LAYERS: SimulatorLayerState = {
   context: false,
   centerline: false,
   fan: true,
-  cutPlane: false,
+  cutPlane: true,
 };
 
 const SIMULATOR_LAYER_LABELS: Record<keyof SimulatorLayerState, string> = {
@@ -720,18 +727,46 @@ export function SimulatorPage() {
   }, [activePolyline, sMm, selectedPreset]);
 
   const hasCurrentSnapshot = Boolean(selectedPreset && snapshot?.preset_key === selectedPreset.preset_key);
-  const atSnapshotPose = Boolean(
+  const atPresetSnapPose = Boolean(
     caseData &&
       selectedPreset &&
       activePolyline &&
-      hasCurrentSnapshot &&
       isAtSnapshotPose(selectedPreset, activePolyline.line_index, sMm, rollDeg, caseData),
   );
   const sectorSource = resolveSimulatorSectorSource({
-    atSnapshotPose,
+    atSnapshotPose: atPresetSnapPose,
     hasCurrentSnapshot,
     snapshotStatus,
   });
+  const selectedBModeSnapshot = selectedPreset
+    ? caseData?.sector_bmode_snapshots?.[selectedPreset.preset_key]
+    : null;
+  const selectedCtSnapshot = selectedPreset
+    ? caseData?.sector_ct_snapshots?.[selectedPreset.preset_key]
+    : null;
+  const selectedCutPlaneCtSnapshot = selectedPreset
+    ? caseData?.cut_plane_ct_snapshots?.[selectedPreset.preset_key]
+    : null;
+  const ctImageUrl = selectedCtSnapshot && shouldUseCtSnapshotSector({
+    atSnapshotPose: atPresetSnapPose,
+    hasCtSnapshot: Boolean(selectedCtSnapshot.image),
+  })
+    ? simulatorCaseAssetUrl(selectedCtSnapshot.image)
+    : null;
+  const cutPlaneCtImageUrl = selectedCutPlaneCtSnapshot && shouldUseCtSnapshotSector({
+    atSnapshotPose: atPresetSnapPose,
+    hasCtSnapshot: Boolean(selectedCutPlaneCtSnapshot.image),
+  })
+    ? simulatorCaseAssetUrl(selectedCutPlaneCtSnapshot.image)
+    : null;
+  const bModeImageUrl = !ctImageUrl && selectedBModeSnapshot && shouldUseBModeSnapshotSector({
+    atSnapshotPose: atPresetSnapPose,
+    hasBModeSnapshot: Boolean(selectedBModeSnapshot.image),
+  })
+    ? simulatorCaseAssetUrl(selectedBModeSnapshot.image)
+    : null;
+  const sectorBackgroundImageUrl = ctImageUrl ?? bModeImageUrl;
+  const sectorBackgroundKind = ctImageUrl ? 'ct' : bModeImageUrl ? 'bmode' : null;
 
   const sectorItems = useMemo<SimulatorSectorItem[]>(() => {
     if (!caseData || !assets || !pose || !selectedPreset || !activePolyline) {
@@ -847,7 +882,13 @@ export function SimulatorPage() {
         <div className="simulator-status-strip">
           <span>{selectedPreset.approach}</span>
           <span>{Math.round(sMm)} mm</span>
-          <span>{simulatorSectorSourceLabel(sectorSource)}</span>
+          <span>
+            {sectorBackgroundKind === 'ct'
+              ? 'CT fan-plane'
+              : sectorBackgroundKind === 'bmode'
+                ? 'CT-derived B-mode'
+                : simulatorSectorSourceLabel(sectorSource)}
+          </span>
         </div>
       </section>
 
@@ -932,6 +973,8 @@ export function SimulatorPage() {
             layers={layers}
             pose={pose}
             selectedPreset={selectedPreset}
+            ctCutPlaneImageUrl={cutPlaneCtImageUrl}
+            ctCutPlaneSnapshot={selectedCutPlaneCtSnapshot ?? null}
             teachingView={teachingView}
           />
         </section>
@@ -941,6 +984,8 @@ export function SimulatorPage() {
           caseData={caseData}
           items={sectorItems}
           selectedPreset={selectedPreset}
+          sectorBackgroundImageUrl={sectorBackgroundImageUrl}
+          sectorBackgroundKind={sectorBackgroundKind}
           setActiveStructure={setActiveStructure}
           source={sectorSource}
         />

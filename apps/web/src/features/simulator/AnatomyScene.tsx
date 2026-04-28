@@ -8,6 +8,8 @@ import { cephalicImageAxis, sectorPlaneNormal, toVector, type SimulatorProbePose
 import type {
   SimulatorCaseManifest,
   SimulatorCleanModelAsset,
+  SimulatorCutPlaneCalibrationPoint,
+  SimulatorCutPlaneCtSnapshot,
   SimulatorLayerState,
   SimulatorLoadedAssets,
   SimulatorPreset,
@@ -214,6 +216,118 @@ function disposeMaterial(material: THREE.Material | THREE.Material[] | undefined
   material?.dispose();
 }
 
+function createFanGeometry(apex: THREE.Vector3, left: THREE.Vector3, right: THREE.Vector3): THREE.BufferGeometry {
+  const geometry = new THREE.BufferGeometry().setFromPoints([apex, left, right]);
+  geometry.setIndex([0, 1, 2]);
+  geometry.setAttribute(
+    'uv',
+    new THREE.Float32BufferAttribute(
+      [
+        0.5, 0.93,
+        0.1, 0.08,
+        0.9, 0.08,
+      ],
+      2,
+    ),
+  );
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function lpsToWebVector(vector: THREE.Vector3): THREE.Vector3 {
+  return new THREE.Vector3(vector.x, vector.z, -vector.y);
+}
+
+function cutPlaneSnapshotVector(snapshot: SimulatorCutPlaneCtSnapshot, value: [number, number, number]): THREE.Vector3 {
+  const vector = toVector(value);
+  return snapshot.coordinate_frame === 'web_xyz_mm_from_lps' ? vector : lpsToWebVector(vector);
+}
+
+function cutPlaneBasis(snapshot: SimulatorCutPlaneCtSnapshot) {
+  return {
+    center: cutPlaneSnapshotVector(snapshot, snapshot.plane_center),
+    xAxis: cutPlaneSnapshotVector(snapshot, snapshot.x_axis).normalize(),
+    yAxis: cutPlaneSnapshotVector(snapshot, snapshot.y_axis).normalize(),
+  };
+}
+
+function cutPlanePointAt(snapshot: SimulatorCutPlaneCtSnapshot, xMm: number, yMm: number): THREE.Vector3 {
+  const { center, xAxis, yAxis } = cutPlaneBasis(snapshot);
+  return center.clone().add(xAxis.clone().multiplyScalar(xMm)).add(yAxis.clone().multiplyScalar(yMm));
+}
+
+function cutPlaneCorners(snapshot: SimulatorCutPlaneCtSnapshot): THREE.Vector3[] {
+  const { center, xAxis, yAxis } = cutPlaneBasis(snapshot);
+  const [xMin, xMax] = snapshot.x_range_mm;
+  const [yMin, yMax] = snapshot.y_range_mm;
+
+  return [
+    center.clone().add(xAxis.clone().multiplyScalar(xMin)).add(yAxis.clone().multiplyScalar(yMin)),
+    center.clone().add(xAxis.clone().multiplyScalar(xMax)).add(yAxis.clone().multiplyScalar(yMin)),
+    center.clone().add(xAxis.clone().multiplyScalar(xMax)).add(yAxis.clone().multiplyScalar(yMax)),
+    center.clone().add(xAxis.clone().multiplyScalar(xMin)).add(yAxis.clone().multiplyScalar(yMax)),
+  ];
+}
+
+function createCutPlaneGeometry(snapshot: SimulatorCutPlaneCtSnapshot): THREE.BufferGeometry {
+  const [bottomLeft, bottomRight, topRight, topLeft] = cutPlaneCorners(snapshot);
+  const geometry = new THREE.BufferGeometry().setFromPoints([bottomLeft, bottomRight, topRight, topLeft]);
+  geometry.setIndex([0, 1, 2, 0, 2, 3]);
+  geometry.setAttribute(
+    'uv',
+    new THREE.Float32BufferAttribute(
+      [
+        0, 0,
+        1, 0,
+        1, 1,
+        0, 1,
+      ],
+      2,
+    ),
+  );
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function createCutPlaneFrameGeometry(snapshot: SimulatorCutPlaneCtSnapshot): THREE.BufferGeometry {
+  return new THREE.BufferGeometry().setFromPoints(cutPlaneCorners(snapshot));
+}
+
+function createCutPlaneCrosshairGeometry(snapshot: SimulatorCutPlaneCtSnapshot, halfLengthMm: number): THREE.BufferGeometry {
+  const { center, xAxis, yAxis } = cutPlaneBasis(snapshot);
+  return new THREE.BufferGeometry().setFromPoints([
+    center.clone().add(xAxis.clone().multiplyScalar(-halfLengthMm)),
+    center.clone().add(xAxis.clone().multiplyScalar(halfLengthMm)),
+    center.clone().add(yAxis.clone().multiplyScalar(-halfLengthMm)),
+    center.clone().add(yAxis.clone().multiplyScalar(halfLengthMm)),
+  ]);
+}
+
+function createCutPlaneCalibrationGeometry(
+  snapshot: SimulatorCutPlaneCtSnapshot,
+  point: SimulatorCutPlaneCalibrationPoint,
+  halfLengthMm: number,
+): THREE.BufferGeometry {
+  const { xAxis, yAxis } = cutPlaneBasis(snapshot);
+  const center = cutPlanePointAt(snapshot, point.plane_mm[0], point.plane_mm[1]);
+  return new THREE.BufferGeometry().setFromPoints([
+    center.clone().add(xAxis.clone().multiplyScalar(-halfLengthMm)),
+    center.clone().add(xAxis.clone().multiplyScalar(halfLengthMm)),
+    center.clone().add(yAxis.clone().multiplyScalar(-halfLengthMm)),
+    center.clone().add(yAxis.clone().multiplyScalar(halfLengthMm)),
+  ]);
+}
+
+function createCutPlaneLineMaterial(color: string, opacity: number): THREE.LineBasicMaterial {
+  return new THREE.LineBasicMaterial({
+    color,
+    depthTest: false,
+    depthWrite: false,
+    opacity,
+    transparent: true,
+  });
+}
+
 function axisVector(axis: string | undefined, fallback: THREE.Vector3): THREE.Vector3 {
   const normalized = axis?.trim().toLowerCase();
   const sign = normalized?.startsWith('-') ? -1 : 1;
@@ -322,6 +436,8 @@ export function AnatomyScene({
   layers,
   pose,
   selectedPreset,
+  ctCutPlaneImageUrl,
+  ctCutPlaneSnapshot,
   teachingView,
 }: {
   activeStructure: string | null;
@@ -332,6 +448,8 @@ export function AnatomyScene({
   layers: SimulatorLayerState;
   pose: SimulatorProbePose;
   selectedPreset: SimulatorPreset;
+  ctCutPlaneImageUrl?: string | null;
+  ctCutPlaneSnapshot?: SimulatorCutPlaneCtSnapshot | null;
   teachingView: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -392,6 +510,7 @@ export function AnatomyScene({
 
     const cleanModel = primaryCleanModel(caseData);
     let cancelled = false;
+    let ctCutPlaneTexture: THREE.Texture | null = null;
 
     if (cleanModel) {
       loadGlbModel(cleanModel)
@@ -594,7 +713,7 @@ export function AnatomyScene({
     }
     scene.add(scopeGroup);
 
-    if (layers.fan) {
+    if (layers.fan || (layers.cutPlane && ctCutPlaneImageUrl)) {
       const maxDepth = caseData.render_defaults.max_depth_mm;
       const fanDepth = maxDepth;
       const halfWidth = fanDepth * Math.tan(THREE.MathUtils.degToRad(caseData.render_defaults.sector_angle_deg / 2));
@@ -603,21 +722,102 @@ export function AnatomyScene({
       const farCenter = apex.clone().add(pose.depthAxis.clone().multiplyScalar(fanDepth));
       const left = farCenter.clone().add(imageAxis.clone().multiplyScalar(-halfWidth));
       const right = farCenter.clone().add(imageAxis.clone().multiplyScalar(halfWidth));
-      const fanGeometry = new THREE.BufferGeometry().setFromPoints([apex, left, right]);
-      fanGeometry.setIndex([0, 1, 2]);
-      fanGeometry.computeVertexNormals();
+      const fanGeometry = createFanGeometry(apex, left, right);
+
+      if (layers.cutPlane && ctCutPlaneImageUrl && ctCutPlaneSnapshot) {
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.load(
+          ctCutPlaneImageUrl,
+          (texture) => {
+            if (cancelled) {
+              texture.dispose();
+              return;
+            }
+
+            ctCutPlaneTexture = texture;
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.needsUpdate = true;
+
+            const ctCutPlane = new THREE.Mesh(
+              createCutPlaneGeometry(ctCutPlaneSnapshot),
+              new THREE.MeshBasicMaterial({
+                color: '#ffffff',
+                depthTest: false,
+                depthWrite: false,
+                map: texture,
+                opacity: 0.86,
+                side: THREE.DoubleSide,
+                transparent: true,
+              }),
+            );
+            ctCutPlane.name = 'ct-cut-plane-wide-texture';
+            ctCutPlane.renderOrder = 20;
+            ctCutPlane.userData.generatedMaterial = true;
+            scene.add(ctCutPlane);
+
+            const frame = new THREE.LineLoop(
+              createCutPlaneFrameGeometry(ctCutPlaneSnapshot),
+              createCutPlaneLineMaterial('#f8fbff', 0.94),
+            );
+            frame.name = 'ct-cut-plane-wide-frame';
+            frame.renderOrder = 21;
+            frame.userData.generatedMaterial = true;
+            scene.add(frame);
+
+            const centerCrosshair = new THREE.LineSegments(
+              createCutPlaneCrosshairGeometry(ctCutPlaneSnapshot, 7),
+              createCutPlaneLineMaterial('#66ecff', 0.95),
+            );
+            centerCrosshair.name = 'ct-cut-plane-contact-crosshair';
+            centerCrosshair.renderOrder = 22;
+            centerCrosshair.userData.generatedMaterial = true;
+            scene.add(centerCrosshair);
+
+            const visibleCalibrationPoints = (ctCutPlaneSnapshot.calibration_points ?? []).filter(
+              (point) => point.visible,
+            );
+            visibleCalibrationPoints.forEach((point) => {
+              const marker = new THREE.LineSegments(
+                createCutPlaneCalibrationGeometry(ctCutPlaneSnapshot, point, 9),
+                createCutPlaneLineMaterial('#ffe14a', point.near_plane === false ? 0.72 : 0.96),
+              );
+              marker.name = `ct-cut-plane-calibration:${point.key}`;
+              marker.renderOrder = 23;
+              marker.userData.generatedMaterial = true;
+              scene.add(marker);
+            });
+
+            container.dataset.ctCutPlane = 'loaded';
+            container.dataset.ctCutPlaneCoordinateFrame = ctCutPlaneSnapshot.coordinate_frame ?? 'LPS_mm';
+            container.dataset.ctCutPlaneFrame = `${ctCutPlaneSnapshot.x_range_mm.join(',')};${ctCutPlaneSnapshot.y_range_mm.join(',')}`;
+            container.dataset.ctCutPlaneYAxis = ctCutPlaneSnapshot.y_axis_anatomical_direction ?? 'unknown';
+            container.dataset.ctCutPlaneCalibration = visibleCalibrationPoints.map((point) => point.key).join(',');
+          },
+          undefined,
+          () => {
+            container.dataset.ctCutPlane = 'error';
+          },
+        );
+      } else {
+        container.dataset.ctCutPlane = 'off';
+      }
+
       const fan = new THREE.Mesh(
         fanGeometry,
         new THREE.MeshBasicMaterial({
           color: '#8bd4ff',
           depthWrite: false,
-          opacity: layers.cutPlane ? 0.12 : 0.18,
+          opacity: layers.cutPlane && ctCutPlaneImageUrl ? 0.1 : layers.cutPlane ? 0.12 : 0.18,
           side: THREE.DoubleSide,
           transparent: true,
         }),
       );
       fan.renderOrder = 5;
-      scene.add(fan);
+      if (layers.fan) {
+        scene.add(fan);
+      }
       const fanEdge = new THREE.Line(
         new THREE.BufferGeometry().setFromPoints([apex, left, right, apex]),
         new THREE.LineBasicMaterial({ color: '#bfe7ff', opacity: 0.72, transparent: true }),
@@ -649,6 +849,7 @@ export function AnatomyScene({
       resizeObserver.disconnect();
       controls.dispose();
       renderer.dispose();
+      ctCutPlaneTexture?.dispose();
       scene.traverse((object) => {
         const mesh = object as THREE.Mesh;
         if (mesh.geometry && !mesh.userData.sharedAssetGeometry) {
@@ -659,12 +860,25 @@ export function AnatomyScene({
         }
       });
     };
-  }, [activeStructure, assets, cameraPose, caseData, intersectedStructureIds, layers, pose, selectedPreset, teachingView]);
+  }, [
+    activeStructure,
+    assets,
+    cameraPose,
+    caseData,
+    intersectedStructureIds,
+    layers,
+    pose,
+    selectedPreset,
+    ctCutPlaneImageUrl,
+    ctCutPlaneSnapshot,
+    teachingView,
+  ]);
 
   return (
     <div
       className="simulator-scene-canvas"
       data-clean-model={primaryCleanModel(caseData)?.asset ?? ''}
+      data-ct-cut-plane-image={ctCutPlaneImageUrl ?? ''}
       data-fan-depth-axis={pose.depthAxis.toArray().map((value) => value.toFixed(3)).join(',')}
       data-fan-image-axis={cephalicImageAxis(pose).toArray().map((value) => value.toFixed(3)).join(',')}
       data-scope-model={caseData.assets.scope_model?.asset ?? ''}

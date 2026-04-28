@@ -564,6 +564,1096 @@
     "source": "LPS_mm",
     "web": "x=L, y=S, z=-P"
   },
+  "cut_plane_ct_snapshots": {
+    "station_10r_node_a::default": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": false,
+          "out_of_plane_mm": 4.912343625312321,
+          "pixel": [
+            249,
+            333
+          ],
+          "plane_mm": [
+            -4.625923566509016,
+            9.23966316456993
+          ],
+          "visible": true,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_10r_node_a__default.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_10r_node_a__default.json",
+      "plane_center": [
+        -22.81863012355642,
+        1206.9521748879158,
+        161.69222274115097
+      ],
+      "plane_normal": [
+        0.6781673257009475,
+        -0.7067679934463823,
+        -0.20141519751845843
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        0.014882020999226036,
+        -0.26080537835537254,
+        0.9652766857600413
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        0.7347568331105221,
+        0.657616573742394,
+        0.16635154984763686
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    },
+    "station_10r_node_b::default": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": true,
+          "out_of_plane_mm": 2.6382133625073907,
+          "pixel": [
+            216,
+            368
+          ],
+          "plane_mm": [
+            -10.60008115278339,
+            2.752408436026552
+          ],
+          "visible": true,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_10r_node_b__default.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_10r_node_b__default.json",
+      "plane_center": [
+        -22.87805568617643,
+        1214.6739031970696,
+        160.8358927427587
+      ],
+      "plane_normal": [
+        0.3273468928740646,
+        -0.4699542289244284,
+        0.819748153057841
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        -0.7106837035950314,
+        0.44928164330414566,
+        0.5413637210179272
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        0.6227139673800045,
+        0.7597953854202936,
+        0.18691786197119417
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    },
+    "station_11l_node_a::default": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": false,
+          "out_of_plane_mm": -7.260922862723191,
+          "pixel": [
+            220,
+            86
+          ],
+          "plane_mm": [
+            -9.856033385967853,
+            54.30693014597577
+          ],
+          "visible": true,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_11l_node_a__default.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_11l_node_a__default.json",
+      "plane_center": [
+        26.991286255460977,
+        1176.1195339554258,
+        139.93620167413252
+      ],
+      "plane_normal": [
+        0.4750277005687381,
+        0.644229663020059,
+        -0.5994304171273248
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        0.6925305315145985,
+        0.146578866546666,
+        0.7063399314791728
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        -0.5429089671505575,
+        0.7506548988496351,
+        0.37651968902111743
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    },
+    "station_11ri_node_a::default": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": true,
+          "out_of_plane_mm": 0.9461494061027231,
+          "pixel": [
+            186,
+            94
+          ],
+          "plane_mm": [
+            -16.069768074332615,
+            52.926522255638886
+          ],
+          "visible": true,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_11ri_node_a__default.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_11ri_node_a__default.json",
+      "plane_center": [
+        -47.52250245859467,
+        1170.7944557653882,
+        141.80771403801688
+      ],
+      "plane_normal": [
+        0.5850115901005636,
+        -0.6684881789615917,
+        0.45922216196153387
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        -0.6818105305697554,
+        -0.09874090701192231,
+        0.7248342111729079
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        0.43919908908398125,
+        0.737138920333934,
+        0.5135468549964289
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    },
+    "station_11rs_node_a::default": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": false,
+          "out_of_plane_mm": 10.946943755198095,
+          "pixel": [
+            250,
+            479
+          ],
+          "plane_mm": [
+            -4.301225953511668,
+            -17.445905243981397
+          ],
+          "visible": true,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_11rs_node_a__default.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_11rs_node_a__default.json",
+      "plane_center": [
+        -33.33319590764664,
+        1210.2811660304033,
+        153.35837393125726
+      ],
+      "plane_normal": [
+        0.3576545828560749,
+        0.5523506736085695,
+        0.7529886670635931
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        -0.33403216475134234,
+        -0.6773096441436058,
+        0.6554953538062601
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        -0.8720697863551857,
+        0.48596335182215294,
+        0.05774000703324531
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    },
+    "station_11rs_node_b::default": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": false,
+          "out_of_plane_mm": 11.077797896659474,
+          "pixel": [
+            242,
+            260
+          ],
+          "plane_mm": [
+            -5.782287133130226,
+            22.52928765846592
+          ],
+          "visible": true,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_11rs_node_b__default.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_11rs_node_b__default.json",
+      "plane_center": [
+        -31.49674674007004,
+        1195.313700299779,
+        149.15790274372318
+      ],
+      "plane_normal": [
+        0.701809262510426,
+        -0.4443321663679052,
+        0.5568057874927096
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        -0.6347530412458487,
+        -0.0352704132150964,
+        0.7719096932807505
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        0.323345536050396,
+        0.8951675395602997,
+        0.30679429661230895
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    },
+    "station_2l_node_a::default": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": true,
+          "out_of_plane_mm": -1.882165835387891,
+          "pixel": [
+            280,
+            597
+          ],
+          "plane_mm": [
+            1.1424606469916272,
+            -38.8908295149224
+          ],
+          "visible": true,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_2l_node_a__default.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_2l_node_a__default.json",
+      "plane_center": [
+        -3.4246162375752753,
+        1246.6103342772133,
+        169.81708994730482
+      ],
+      "plane_normal": [
+        -0.13676196725633283,
+        0.3935422746201377,
+        -0.9090768077555307
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        0.951724767354572,
+        -0.20237799226521286,
+        -0.23078803142838075
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        0.2748019860118619,
+        0.8967539385659311,
+        0.3468663174054622
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    },
+    "station_2r_node_a::default": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": true,
+          "out_of_plane_mm": 1.58931413999046,
+          "pixel": [
+            261,
+            792
+          ],
+          "plane_mm": [
+            -2.3445715566483916,
+            -74.57581503557464
+          ],
+          "visible": false,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_2r_node_a__default.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_2r_node_a__default.json",
+      "plane_center": [
+        -9.39837405999224,
+        1282.9947772408584,
+        176.23486067493909
+      ],
+      "plane_normal": [
+        -0.6789299325868807,
+        -0.1727133783807567,
+        0.7135994924086476
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        -0.7322348170922365,
+        0.23040323623293896,
+        -0.6408950938892322
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        0.0537244755718734,
+        0.9576452566904377,
+        0.28289440267144395
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    },
+    "station_4l_node_a::default": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": false,
+          "out_of_plane_mm": -4.04838106636157,
+          "pixel": [
+            289,
+            350
+          ],
+          "plane_mm": [
+            2.7355331388105033,
+            6.064632835039309
+          ],
+          "visible": true,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_4l_node_a__default.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_4l_node_a__default.json",
+      "plane_center": [
+        -7.73685811154497,
+        1208.1670989091544,
+        152.4257095686576
+      ],
+      "plane_normal": [
+        0.7193516694265768,
+        0.5899833931848746,
+        -0.36667802151105106
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        0.43188763799784374,
+        0.03357491462509015,
+        0.9013022762938977
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        -0.5440645585202555,
+        0.8067170017261194,
+        0.23065436325415523
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    },
+    "station_4l_node_b::default": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": true,
+          "out_of_plane_mm": -2.5759589270471164,
+          "pixel": [
+            226,
+            377
+          ],
+          "plane_mm": [
+            -8.659197123040785,
+            1.1468867708142771
+          ],
+          "visible": true,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_4l_node_b__default.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_4l_node_b__default.json",
+      "plane_center": [
+        -4.689908484269838,
+        1213.334783582309,
+        161.10257200338617
+      ],
+      "plane_normal": [
+        0.470371645212054,
+        0.4813886658266694,
+        -0.7396049403527027
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        0.7265247988076615,
+        0.26448571903146173,
+        0.6341995120984387
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        -0.500911401445398,
+        0.8356507983853244,
+        0.2253342207920879
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    },
+    "station_4l_node_c::default": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": true,
+          "out_of_plane_mm": -0.8399362026994683,
+          "pixel": [
+            224,
+            351
+          ],
+          "plane_mm": [
+            -9.135472894101408,
+            5.942896050161771
+          ],
+          "visible": true,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_4l_node_c__default.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_4l_node_c__default.json",
+      "plane_center": [
+        -1.8401470551320385,
+        1210.6398261597844,
+        158.02997226760007
+      ],
+      "plane_normal": [
+        0.10242400231901644,
+        0.30164295568405786,
+        -0.9479033975227327
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        0.835809091847172,
+        0.49060569293126943,
+        0.24643298490468915
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        -0.53938157711824,
+        0.817506930459684,
+        0.2018661262218741
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    },
+    "station_4r_node_a::default": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": true,
+          "out_of_plane_mm": -0.5013297355379385,
+          "pixel": [
+            247,
+            448
+          ],
+          "plane_mm": [
+            -4.999312748524849,
+            -11.804264093501242
+          ],
+          "visible": true,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_4r_node_a__default.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_4r_node_a__default.json",
+      "plane_center": [
+        -14.740687400947015,
+        1219.6703742036466,
+        166.79381918297796
+      ],
+      "plane_normal": [
+        0.9698891039873134,
+        0.025969358992216945,
+        0.2421584571313167
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        -0.2129458241231862,
+        -0.39210050041437694,
+        0.8949364634225674
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        -0.11819137851460841,
+        0.9195557568567164,
+        0.3747639364673288
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    },
+    "station_4r_node_b::default": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": false,
+          "out_of_plane_mm": 7.16092058415137,
+          "pixel": [
+            234,
+            601
+          ],
+          "plane_mm": [
+            -7.378524448427905,
+            -39.66313409731804
+          ],
+          "visible": true,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_4r_node_b__default.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_4r_node_b__default.json",
+      "plane_center": [
+        -9.636363156573237,
+        1246.8590180116103,
+        176.90970309686261
+      ],
+      "plane_normal": [
+        0.946114377636968,
+        -0.31657856619489955,
+        0.06815860807406818
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        -0.1626692921437076,
+        -0.28261788706793384,
+        0.9453390033753615
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        0.2800112244573027,
+        0.9054861353633408,
+        0.3188864576031473
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    },
+    "station_4r_node_c::default": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": true,
+          "out_of_plane_mm": -1.1803267396345305,
+          "pixel": [
+            239,
+            670
+          ],
+          "plane_mm": [
+            -6.356203639858705,
+            -52.238885852960614
+          ],
+          "visible": true,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_4r_node_c__default.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_4r_node_c__default.json",
+      "plane_center": [
+        -11.35325264338869,
+        1259.5266175408028,
+        177.54313049249316
+      ],
+      "plane_normal": [
+        0.4410551313265507,
+        -0.3273523487938847,
+        0.835649933207468
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        -0.8886994945808983,
+        -0.029372839380714968,
+        0.45754829760187166
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        0.12523409864000787,
+        0.9444456977750715,
+        0.3038729084534902
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    },
+    "station_7_node_a::lms": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": true,
+          "out_of_plane_mm": -0.9081081819258912,
+          "pixel": [
+            323,
+            292
+          ],
+          "plane_mm": [
+            8.913975706555936,
+            16.773865302321443
+          ],
+          "visible": true,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_7_node_a__lms.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_7_node_a__lms.json",
+      "plane_center": [
+        -31.724918025766197,
+        1210.728067582357,
+        156.27486896900623
+      ],
+      "plane_normal": [
+        0.023621212896287103,
+        0.4059868760165108,
+        -0.9135735847777467
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        0.4986583767984052,
+        -0.7968168981148542,
+        -0.34120764078109644
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        0.8664766941759531,
+        0.44750138254644123,
+        0.22127053818557874
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    },
+    "station_7_node_a::rms": {
+      "calibration_points": [
+        {
+          "key": "main_carina",
+          "label": "Main carina",
+          "near_plane": true,
+          "out_of_plane_mm": 2.9472251086917565,
+          "pixel": [
+            310,
+            278
+          ],
+          "plane_mm": [
+            6.562808329180073,
+            19.30164289227925
+          ],
+          "visible": true,
+          "world": [
+            -12.767176630104522,
+            1210.7629090195594,
+            157.77453819821739
+          ],
+          "world_lps": [
+            -12.767176630104522,
+            -157.77453819821739,
+            1210.7629090195594
+          ]
+        }
+      ],
+      "coordinate_frame": "web_xyz_mm_from_lps",
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "cut_plane_ct/station_7_node_a__rms.png",
+      "image_size": [
+        768,
+        768
+      ],
+      "metadata": "cut_plane_ct/station_7_node_a__rms.json",
+      "plane_center": [
+        -28.07447116393732,
+        1197.4698879708417,
+        154.12867303329799
+      ],
+      "plane_normal": [
+        0.21626562483932282,
+        0.23273526977103987,
+        -0.9481895768871637
+      ],
+      "view_kind": "wide_ct_cut_plane",
+      "x_axis": [
+        0.8563931740605896,
+        -0.5115902927785986,
+        0.06975746380952166
+      ],
+      "x_range_mm": [
+        -50.0,
+        90.0
+      ],
+      "y_axis": [
+        0.468849561091067,
+        0.8271092228595381,
+        0.30995229072456415
+      ],
+      "y_axis_anatomical_direction": "cephalic",
+      "y_range_mm": [
+        -70.0,
+        70.0
+      ]
+    }
+  },
   "navigation": {
     "mode": "guided_centerline",
     "primary_line_index": 1,
@@ -572,10 +1662,13 @@
   "notes": {
     "clean_models": "GLB presentation meshes only; sector intersections still use source masks.",
     "course_export": "Static SoCal EBUS Prep learner asset. Sector snapshots are precomputed for station snaps; free navigation uses the browser point-cloud fallback.",
+    "cut_plane_ct_snapshots": "Wide CT cuts through the CP-EBUS fan plane for troubleshooting plane orientation only; not clinically validated diagnostic ultrasound.",
     "intent": "local anatomy-correlation teaching app",
     "mask_assets": "translucent point-cloud fallbacks for v1 browser performance",
     "navigation": "guided along exported centerline polylines with curated station snaps",
-    "scope_model": "GLB bronchoscope tip presentation model aligned to the active probe pose."
+    "scope_model": "GLB bronchoscope tip presentation model aligned to the active probe pose.",
+    "sector_bmode_snapshots": "CT-derived simulated CP-EBUS B-mode images for orientation training only; not clinically validated diagnostic ultrasound.",
+    "sector_ct_snapshots": "CT sampled in the CP-EBUS fan plane for orientation training only; shown as a temporary ultrasound correlate and not clinically validated diagnostic ultrasound."
   },
   "presets": [
     {
@@ -1668,6 +2761,346 @@
     "sector_angle_deg": 60.0
   },
   "schema_version": 1,
+  "sector_bmode_snapshots": {
+    "station_10r_node_a::default": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_10r_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_10r_node_a__default.json"
+    },
+    "station_10r_node_b::default": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_10r_node_b__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_10r_node_b__default.json"
+    },
+    "station_11l_node_a::default": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_11l_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_11l_node_a__default.json"
+    },
+    "station_11ri_node_a::default": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_11ri_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_11ri_node_a__default.json"
+    },
+    "station_11rs_node_a::default": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_11rs_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_11rs_node_a__default.json"
+    },
+    "station_11rs_node_b::default": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_11rs_node_b__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_11rs_node_b__default.json"
+    },
+    "station_2l_node_a::default": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_2l_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_2l_node_a__default.json"
+    },
+    "station_2r_node_a::default": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_2r_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_2r_node_a__default.json"
+    },
+    "station_4l_node_a::default": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_4l_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_4l_node_a__default.json"
+    },
+    "station_4l_node_b::default": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_4l_node_b__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_4l_node_b__default.json"
+    },
+    "station_4l_node_c::default": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_4l_node_c__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_4l_node_c__default.json"
+    },
+    "station_4r_node_a::default": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_4r_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_4r_node_a__default.json"
+    },
+    "station_4r_node_b::default": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_4r_node_b__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_4r_node_b__default.json"
+    },
+    "station_4r_node_c::default": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_4r_node_c__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_4r_node_c__default.json"
+    },
+    "station_7_node_a::lms": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_7_node_a__lms.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_7_node_a__lms.json"
+    },
+    "station_7_node_a::rms": {
+      "engine": "physics",
+      "engine_version": "physics-v1",
+      "image": "sector_bmode/station_7_node_a__rms.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_bmode/station_7_node_a__rms.json"
+    }
+  },
+  "sector_ct_snapshots": {
+    "station_10r_node_a::default": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_10r_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_10r_node_a__default.json",
+      "view_kind": "localizer_virtual"
+    },
+    "station_10r_node_b::default": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_10r_node_b__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_10r_node_b__default.json",
+      "view_kind": "localizer_virtual"
+    },
+    "station_11l_node_a::default": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_11l_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_11l_node_a__default.json",
+      "view_kind": "localizer_virtual"
+    },
+    "station_11ri_node_a::default": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_11ri_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_11ri_node_a__default.json",
+      "view_kind": "localizer_virtual"
+    },
+    "station_11rs_node_a::default": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_11rs_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_11rs_node_a__default.json",
+      "view_kind": "localizer_virtual"
+    },
+    "station_11rs_node_b::default": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_11rs_node_b__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_11rs_node_b__default.json",
+      "view_kind": "localizer_virtual"
+    },
+    "station_2l_node_a::default": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_2l_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_2l_node_a__default.json",
+      "view_kind": "localizer_virtual"
+    },
+    "station_2r_node_a::default": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_2r_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_2r_node_a__default.json",
+      "view_kind": "localizer_virtual"
+    },
+    "station_4l_node_a::default": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_4l_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_4l_node_a__default.json",
+      "view_kind": "localizer_virtual"
+    },
+    "station_4l_node_b::default": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_4l_node_b__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_4l_node_b__default.json",
+      "view_kind": "localizer_virtual"
+    },
+    "station_4l_node_c::default": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_4l_node_c__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_4l_node_c__default.json",
+      "view_kind": "localizer_virtual"
+    },
+    "station_4r_node_a::default": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_4r_node_a__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_4r_node_a__default.json",
+      "view_kind": "localizer_virtual"
+    },
+    "station_4r_node_b::default": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_4r_node_b__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_4r_node_b__default.json",
+      "view_kind": "localizer_virtual"
+    },
+    "station_4r_node_c::default": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_4r_node_c__default.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_4r_node_c__default.json",
+      "view_kind": "localizer_virtual"
+    },
+    "station_7_node_a::lms": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_7_node_a__lms.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_7_node_a__lms.json",
+      "view_kind": "localizer_virtual"
+    },
+    "station_7_node_a::rms": {
+      "engine": "localizer",
+      "engine_version": "localizer-v1",
+      "image": "sector_ct/station_7_node_a__rms.png",
+      "image_size": [
+        512,
+        512
+      ],
+      "metadata": "sector_ct/station_7_node_a__rms.json",
+      "view_kind": "localizer_virtual"
+    }
+  },
   "sector_snapshots": {
     "station_10r_node_a::default": "sector_snapshots/station_10r_node_a__default.json",
     "station_10r_node_b::default": "sector_snapshots/station_10r_node_b__default.json",

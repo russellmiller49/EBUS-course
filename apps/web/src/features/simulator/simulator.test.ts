@@ -7,6 +7,8 @@ import { simulatorCaseAssetUrl } from './paths';
 import { computeSimulatorPose, pointAtS } from './pose';
 import {
   resolveSimulatorSectorSource,
+  shouldUseBModeSnapshotSector,
+  shouldUseCtSnapshotSector,
   shouldUseSnapshotSectorItems,
   simulatorSectorSourceLabel,
 } from './sectorSource';
@@ -89,7 +91,15 @@ describe('simulator static assets', () => {
 
     expect(manifest.presets.length).toBeGreaterThan(0);
     expect(Object.keys(manifest.sector_snapshots ?? {}).length).toBe(manifest.presets.length);
+    expect(Object.keys(manifest.sector_bmode_snapshots ?? {}).length).toBe(manifest.presets.length);
+    expect(Object.keys(manifest.sector_ct_snapshots ?? {}).length).toBe(manifest.presets.length);
+    expect(Object.keys(manifest.cut_plane_ct_snapshots ?? {}).length).toBe(manifest.presets.length);
     expect(manifest.assets.scope_model?.asset).toContain('EBUS_tip.glb');
+
+    const twoLeftCutPlane = manifest.cut_plane_ct_snapshots?.['station_2l_node_a::default'];
+    expect(twoLeftCutPlane?.coordinate_frame).toBe('web_xyz_mm_from_lps');
+    expect(twoLeftCutPlane?.y_axis_anatomical_direction).toBe('cephalic');
+    expect(twoLeftCutPlane?.calibration_points?.some((point) => point.key === 'main_carina')).toBe(true);
   });
 
   it('builds base-aware URLs for static simulator assets', () => {
@@ -256,5 +266,17 @@ describe('simulator sector source selection', () => {
 
     expect(source).toBe('point_cloud_sector');
     expect(shouldUseSnapshotSectorItems(source)).toBe(false);
+  });
+
+  it('uses CT-derived B-mode only at the exact station snap pose', () => {
+    expect(shouldUseBModeSnapshotSector({ atSnapshotPose: true, hasBModeSnapshot: true })).toBe(true);
+    expect(shouldUseBModeSnapshotSector({ atSnapshotPose: false, hasBModeSnapshot: true })).toBe(false);
+    expect(shouldUseBModeSnapshotSector({ atSnapshotPose: true, hasBModeSnapshot: false })).toBe(false);
+  });
+
+  it('uses CT fan-plane snapshots only at the exact station snap pose', () => {
+    expect(shouldUseCtSnapshotSector({ atSnapshotPose: true, hasCtSnapshot: true })).toBe(true);
+    expect(shouldUseCtSnapshotSector({ atSnapshotPose: false, hasCtSnapshot: true })).toBe(false);
+    expect(shouldUseCtSnapshotSector({ atSnapshotPose: true, hasCtSnapshot: false })).toBe(false);
   });
 });
