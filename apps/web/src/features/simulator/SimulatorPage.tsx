@@ -61,8 +61,9 @@ const LIVE_NEAR_PLANE_SIGMA_MM = {
 } as const;
 const LIVE_PLANE_RENDER_RADIUS_PX = {
   node: 4.8,
-  vessel: 4.2,
+  vessel: 6.4,
 } as const;
+const LIVE_RASTER_MASK_SIZE = 320;
 const ROLL_MIN_DEG = -180;
 const ROLL_MAX_DEG = 180;
 
@@ -338,8 +339,8 @@ function rasterMaskFromPlaneCrossingPoints(
     sectorAngleDeg: number;
   },
 ): SimulatorSectorRasterMask | null {
-  const width = 160;
-  const height = 160;
+  const width = LIVE_RASTER_MASK_SIZE;
+  const height = LIVE_RASTER_MASK_SIZE;
   const negative = new Float32Array(width * height);
   const positive = new Float32Array(width * height);
   const nearPlane = new Float32Array(width * height);
@@ -347,7 +348,7 @@ function rasterMaskFromPlaneCrossingPoints(
   const searchSigmaMm = LIVE_PLANE_RENDER_SIGMA_MM[kind];
   const nearSigmaMm = LIVE_NEAR_PLANE_SIGMA_MM[kind];
   const epsilon = LIVE_PLANE_INTERSECTION_EPSILON_MM[kind];
-  const radius = LIVE_PLANE_RENDER_RADIUS_PX[kind];
+  const radius = LIVE_PLANE_RENDER_RADIUS_PX[kind] * (width / 160);
 
   for (const point of points) {
     const coordinates = rasterCoordinatesForProjectedPoint(point, width, height, maxDepthMm, sectorAngleDeg);

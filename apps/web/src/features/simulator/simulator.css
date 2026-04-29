@@ -169,6 +169,32 @@
   border-bottom: 1px solid rgba(222, 232, 226, 0.14);
 }
 
+.simulator-sector-header-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.simulator-sector-style-toggle {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: #222a2c;
+  color: #d9e5e1;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.simulator-sector-style-toggle[aria-pressed='true'] {
+  border-color: rgba(139, 212, 255, 0.55);
+  background: rgba(139, 212, 255, 0.12);
+  color: #d9f0ee;
+}
+
 .simulator-button {
   min-width: 64px;
   min-height: 36px;

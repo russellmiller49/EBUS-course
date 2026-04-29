@@ -98,6 +98,7 @@ export interface SimulatorCaseManifest {
     sector_angle_deg: number;
     max_depth_mm: number;
     roll_deg: number;
+    sector_realism?: 'classic' | 'realistic';
   };
   bounds: {
     min: Vec3;
