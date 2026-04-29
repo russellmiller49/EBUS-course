@@ -141,6 +141,12 @@ export interface SimulatorSectorRasterMask {
   source?: string;
   depth_samples?: number;
   lateral_samples?: number;
+  debug?: {
+    rawPointsMm?: Vec2[];
+    crossingPointsMm?: Vec2[];
+    hullsMm?: Vec2[][];
+    finalContoursMm?: Vec2[][];
+  };
 }
 
 export interface SimulatorVolumeSectorLabel {

@@ -1,23 +1,28 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 
 import { simulatorCaseAssetUrl } from './paths';
-import { computeSimulatorPose, pointAtS } from './pose';
+import { computeSimulatorPose, pointAtS, type SimulatorProbePose } from './pose';
 import {
   resolveSimulatorSectorSource,
   shouldUseSnapshotSectorItems,
   simulatorSectorSourceLabel,
 } from './sectorSource';
-import { buildPointCloudSectorItems } from './SimulatorPage';
+import { contourIsCloseable, hasUsableSectorContourGeometry } from './SectorView';
+import { buildPlaneIntersectionRasterMask, buildPointCloudSectorItems } from './SimulatorPage';
 import { normalizeSimulatorStationId } from './stationIds';
 import type {
   SimulatorCaseManifest,
   SimulatorCenterlinePolyline,
   SimulatorLoadedAssets,
   SimulatorPreset,
+  SimulatorSectorItem,
   SimulatorSectorSnapshot,
+  Vec2,
+  Vec3,
 } from './types';
 
 function readSimulatorJson<T>(path: string): T {
@@ -83,6 +88,84 @@ function liveMaskedSectorIds(
   return liveMaskedSectorItems(fixture, presetKey, sOffsetMm, rollDeg).map((item) => item.id);
 }
 
+function syntheticPlanePose(): SimulatorProbePose {
+  return {
+    position: new THREE.Vector3(0, 0, 0),
+    tangent: new THREE.Vector3(0, 1, 0),
+    depthAxis: new THREE.Vector3(0, 0, 1),
+    lateralAxis: new THREE.Vector3(1, 0, 0),
+  };
+}
+
+function sphereSurfacePoints(center: Vec3, radiusMm: number, rings = 16, segments = 32): Vec3[] {
+  const points: Vec3[] = [];
+
+  for (let ring = 1; ring < rings; ring += 1) {
+    const phi = (ring / rings) * Math.PI;
+    for (let segment = 0; segment < segments; segment += 1) {
+      const theta = ((segment + 0.37) / segments) * Math.PI * 2;
+      points.push([
+        center[0] + radiusMm * Math.sin(phi) * Math.cos(theta),
+        center[1] + radiusMm * Math.sin(phi) * Math.sin(theta),
+        center[2] + radiusMm * Math.cos(phi),
+      ]);
+    }
+  }
+
+  return points;
+}
+
+function cylinderAlongYSurfacePoints({
+  center,
+  halfLengthMm,
+  radiusMm,
+  axialSamples = 20,
+  radialSamples = 32,
+}: {
+  center: Vec3;
+  halfLengthMm: number;
+  radiusMm: number;
+  axialSamples?: number;
+  radialSamples?: number;
+}): Vec3[] {
+  const points: Vec3[] = [];
+
+  for (let axial = 0; axial < axialSamples; axial += 1) {
+    const y = center[1] - halfLengthMm + (2 * halfLengthMm * axial) / Math.max(axialSamples - 1, 1);
+    for (let radial = 0; radial < radialSamples; radial += 1) {
+      const theta = ((radial + 0.31) / radialSamples) * Math.PI * 2;
+      points.push([
+        center[0] + radiusMm * Math.cos(theta),
+        y,
+        center[2] + radiusMm * Math.sin(theta),
+      ]);
+    }
+  }
+
+  return points;
+}
+
+function alphaPixelCount(alpha: number[]) {
+  return alpha.filter((value) => value > 0).length;
+}
+
+function sectorItemWithContours(contoursMm: Vec2[] | Vec2[][]): SimulatorSectorItem {
+  const normalizedContours = Array.isArray(contoursMm[0]?.[0])
+    ? contoursMm as Vec2[][]
+    : [contoursMm as Vec2[]];
+
+  return {
+    id: 'test-structure',
+    label: 'test structure',
+    kind: 'vessel',
+    color: '#ffffff',
+    depthMm: 20,
+    lateralMm: 0,
+    visible: true,
+    contoursMm: normalizedContours,
+  };
+}
+
 describe('simulator static assets', () => {
   it('loads a manifest with precomputed station snap snapshots', () => {
     const manifest = readCaseAsset<SimulatorCaseManifest>('case_manifest.web.json');
@@ -139,7 +222,117 @@ describe('simulator static assets', () => {
     expect(maskedItems.map((item) => item.id)).toEqual(
       expect.arrayContaining(['station_7', 'pulmonary_venous_system', 'left_atrium']),
     );
-    expect(maskedItems.every((item) => item.rasterMask?.source === 'browser_point_cloud_plane_crossing')).toBe(true);
+    expect(maskedItems.every((item) => item.rasterMask?.source === 'browser_point_cloud_plane_contour')).toBe(true);
+  });
+});
+
+describe('simulator plane-cut mask generator', () => {
+  it('cuts a sphere into one smooth filled contour', () => {
+    const result = buildPlaneIntersectionRasterMask({
+      kind: 'node',
+      maxDepthMm: 40,
+      points: sphereSurfacePoints([0, 0, 22], 6),
+      pose: syntheticPlanePose(),
+      sectorAngleDeg: 70,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.rasterMask.source).toBe('browser_point_cloud_plane_contour');
+    expect(result?.contoursMm).toHaveLength(1);
+    expect(alphaPixelCount(result?.rasterMask.alpha ?? [])).toBeGreaterThan(900);
+  });
+
+  it('cuts a cylinder into one continuous vessel mask instead of point circles', () => {
+    const result = buildPlaneIntersectionRasterMask({
+      kind: 'vessel',
+      maxDepthMm: 40,
+      points: cylinderAlongYSurfacePoints({
+        center: [0, 0, 24],
+        halfLengthMm: 10,
+        radiusMm: 4,
+      }),
+      pose: syntheticPlanePose(),
+      sectorAngleDeg: 70,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.contoursMm).toHaveLength(1);
+    expect(alphaPixelCount(result?.rasterMask.alpha ?? [])).toBeGreaterThan(1500);
+  });
+
+  it('keeps two adjacent cylinder cuts as separate contours when their plane intersections do not touch', () => {
+    const leftCylinder = cylinderAlongYSurfacePoints({
+      center: [0, -16, 24],
+      halfLengthMm: 5,
+      radiusMm: 4,
+    });
+    const rightCylinder = cylinderAlongYSurfacePoints({
+      center: [0, 16, 24],
+      halfLengthMm: 5,
+      radiusMm: 4,
+    });
+    const result = buildPlaneIntersectionRasterMask({
+      kind: 'vessel',
+      maxDepthMm: 40,
+      points: [...leftCylinder, ...rightCylinder],
+      pose: syntheticPlanePose(),
+      sectorAngleDeg: 70,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.contoursMm).toHaveLength(2);
+  });
+});
+
+describe('simulator sector contour source selection', () => {
+  it('treats explicitly closed mm-space contours as usable mask geometry', () => {
+    const item = {
+      ...sectorItemWithContours([[0, 20], [5, 24], [0, 28], [-5, 24]]),
+      contourClosed: [true],
+    };
+
+    expect(hasUsableSectorContourGeometry(item)).toBe(true);
+  });
+
+  it('promotes explicitly open contours only when the closure chord is anatomically plausible', () => {
+    const nearClosedOpenContour = Array.from({ length: 12 }, (_, index): Vec2 => [
+      -6 + index,
+      22 + Math.sin(index / 2) * 0.25,
+    ]);
+    const item = {
+      ...sectorItemWithContours(nearClosedOpenContour),
+      contourClosed: [false],
+    };
+
+    expect(contourIsCloseable(nearClosedOpenContour, false)).toBe(true);
+    expect(hasUsableSectorContourGeometry(item)).toBe(true);
+  });
+
+  it('rejects arc-class open contours so raster or ellipse fallback handles them instead of banana fills', () => {
+    const arcContour: Vec2[] = [
+      [-6, 20],
+      [-4, 24],
+      [-1, 27],
+      [3, 27],
+      [6, 24],
+      [7, 20],
+    ];
+    const item = {
+      ...sectorItemWithContours(arcContour),
+      contourClosed: [false],
+    };
+
+    expect(contourIsCloseable(arcContour, false)).toBe(false);
+    expect(hasUsableSectorContourGeometry(item)).toBe(false);
+  });
+
+  it('does not treat untagged long open contours as usable unless they are geometrically closed', () => {
+    const untaggedOpenContour = Array.from({ length: 12 }, (_, index): Vec2 => [
+      -6 + index,
+      20 + Math.sin(index / 3),
+    ]);
+
+    expect(hasUsableSectorContourGeometry(sectorItemWithContours(untaggedOpenContour))).toBe(false);
   });
 });
 

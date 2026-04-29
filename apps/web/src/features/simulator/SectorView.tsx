@@ -8,6 +8,7 @@ import type { SimulatorCaseManifest, SimulatorPreset, SimulatorSectorItem, Simul
 type SectorStyle = 'classic' | 'realistic';
 
 const SECTOR_STYLE_STORAGE_KEY = 'ebus.sectorStyle';
+const OPEN_CONTOUR_CLOSEABLE_CHORD_RATIO = 0.7;
 
 function normalizeSectorStyle(value: unknown): SectorStyle | null {
   if (typeof value !== 'string') {
@@ -613,10 +614,10 @@ function buildSmoothedRasterSourceCanvas(rasterMask: SimulatorSectorRasterMask, 
   const scale = Math.max(width / 160, 1);
   const closed = solidifyMask(
     raw,
-    kind === 'vessel' ? 12 * scale : 5 * scale,
-    kind === 'vessel' ? 16 : 22,
-    kind === 'vessel' ? 2.2 * scale : 1.4 * scale,
-    kind === 'vessel' ? 68 : 88,
+    kind === 'vessel' ? 2.5 * scale : 2.0 * scale,
+    kind === 'vessel' ? 80 : 90,
+    kind === 'vessel' ? 1.5 * scale : 1.0 * scale,
+    kind === 'vessel' ? 110 : 130,
   );
   const closedCtx = closed.getContext('2d');
 
@@ -657,7 +658,7 @@ function buildSmoothedRasterSourceCanvas(rasterMask: SimulatorSectorRasterMask, 
     return filtered;
   }
 
-  return solidifyMask(filtered, 0, 1, kind === 'vessel' ? 1.8 * scale : 1.1 * scale, kind === 'vessel' ? 74 : 90);
+  return solidifyMask(filtered, 0, 1, kind === 'vessel' ? 1.0 * scale : 0.8 * scale, kind === 'vessel' ? 110 : 140);
 }
 
 function warpAlphaCanvasIntoCanvas(
@@ -696,9 +697,7 @@ function drawSmoothSectorItemMask(
   let drewContour = false;
 
   for (const [index, contour] of (item.contoursMm ?? []).entries()) {
-    const closed = item.contourClosed?.[index] ?? isClosedContour(contour);
-
-    if (!closed) {
+    if (!contourIsCloseable(contour, item.contourClosed?.[index])) {
       continue;
     }
 
@@ -771,7 +770,9 @@ function buildSolidItemMask(
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
-  if (item.rasterMask?.alpha?.length) {
+  if (hasUsableSectorContourGeometry(item)) {
+    drawSmoothSectorItemMask(ctx, item, width, height, maxDepth, halfTan);
+  } else if (item.rasterMask?.alpha?.length) {
     const source = buildSmoothedRasterSourceCanvas(item.rasterMask, item.kind === 'vessel' ? 'vessel' : 'node');
     warpAlphaCanvasIntoCanvas(ctx, source, width, height);
   } else {
@@ -1090,6 +1091,44 @@ function isClosedContour(points: Vec2[]): boolean {
   return Math.hypot(first[0] - last[0], first[1] - last[1]) <= 1.5;
 }
 
+export function contourIsCloseable(points: Vec2[], explicitClosed?: boolean): boolean {
+  if (explicitClosed === true) {
+    return true;
+  }
+
+  if (explicitClosed === false) {
+    if (points.length < 4) {
+      return false;
+    }
+
+    const first = points[0];
+    const last = points[points.length - 1];
+    const chord = Math.hypot(first[0] - last[0], first[1] - last[1]);
+    let perimeter = 0;
+
+    for (let index = 1; index < points.length; index += 1) {
+      perimeter += Math.hypot(
+        points[index][0] - points[index - 1][0],
+        points[index][1] - points[index - 1][1],
+      );
+    }
+
+    return perimeter > 0 && chord / perimeter >= OPEN_CONTOUR_CLOSEABLE_CHORD_RATIO;
+  }
+
+  return isClosedContour(points);
+}
+
+export function hasUsableSectorContourGeometry(item: SimulatorSectorItem): boolean {
+  const contours = item.contoursMm ?? [];
+
+  if (contours.length === 0) {
+    return false;
+  }
+
+  return contours.some((contour, index) => contourIsCloseable(contour, item.contourClosed?.[index]));
+}
+
 export function SectorView({
   activeStructure,
   caseData,
@@ -1112,6 +1151,13 @@ export function SectorView({
     () => resolveInitialSectorStyle(caseData.render_defaults.sector_realism),
     [caseData.render_defaults.sector_realism],
   );
+  const sectorDebugEnabled = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return new URLSearchParams(window.location.search).get('sectorDebug') === '1';
+  }, []);
   const [sectorStyle, setSectorStyle] = useState<SectorStyle>(resolvedInitialSectorStyle);
   const visibleItems = items.filter((item) => item.visible || item.kind === 'airway' || item.kind === 'contact');
 
@@ -1528,6 +1574,70 @@ export function SectorView({
                 </g>
               );
             })}
+            {sectorDebugEnabled ? (
+              <g className="simulator-sector-debug-overlay" pointerEvents="none">
+                {renderItems.map((item) => {
+                  const debug = item.rasterMask?.debug;
+
+                  if (!debug) {
+                    return null;
+                  }
+
+                  return (
+                    <g key={`${item.id}-debug`}>
+                      {(debug.finalContoursMm ?? []).map((contour, index) => (
+                        <path
+                          key={`${item.id}-debug-final-${index}`}
+                          d={contourPath(contour, true)}
+                          fill="#29d3ff"
+                          fillOpacity="0.08"
+                          stroke="#29d3ff"
+                          strokeOpacity="0.72"
+                          strokeWidth="0.18"
+                        />
+                      ))}
+                      {(debug.hullsMm ?? []).map((contour, index) => (
+                        <path
+                          key={`${item.id}-debug-hull-${index}`}
+                          d={contourPath(contour, true)}
+                          fill="none"
+                          stroke="#ffd447"
+                          strokeDasharray="0.8 0.65"
+                          strokeOpacity="0.78"
+                          strokeWidth="0.16"
+                        />
+                      ))}
+                      {(debug.rawPointsMm ?? []).map((point, index) => {
+                        const mapped = sectorPoint(point);
+                        return (
+                          <circle
+                            key={`${item.id}-debug-raw-${index}`}
+                            cx={mapped.x}
+                            cy={mapped.y}
+                            r="0.12"
+                            fill="#8fb3ff"
+                            fillOpacity="0.28"
+                          />
+                        );
+                      })}
+                      {(debug.crossingPointsMm ?? []).map((point, index) => {
+                        const mapped = sectorPoint(point);
+                        return (
+                          <circle
+                            key={`${item.id}-debug-crossing-${index}`}
+                            cx={mapped.x}
+                            cy={mapped.y}
+                            r="0.24"
+                            fill="#ff4d6d"
+                            fillOpacity="0.72"
+                          />
+                        );
+                      })}
+                    </g>
+                  );
+                })}
+              </g>
+            ) : null}
           </g>
           {activeItem && activeItemPosition && activeCalloutAnchor ? (
             <g className="simulator-sector-label-leader" pointerEvents="none">
