@@ -1,45 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
 import { clamp } from './pose';
 import { formatSimulatorStation } from './stationIds';
 import type { SimulatorCaseManifest, SimulatorPreset, SimulatorSectorItem, SimulatorSectorRasterMask, Vec2 } from './types';
 
-type SectorStyle = 'classic' | 'realistic';
-
-const SECTOR_STYLE_STORAGE_KEY = 'ebus.sectorStyle';
 const OPEN_CONTOUR_CLOSEABLE_CHORD_RATIO = 0.7;
-
-function normalizeSectorStyle(value: unknown): SectorStyle | null {
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const normalized = value.trim().toLowerCase();
-  return normalized === 'classic' || normalized === 'realistic' ? normalized : null;
-}
-
-function resolveInitialSectorStyle(defaultStyle: unknown): SectorStyle {
-  if (typeof window !== 'undefined') {
-    const urlStyle = normalizeSectorStyle(new URLSearchParams(window.location.search).get('sectorStyle'));
-
-    if (urlStyle) {
-      return urlStyle;
-    }
-
-    try {
-      const storedStyle = normalizeSectorStyle(window.localStorage.getItem(SECTOR_STYLE_STORAGE_KEY));
-
-      if (storedStyle) {
-        return storedStyle;
-      }
-    } catch {
-      // Style persistence is optional; blocked storage should not affect rendering.
-    }
-  }
-
-  return normalizeSectorStyle(defaultStyle) ?? 'classic';
-}
 
 function hexToRgb(color: string) {
   const normalized = color.trim().replace(/^#/, '');
@@ -111,11 +77,6 @@ function hslToRgb(h: number, s: number, l: number) {
   };
 }
 
-function smoothstep(edge0: number, edge1: number, x: number) {
-  const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
-  return t * t * (3 - 2 * t);
-}
-
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
@@ -125,38 +86,6 @@ function adjustHsl(color: string, saturation: number, lightness: number) {
   const hsl = rgbToHsl(r, g, b);
   const out = hslToRgb(hsl.h, clamp(saturation, 0, 1), clamp(lightness, 0, 1));
   return `rgb(${out.r}, ${out.g}, ${out.b})`;
-}
-
-function tintForKind(kind: 'node' | 'vessel', alphaRatio: number, baseColor: string) {
-  const base = hexToRgb(baseColor);
-
-  if (kind === 'vessel') {
-    const lowR = 10;
-    const lowG = 13;
-    const lowB = 16;
-    const rimWeight = 4 * alphaRatio * (1 - alphaRatio);
-    const tintMix = 0.28 + rimWeight * 0.36;
-    return {
-      r: Math.round(lerp(lowR, base.r, tintMix)),
-      g: Math.round(lerp(lowG, base.g, tintMix)),
-      b: Math.round(lerp(lowB, base.b, tintMix)),
-      opacity: 0.84,
-    };
-  }
-
-  const hsl = rgbToHsl(base.r, base.g, base.b);
-  const high = hslToRgb(hsl.h, 0.28, 0.42);
-  const lowMixT = 0.12;
-  const lowR = lerp(0x1a, base.r, lowMixT);
-  const lowG = lerp(0x1f, base.g, lowMixT);
-  const lowB = lerp(0x1d, base.b, lowMixT);
-  const t = smoothstep(0.15, 0.85, alphaRatio);
-  return {
-    r: Math.round(lerp(lowR, high.r, t)),
-    g: Math.round(lerp(lowG, high.g, t)),
-    b: Math.round(lerp(lowB, high.b, t)),
-    opacity: 0.62,
-  };
 }
 
 function drawFanClip(ctx: CanvasRenderingContext2D, width: number, height: number) {
@@ -247,75 +176,6 @@ function drawSectorTexture(ctx: CanvasRenderingContext2D, width: number, height:
   ctx.fillRect(0, 0, width, (25 * height) / 100);
   ctx.globalCompositeOperation = 'source-over';
 
-  ctx.restore();
-}
-
-function drawRasterMask(
-  ctx: CanvasRenderingContext2D,
-  item: SimulatorSectorItem,
-  rasterMask: SimulatorSectorRasterMask,
-  width: number,
-  height: number,
-) {
-  const maskCanvas = document.createElement('canvas');
-  maskCanvas.width = rasterMask.width;
-  maskCanvas.height = rasterMask.height;
-  const maskCtx = maskCanvas.getContext('2d');
-
-  if (!maskCtx) {
-    return;
-  }
-
-  const kind: 'node' | 'vessel' = item.kind === 'vessel' ? 'vessel' : 'node';
-  const image = maskCtx.createImageData(rasterMask.width, rasterMask.height);
-  for (let index = 0; index < rasterMask.alpha.length && index < rasterMask.width * rasterMask.height; index += 1) {
-    const alpha = clamp(Number(rasterMask.alpha[index]) || 0, 0, 255);
-    const offset = index * 4;
-    const tint = tintForKind(kind, alpha / 255, item.color);
-    image.data[offset] = tint.r;
-    image.data[offset + 1] = tint.g;
-    image.data[offset + 2] = tint.b;
-    image.data[offset + 3] = Math.round(alpha * tint.opacity);
-  }
-  maskCtx.putImageData(image, 0, 0);
-
-  const top = (8 * height) / 100;
-  const fanHeight = (82 * height) / 100;
-  const rowHeight = Math.max(1, fanHeight / Math.max(rasterMask.height - 1, 1) + 1.25);
-  const warpedCanvas = document.createElement('canvas');
-  warpedCanvas.width = Math.ceil(width);
-  warpedCanvas.height = Math.ceil(height);
-  const warpedCtx = warpedCanvas.getContext('2d');
-
-  if (!warpedCtx) {
-    return;
-  }
-
-  warpedCtx.save();
-  drawFanClip(warpedCtx, width, height);
-  warpedCtx.clip();
-  warpedCtx.imageSmoothingEnabled = true;
-  warpedCtx.imageSmoothingQuality = 'high';
-  for (let row = 0; row < rasterMask.height; row += 1) {
-    const depthRatio = rasterMask.height <= 1 ? 0 : row / (rasterMask.height - 1);
-    const y = top + depthRatio * fanHeight - rowHeight / 2;
-    const halfWidth = (depthRatio * 39 * width) / 100;
-    const rowWidth = halfWidth * 2;
-
-    if (rowWidth < 0.5) {
-      continue;
-    }
-
-    warpedCtx.drawImage(maskCanvas, 0, row, rasterMask.width, 1, width / 2 - halfWidth, y, rowWidth, rowHeight);
-  }
-  warpedCtx.restore();
-
-  ctx.save();
-  drawFanClip(ctx, width, height);
-  ctx.clip();
-  ctx.filter = item.kind === 'vessel' ? 'blur(2.2px)' : 'blur(1.6px)';
-  ctx.drawImage(warpedCanvas, 0, 0, width, height);
-  ctx.filter = 'none';
   ctx.restore();
 }
 
@@ -901,6 +761,26 @@ function buildWallFromLumen(lumen: HTMLCanvasElement, dilatePx: number) {
   return canvas;
 }
 
+function buildFanBoundaryMask(width: number, height: number, lineWidthPx: number) {
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(width);
+  canvas.height = Math.ceil(height);
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    return canvas;
+  }
+
+  drawFanClip(ctx, width, height);
+  ctx.lineWidth = lineWidthPx;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#ffffff';
+  ctx.stroke();
+
+  return solidifyMask(canvas, 0, 1, 0);
+}
+
 // Convert soft alpha into a binary interior before wall/carve-out work.
 function solidifyMask(
   input: HTMLCanvasElement,
@@ -1147,10 +1027,6 @@ export function SectorView({
   const rasterCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const maxDepth = caseData.render_defaults.max_depth_mm;
   const halfTan = Math.tan(THREE.MathUtils.degToRad(caseData.render_defaults.sector_angle_deg / 2));
-  const resolvedInitialSectorStyle = useMemo(
-    () => resolveInitialSectorStyle(caseData.render_defaults.sector_realism),
-    [caseData.render_defaults.sector_realism],
-  );
   const sectorDebugEnabled = useMemo(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -1158,12 +1034,7 @@ export function SectorView({
 
     return new URLSearchParams(window.location.search).get('sectorDebug') === '1';
   }, []);
-  const [sectorStyle, setSectorStyle] = useState<SectorStyle>(resolvedInitialSectorStyle);
   const visibleItems = items.filter((item) => item.visible || item.kind === 'airway' || item.kind === 'contact');
-
-  useEffect(() => {
-    setSectorStyle(resolvedInitialSectorStyle);
-  }, [resolvedInitialSectorStyle]);
 
   function itemPosition(item: SimulatorSectorItem) {
     const depthRatio = clamp(item.depthMm / maxDepth, 0, 1);
@@ -1328,89 +1199,82 @@ export function SectorView({
       ctx.translate(viewOffsetX, viewOffsetY);
       drawSectorTexture(ctx, viewSize, viewSize);
 
-      if (sectorStyle === 'realistic') {
-        const vessels = renderItems.filter((item) => item.kind === 'vessel' && item.rasterMask?.alpha?.length);
-        const nodes = renderItems.filter((item) => item.kind === 'node' && item.rasterMask?.alpha?.length);
+      const vessels = renderItems.filter((item) => item.kind === 'vessel' && item.rasterMask?.alpha?.length);
+      const nodes = renderItems.filter((item) => item.kind === 'node' && item.rasterMask?.alpha?.length);
 
-        if (vessels.length > 0) {
-          const renderedMasks = new Map<string, HTMLCanvasElement>();
-          const { lumen, itemMasks: vesselMasks } = buildVesselLumen(vessels, viewSize, viewSize, maxDepth, halfTan);
-          for (const [id, mask] of vesselMasks) {
-            renderedMasks.set(id, mask);
-          }
-
-          drawPosteriorEnhancement(ctx, lumen, viewSize, viewSize);
-
-          ctx.save();
-          drawFanClip(ctx, viewSize, viewSize);
-          ctx.clip();
-          ctx.globalCompositeOperation = 'destination-out';
-          ctx.drawImage(lumen, 0, 0);
-          ctx.globalCompositeOperation = 'source-over';
-          ctx.drawImage(tintMask(lumen, '#080a0c'), 0, 0);
-          ctx.restore();
-
-          const outerWall = buildWallFromLumen(lumen, 5);
-          ctx.save();
-          drawFanClip(ctx, viewSize, viewSize);
-          ctx.clip();
-          ctx.filter = 'blur(0.6px)';
-          ctx.globalAlpha = 0.92;
-          ctx.drawImage(tintMask(outerWall, '#dad6c8'), 0, 0);
-          ctx.filter = 'none';
-          ctx.restore();
-
-          const innerWall = buildWallFromLumen(lumen, 2);
-          ctx.save();
-          drawFanClip(ctx, viewSize, viewSize);
-          ctx.clip();
-          ctx.globalAlpha = 0.6;
-          ctx.drawImage(tintMask(innerWall, '#a9a596'), 0, 0);
-          ctx.globalAlpha = 1;
-          ctx.restore();
-
-          const occupiedMask = cloneMask(lumen);
-          for (const node of nodes) {
-            const rawNodeMask = buildSolidItemMask(node, viewSize, viewSize, maxDepth, halfTan, 4, 18);
-            const nodeMask = subtractMask(rawNodeMask, occupiedMask, 4);
-
-            if (!maskHasPixels(nodeMask)) {
-              continue;
-            }
-
-            renderedMasks.set(node.id, nodeMask);
-            drawHypoechoicNode(ctx, nodeMask, viewSize, viewSize);
-            drawMaskInto(occupiedMask, nodeMask);
-          }
-
-          drawEducationalTint(ctx, vessels, nodes, renderedMasks, viewSize, viewSize, activeStructure);
-        } else {
-          const renderedMasks = new Map<string, HTMLCanvasElement>();
-          const occupiedMask = document.createElement('canvas');
-          occupiedMask.width = Math.ceil(viewSize);
-          occupiedMask.height = Math.ceil(viewSize);
-
-          for (const node of nodes) {
-            const rawNodeMask = buildSolidItemMask(node, viewSize, viewSize, maxDepth, halfTan, 4, 18);
-            const nodeMask = subtractMask(rawNodeMask, occupiedMask, 2);
-
-            if (!maskHasPixels(nodeMask)) {
-              continue;
-            }
-
-            renderedMasks.set(node.id, nodeMask);
-            drawHypoechoicNode(ctx, nodeMask, viewSize, viewSize);
-            drawMaskInto(occupiedMask, nodeMask);
-          }
-
-          drawEducationalTint(ctx, vessels, nodes, renderedMasks, viewSize, viewSize, activeStructure);
+      if (vessels.length > 0) {
+        const renderedMasks = new Map<string, HTMLCanvasElement>();
+        const { lumen, itemMasks: vesselMasks } = buildVesselLumen(vessels, viewSize, viewSize, maxDepth, halfTan);
+        for (const [id, mask] of vesselMasks) {
+          renderedMasks.set(id, mask);
         }
+
+        drawPosteriorEnhancement(ctx, lumen, viewSize, viewSize);
+
+        ctx.save();
+        drawFanClip(ctx, viewSize, viewSize);
+        ctx.clip();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.drawImage(lumen, 0, 0);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(tintMask(lumen, '#080a0c'), 0, 0);
+        ctx.restore();
+
+        const fanBoundaryMask = buildFanBoundaryMask(viewSize, viewSize, Math.max(5, viewSize * 0.018));
+        const outerWall = subtractMask(buildWallFromLumen(lumen, 5), fanBoundaryMask);
+        ctx.save();
+        drawFanClip(ctx, viewSize, viewSize);
+        ctx.clip();
+        ctx.filter = 'blur(0.6px)';
+        ctx.globalAlpha = 0.92;
+        ctx.drawImage(tintMask(outerWall, '#dad6c8'), 0, 0);
+        ctx.filter = 'none';
+        ctx.restore();
+
+        const innerWall = subtractMask(buildWallFromLumen(lumen, 2), fanBoundaryMask);
+        ctx.save();
+        drawFanClip(ctx, viewSize, viewSize);
+        ctx.clip();
+        ctx.globalAlpha = 0.6;
+        ctx.drawImage(tintMask(innerWall, '#a9a596'), 0, 0);
+        ctx.globalAlpha = 1;
+        ctx.restore();
+
+        const occupiedMask = cloneMask(lumen);
+        for (const node of nodes) {
+          const rawNodeMask = buildSolidItemMask(node, viewSize, viewSize, maxDepth, halfTan, 4, 18);
+          const nodeMask = subtractMask(rawNodeMask, occupiedMask, 4);
+
+          if (!maskHasPixels(nodeMask)) {
+            continue;
+          }
+
+          renderedMasks.set(node.id, nodeMask);
+          drawHypoechoicNode(ctx, nodeMask, viewSize, viewSize);
+          drawMaskInto(occupiedMask, nodeMask);
+        }
+
+        drawEducationalTint(ctx, vessels, nodes, renderedMasks, viewSize, viewSize, activeStructure);
       } else {
-        for (const item of renderItems) {
-          if ((item.kind === 'node' || item.kind === 'vessel') && item.rasterMask?.alpha?.length) {
-            drawRasterMask(ctx, item, item.rasterMask, viewSize, viewSize);
+        const renderedMasks = new Map<string, HTMLCanvasElement>();
+        const occupiedMask = document.createElement('canvas');
+        occupiedMask.width = Math.ceil(viewSize);
+        occupiedMask.height = Math.ceil(viewSize);
+
+        for (const node of nodes) {
+          const rawNodeMask = buildSolidItemMask(node, viewSize, viewSize, maxDepth, halfTan, 4, 18);
+          const nodeMask = subtractMask(rawNodeMask, occupiedMask, 2);
+
+          if (!maskHasPixels(nodeMask)) {
+            continue;
           }
+
+          renderedMasks.set(node.id, nodeMask);
+          drawHypoechoicNode(ctx, nodeMask, viewSize, viewSize);
+          drawMaskInto(occupiedMask, nodeMask);
         }
+
+        drawEducationalTint(ctx, vessels, nodes, renderedMasks, viewSize, viewSize, activeStructure);
       }
       ctx.restore();
     };
@@ -1419,18 +1283,7 @@ export function SectorView({
     const observer = new ResizeObserver(draw);
     observer.observe(parent);
     return () => observer.disconnect();
-  }, [activeStructure, halfTan, renderItems, maxDepth, sectorStyle]);
-
-  const toggleSectorStyle = () => {
-    const next: SectorStyle = sectorStyle === 'realistic' ? 'classic' : 'realistic';
-    setSectorStyle(next);
-
-    try {
-      window.localStorage.setItem(SECTOR_STYLE_STORAGE_KEY, next);
-    } catch {
-      // Ignore storage failures; the visible toggle should still respond.
-    }
-  };
+  }, [activeStructure, halfTan, renderItems, maxDepth]);
 
   return (
     <section className="simulator-sector-pane" aria-label="Labeled EBUS sector" data-sector-source={source}>
@@ -1443,14 +1296,7 @@ export function SectorView({
         </div>
         <div className="simulator-sector-header-actions">
           <span className="simulator-chip">{selectedPreset.approach}</span>
-          <button
-            type="button"
-            className="simulator-sector-style-toggle"
-            onClick={toggleSectorStyle}
-            aria-pressed={sectorStyle === 'realistic'}
-          >
-            {sectorStyle === 'realistic' ? 'Realistic' : 'Classic'}
-          </button>
+          <span className="simulator-chip">Realistic</span>
         </div>
       </div>
       <div className="simulator-sector-viewport">
@@ -1521,7 +1367,7 @@ export function SectorView({
               const rimColor = adjustHsl(item.color, clamp(baseHsl.s * 0.9, 0, 1), clamp(baseHsl.l * 0.55, 0.12, 0.5));
               const activeRim = adjustHsl(item.color, baseHsl.s, 0.88);
               const strokeColor = active ? activeRim : rimColor;
-              const canvasRendered = sectorStyle === 'realistic' && Boolean(item.rasterMask?.alpha?.length);
+              const canvasRendered = Boolean(item.rasterMask?.alpha?.length);
               const inactiveFill = canvasRendered ? 'transparent' : item.color;
               const inactiveFillOpacity = canvasRendered ? 0 : active ? 0.98 : 0.92;
               const inactiveStrokeOpacity = canvasRendered ? 0 : active ? 0.95 : 0.7;

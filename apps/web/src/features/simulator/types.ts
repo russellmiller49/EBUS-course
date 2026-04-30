@@ -72,14 +72,19 @@ export interface SimulatorPreset {
   line_index: number;
   centerline_s_mm: number;
   contact: Vec3;
+  contact_lps?: Vec3;
   target: Vec3;
   target_lps: Vec3;
+  station_asset?: string;
   station_key: string;
   vessel_overlays: string[];
   contact_to_target_distance_mm: number;
   shaft_axis?: Vec3 | null;
+  shaft_axis_lps?: Vec3 | null;
   depth_axis?: Vec3 | null;
+  depth_axis_lps?: Vec3 | null;
   lateral_axis?: Vec3 | null;
+  lateral_axis_lps?: Vec3 | null;
 }
 
 export interface SimulatorNodeMarker {
@@ -88,6 +93,7 @@ export interface SimulatorNodeMarker {
   station_key: string;
   label: string;
   position: Vec3;
+  position_lps?: Vec3;
   radius_mm: number;
   color: string;
 }
@@ -98,7 +104,7 @@ export interface SimulatorCaseManifest {
     sector_angle_deg: number;
     max_depth_mm: number;
     roll_deg: number;
-    sector_realism?: 'classic' | 'realistic';
+    sector_realism?: 'realistic';
   };
   bounds: {
     min: Vec3;

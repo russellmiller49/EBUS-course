@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 
-import { simulatorCaseAssetUrl } from './paths';
+import { simulatorCaseAssetUrl, simulatorManifestUrl } from './paths';
 import { computeSimulatorPose, pointAtS, type SimulatorProbePose } from './pose';
 import {
   resolveSimulatorSectorSource,
@@ -12,7 +12,11 @@ import {
   simulatorSectorSourceLabel,
 } from './sectorSource';
 import { contourIsCloseable, hasUsableSectorContourGeometry } from './SectorView';
-import { buildPlaneIntersectionRasterMask, buildPointCloudSectorItems } from './SimulatorPage';
+import {
+  buildPlaneIntersectionRasterMask,
+  buildPointCloudSectorItems,
+  simulatorSceneStructureVisibilityItems,
+} from './SimulatorPage';
 import { normalizeSimulatorStationId } from './stationIds';
 import type {
   SimulatorCaseManifest,
@@ -145,6 +149,68 @@ function cylinderAlongYSurfacePoints({
   return points;
 }
 
+function pairedWallBandSurfacePoints({
+  depthMm,
+  halfBandGapMm,
+  halfLengthMm,
+  yHalfThicknessMm,
+  samples = 18,
+}: {
+  depthMm: number;
+  halfBandGapMm: number;
+  halfLengthMm: number;
+  yHalfThicknessMm: number;
+  samples?: number;
+}): Vec3[] {
+  const points: Vec3[] = [];
+
+  for (const z of [depthMm - halfBandGapMm, depthMm + halfBandGapMm]) {
+    for (let index = 0; index < samples; index += 1) {
+      const x = -halfLengthMm + (2 * halfLengthMm * index) / Math.max(samples - 1, 1);
+      points.push([x, -yHalfThicknessMm, z]);
+      points.push([x, yHalfThicknessMm, z]);
+    }
+  }
+
+  return points;
+}
+
+function openDistalVesselSurfacePoints({
+  bottomDepthMm,
+  halfWidthMm,
+  outOfPlaneHalfThicknessMm,
+  topDepthMm,
+  samples = 10,
+}: {
+  bottomDepthMm: number;
+  halfWidthMm: number;
+  outOfPlaneHalfThicknessMm: number;
+  topDepthMm: number;
+  samples?: number;
+}): Vec3[] {
+  const points: Vec3[] = [];
+  const addPointPair = (lateralMm: number, depthMm: number) => {
+    points.push([-outOfPlaneHalfThicknessMm, lateralMm, depthMm]);
+    points.push([outOfPlaneHalfThicknessMm, lateralMm, depthMm]);
+  };
+
+  for (let index = 0; index < samples; index += 1) {
+    const t = index / Math.max(samples - 1, 1);
+    const z = topDepthMm + (bottomDepthMm - topDepthMm) * t;
+    addPointPair(-halfWidthMm, z);
+    addPointPair(halfWidthMm, z);
+  }
+
+  for (let index = 0; index < samples; index += 1) {
+    const t = index / Math.max(samples - 1, 1);
+    const x = -halfWidthMm + 2 * halfWidthMm * t;
+    addPointPair(x, topDepthMm);
+    addPointPair(x, bottomDepthMm);
+  }
+
+  return points;
+}
+
 function alphaPixelCount(alpha: number[]) {
   return alpha.filter((value) => value > 0).length;
 }
@@ -173,6 +239,62 @@ describe('simulator static assets', () => {
     expect(manifest.presets.length).toBeGreaterThan(0);
     expect(Object.keys(manifest.sector_snapshots ?? {}).length).toBe(manifest.presets.length);
     expect(manifest.assets.scope_model?.asset).toContain('EBUS_tip.glb');
+  });
+
+  it('loads the simplified model trial manifest with mesh-derived point clouds and no snapshots', () => {
+    const manifest = readCaseAsset<SimulatorCaseManifest>('case_manifest.simplified.web.json');
+    const primaryModel = manifest.assets.clean_models?.find((model) => model.primary);
+
+    expect(manifest.case_id).toContain('simplified');
+    expect(primaryModel?.asset).toBe('models/simplified_sim_model.gltf');
+    expect(manifest.render_defaults.sector_realism).toBe('realistic');
+    expect(Object.keys(manifest.sector_snapshots ?? {})).toHaveLength(0);
+    expect(manifest.presets).toHaveLength(11);
+    expect(manifest.assets.stations.map((asset) => asset.key)).toEqual(
+      expect.arrayContaining(['station_2l', 'station_4r', 'station_7', 'station_10r', 'station_10l', 'station_11rs']),
+    );
+    expect(manifest.presets.map((preset) => preset.preset_key)).not.toContain('station_4r_node_b::default');
+    expect(manifest.assets.stations.every((asset) => asset.asset.startsWith('geometry/simplified/stations/'))).toBe(true);
+    expect(manifest.assets.vessels.every((asset) => asset.asset.startsWith('geometry/simplified/vessels/'))).toBe(true);
+  });
+
+  it('uses the simplified simulator manifest as the default app manifest', () => {
+    expect(simulatorManifestUrl()).toMatch(
+      /\/simulator\/case-001\/case_manifest\.simplified\.web\.json$/,
+    );
+  });
+
+  it('uses the simplified point list to aim station snap presets', () => {
+    const manifest = readCaseAsset<SimulatorCaseManifest>('case_manifest.simplified.web.json');
+    const station4r = manifest.presets.find((preset) => preset.preset_key === 'station_4r_node_a::default');
+    const station10l = manifest.presets.find((preset) => preset.preset_key === 'station_10l_node_a::default');
+
+    expect(station4r?.station_asset).toBe('geometry/simplified/stations/station_4r_points.json');
+    expect(station4r?.contact[0]).toBeCloseTo(-13.355912548975311, 5);
+    expect(station4r?.contact[1]).toBeCloseTo(1239.0529931957165, 5);
+    expect(station4r?.contact[2]).toBeCloseTo(171.51630648491516, 5);
+    expect(station4r?.target[0]).toBeCloseTo(-16.0781483437477, 5);
+    expect(station4r?.target[1]).toBeCloseTo(1234.3357423743225, 5);
+    expect(station4r?.target[2]).toBeCloseTo(180.22746102818675, 5);
+    expect(station4r?.target_lps[0]).toBeCloseTo(-16.0781483437477, 5);
+    expect(station4r?.target_lps[1]).toBeCloseTo(-180.22746102818675, 5);
+    expect(station4r?.target_lps[2]).toBeCloseTo(1234.3357423743225, 5);
+    expect(station4r?.depth_axis?.length).toBe(3);
+    expect(station10l?.station_asset).toBe('geometry/simplified/stations/station_10l_points.json');
+  });
+
+  it('lists simplified nodes and vessels for individual 3D visibility controls', () => {
+    const manifest = readCaseAsset<SimulatorCaseManifest>('case_manifest.simplified.web.json');
+    const items = simulatorSceneStructureVisibilityItems(manifest);
+
+    expect(items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'station_4r', kind: 'node' }),
+        expect.objectContaining({ id: 'station_10l', kind: 'node' }),
+        expect.objectContaining({ id: 'aorta', kind: 'vessel' }),
+        expect.objectContaining({ id: 'pulmonary_artery', kind: 'vessel' }),
+      ]),
+    );
   });
 
   it('builds base-aware URLs for static simulator assets', () => {
@@ -258,6 +380,45 @@ describe('simulator plane-cut mask generator', () => {
     expect(result).not.toBeNull();
     expect(result?.contoursMm).toHaveLength(1);
     expect(alphaPixelCount(result?.rasterMask.alpha ?? [])).toBeGreaterThan(1500);
+  });
+
+  it('unions paired wall bands from a broad vessel into one lumen contour', () => {
+    const result = buildPlaneIntersectionRasterMask({
+      kind: 'vessel',
+      maxDepthMm: 50,
+      points: pairedWallBandSurfacePoints({
+        depthMm: 28,
+        halfBandGapMm: 12,
+        halfLengthMm: 13,
+        yHalfThicknessMm: 2,
+      }),
+      pose: syntheticPlanePose(),
+      sectorAngleDeg: 70,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.contoursMm).toHaveLength(1);
+    expect(alphaPixelCount(result?.rasterMask.alpha ?? [])).toBeGreaterThan(2500);
+  });
+
+  it('clips a vessel crossing that exits the distal fan instead of closing it inside the field', () => {
+    const result = buildPlaneIntersectionRasterMask({
+      kind: 'vessel',
+      maxDepthMm: 40,
+      points: openDistalVesselSurfacePoints({
+        bottomDepthMm: 52,
+        halfWidthMm: 8,
+        outOfPlaneHalfThicknessMm: 2,
+        topDepthMm: 18,
+      }),
+      pose: syntheticPlanePose(),
+      sectorAngleDeg: 70,
+    });
+    const maxContourDepthMm = Math.max(...(result?.contoursMm.flat().map((point) => point[1]) ?? [0]));
+
+    expect(result).not.toBeNull();
+    expect(result?.contoursMm).toHaveLength(1);
+    expect(maxContourDepthMm).toBeGreaterThan(39.5);
   });
 
   it('keeps two adjacent cylinder cuts as separate contours when their plane intersections do not touch', () => {

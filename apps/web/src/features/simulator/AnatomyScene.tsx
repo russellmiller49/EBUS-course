@@ -36,6 +36,11 @@ const AIRWAY_TRANSLUCENCY_REDUCTION = 0.15;
 
 type GlbAsset = Pick<SimulatorCleanModelAsset, 'asset'> | Pick<SimulatorScopeModelAsset, 'asset'>;
 
+interface LockedCameraView {
+  position: THREE.Vector3;
+  target: THREE.Vector3;
+}
+
 const glbModelCache = new Map<string, Promise<THREE.Group>>();
 
 function loadGlbModel(asset: GlbAsset): Promise<THREE.Group> {
@@ -318,8 +323,10 @@ export function AnatomyScene({
   assets,
   cameraPose,
   caseData,
+  hiddenStructureIds,
   intersectedStructureIds,
   layers,
+  lockView,
   pose,
   selectedPreset,
   teachingView,
@@ -328,13 +335,16 @@ export function AnatomyScene({
   assets: SimulatorLoadedAssets;
   cameraPose: SimulatorProbePose;
   caseData: SimulatorCaseManifest;
+  hiddenStructureIds?: Set<string>;
   intersectedStructureIds: Set<string>;
   layers: SimulatorLayerState;
+  lockView?: boolean;
   pose: SimulatorProbePose;
   selectedPreset: SimulatorPreset;
   teachingView: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const lockedCameraViewRef = useRef<LockedCameraView | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -358,16 +368,16 @@ export function AnatomyScene({
     const size = toVector(caseData.bounds.size);
     const sceneRadius = Math.max(size.x, size.y, size.z, 180);
     const focus = cameraPose.position.clone().add(cameraPose.depthAxis.clone().multiplyScalar(15));
+    const autoCameraPosition = focus
+      .clone()
+      .add(cameraPose.lateralAxis.clone().multiplyScalar(92))
+      .add(cameraPose.depthAxis.clone().multiplyScalar(-118))
+      .add(cameraPose.tangent.clone().multiplyScalar(58))
+      .add(new THREE.Vector3(0, 54, 0));
+    const lockedCameraView = lockView ? lockedCameraViewRef.current : null;
     const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, sceneRadius * 8);
-    camera.position.copy(
-      focus
-        .clone()
-        .add(cameraPose.lateralAxis.clone().multiplyScalar(92))
-        .add(cameraPose.depthAxis.clone().multiplyScalar(-118))
-        .add(cameraPose.tangent.clone().multiplyScalar(58))
-        .add(new THREE.Vector3(0, 54, 0)),
-    );
-    camera.lookAt(focus);
+    camera.position.copy(lockedCameraView?.position ?? autoCameraPosition);
+    camera.lookAt(lockedCameraView?.target ?? focus);
 
     const cutPlane = layers.cutPlane
       ? new THREE.Plane().setFromNormalAndCoplanarPoint(sectorPlaneNormal(pose), pose.position)
@@ -379,7 +389,7 @@ export function AnatomyScene({
     renderer.localClippingEnabled = Boolean(anatomyClippingPlanes);
 
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.copy(focus);
+    controls.target.copy(lockedCameraView?.target ?? focus);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.rotateSpeed = 0.55;
@@ -413,7 +423,7 @@ export function AnatomyScene({
 
             const structureId = cleanModelStructureId(mesh.name || mesh.parent?.name || '');
             const layer = cleanModelLayer(structureId);
-            mesh.visible = Boolean(layers[layer]);
+            mesh.visible = Boolean(layers[layer]) && !hiddenStructureIds?.has(structureId);
 
             if (!mesh.visible) {
               return;
@@ -489,6 +499,10 @@ export function AnatomyScene({
 
     if (!cleanModel && layers.stations) {
       for (const station of caseData.assets.stations) {
+        if (hiddenStructureIds?.has(station.key)) {
+          continue;
+        }
+
         const points = assets.stations[station.key]?.points ?? [];
         if (!points.length) {
           continue;
@@ -515,6 +529,10 @@ export function AnatomyScene({
 
     if (!cleanModel && layers.vessels) {
       for (const vessel of caseData.assets.vessels) {
+        if (hiddenStructureIds?.has(vessel.key)) {
+          continue;
+        }
+
         const points = assets.vessels[vessel.key]?.points ?? [];
         if (!points.length) {
           continue;
@@ -541,6 +559,10 @@ export function AnatomyScene({
 
     if (layers.nodes) {
       for (const node of caseData.anatomy.nodes) {
+        if (hiddenStructureIds?.has(node.station_key) || hiddenStructureIds?.has(node.key)) {
+          continue;
+        }
+
         const active =
           isTeachingFocus(node.station_key, selectedPreset, intersectedStructureIds, activeStructure) ||
           activeStructure === node.key;
@@ -644,6 +666,10 @@ export function AnatomyScene({
     resizeObserver.observe(container);
 
     return () => {
+      lockedCameraViewRef.current = {
+        position: camera.position.clone(),
+        target: controls.target.clone(),
+      };
       cancelled = true;
       window.cancelAnimationFrame(frameId);
       resizeObserver.disconnect();
@@ -659,7 +685,19 @@ export function AnatomyScene({
         }
       });
     };
-  }, [activeStructure, assets, cameraPose, caseData, intersectedStructureIds, layers, pose, selectedPreset, teachingView]);
+  }, [
+    activeStructure,
+    assets,
+    cameraPose,
+    caseData,
+    hiddenStructureIds,
+    intersectedStructureIds,
+    layers,
+    lockView,
+    pose,
+    selectedPreset,
+    teachingView,
+  ]);
 
   return (
     <div

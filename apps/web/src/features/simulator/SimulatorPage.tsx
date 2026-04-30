@@ -36,6 +36,10 @@ const LIVE_CLUSTER_RADIUS_MM = {
   node: 7,
   vessel: 9.5,
 } as const;
+const LIVE_VESSEL_WALL_CLUSTER_DEPTH_GAP_MM = 30;
+const LIVE_VESSEL_WALL_CLUSTER_LATERAL_GAP_MM = 14;
+const LIVE_VESSEL_WALL_CLUSTER_OVERLAP_RATIO = 0.45;
+const LIVE_VESSEL_SECTOR_CLIP_MARGIN_MM = 18;
 const LIVE_MIN_GRAPH_EDGE_MM = {
   node: 4,
   vessel: 4.5,
@@ -84,12 +88,21 @@ const VIEWABLE_LAYER_KEYS: Array<keyof SimulatorLayerState> = [
 ];
 
 interface PersistedSimulatorState {
+  hiddenSceneStructureIds?: string[];
   layers?: Partial<SimulatorLayerState>;
   lineIndex?: number;
+  lockSceneView?: boolean;
   rollDeg?: number;
   sMm?: number;
   selectedKey?: string;
   teachingView?: boolean;
+}
+
+interface SceneStructureVisibilityItem {
+  color: string;
+  id: string;
+  kind: 'node' | 'vessel';
+  label: string;
 }
 
 function readPersistedState(): PersistedSimulatorState | null {
@@ -116,6 +129,31 @@ function normalizeSimulatorLayers(layers: Partial<SimulatorLayerState> | null | 
     nodes: false,
     centerline: false,
   };
+}
+
+function normalizeHiddenSceneStructureIds(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(new Set(value.filter((item): item is string => typeof item === 'string' && item.length > 0)));
+}
+
+export function simulatorSceneStructureVisibilityItems(caseData: SimulatorCaseManifest): SceneStructureVisibilityItem[] {
+  const nodeItems = caseData.assets.stations.map((station) => ({
+    color: caseData.color_map.lymph_node ?? station.color,
+    id: station.key,
+    kind: 'node' as const,
+    label: station.label.replace(/\s+region$/i, ''),
+  }));
+  const vesselItems = caseData.assets.vessels.map((vessel) => ({
+    color: vessel.color,
+    id: vessel.key,
+    kind: 'vessel' as const,
+    label: vessel.label,
+  }));
+
+  return [...nodeItems, ...vesselItems];
 }
 
 function clampProbeRollDeg(value: number): number {
@@ -161,6 +199,14 @@ interface PlaneCrossingPoint {
   point: Vec3;
   depthMm: number;
   lateralMm: number;
+  sectorClipped?: boolean;
+}
+
+interface CrossingClusterBounds {
+  maxDepthMm: number;
+  maxLateralMm: number;
+  minDepthMm: number;
+  minLateralMm: number;
 }
 
 interface PointCloudGraphEdge {
@@ -200,6 +246,31 @@ function rasterCoordinatesForProjectedPoint(
   }
 
   return { x, y };
+}
+
+function sectorHalfWidthMm(depthMm: number, sectorAngleDeg: number) {
+  return Math.max(depthMm, 0) * Math.tan((sectorAngleDeg * Math.PI) / 360);
+}
+
+function clipProjectedPointToSectorBoundary(
+  point: Pick<ProjectedSectorPoint, 'depthMm' | 'lateralMm'>,
+  maxDepthMm: number,
+  sectorAngleDeg: number,
+): Pick<ProjectedSectorPoint, 'depthMm' | 'lateralMm'> | null {
+  const depthMm = clamp(point.depthMm, 0.5, maxDepthMm);
+  const halfWidthMm = sectorHalfWidthMm(depthMm, sectorAngleDeg);
+  const lateralMm = clamp(point.lateralMm, -halfWidthMm, halfWidthMm);
+  const gapMm = Math.hypot(point.depthMm - depthMm, point.lateralMm - lateralMm);
+
+  if (gapMm > LIVE_VESSEL_SECTOR_CLIP_MARGIN_MM) {
+    return null;
+  }
+
+  if (point.depthMm < 0.5 - LIVE_VESSEL_SECTOR_CLIP_MARGIN_MM) {
+    return null;
+  }
+
+  return { depthMm, lateralMm };
 }
 
 function convexHull(points: Vec2[]): Vec2[] {
@@ -420,6 +491,102 @@ function clusterCrossingPoints(points: PlaneCrossingPoint[], kind: 'node' | 'ves
   }
 
   return clusters;
+}
+
+function crossingClusterBounds(cluster: PlaneCrossingPoint[]): CrossingClusterBounds {
+  let minLateralMm = Number.POSITIVE_INFINITY;
+  let maxLateralMm = Number.NEGATIVE_INFINITY;
+  let minDepthMm = Number.POSITIVE_INFINITY;
+  let maxDepthMm = Number.NEGATIVE_INFINITY;
+
+  for (const point of cluster) {
+    minLateralMm = Math.min(minLateralMm, point.lateralMm);
+    maxLateralMm = Math.max(maxLateralMm, point.lateralMm);
+    minDepthMm = Math.min(minDepthMm, point.depthMm);
+    maxDepthMm = Math.max(maxDepthMm, point.depthMm);
+  }
+
+  return { maxDepthMm, maxLateralMm, minDepthMm, minLateralMm };
+}
+
+function intervalGap(minA: number, maxA: number, minB: number, maxB: number) {
+  return Math.max(0, Math.max(minB - maxA, minA - maxB));
+}
+
+function intervalOverlapRatio(minA: number, maxA: number, minB: number, maxB: number) {
+  const overlap = Math.min(maxA, maxB) - Math.max(minA, minB);
+  const smallestSpan = Math.min(maxA - minA, maxB - minB);
+
+  if (smallestSpan <= 1e-6) {
+    return overlap >= -1e-6 ? 1 : 0;
+  }
+
+  return Math.max(0, overlap) / smallestSpan;
+}
+
+function vesselClustersShouldMerge(a: PlaneCrossingPoint[], b: PlaneCrossingPoint[]) {
+  const boundsA = crossingClusterBounds(a);
+  const boundsB = crossingClusterBounds(b);
+  const lateralOverlapRatio = intervalOverlapRatio(
+    boundsA.minLateralMm,
+    boundsA.maxLateralMm,
+    boundsB.minLateralMm,
+    boundsB.maxLateralMm,
+  );
+  const depthOverlapRatio = intervalOverlapRatio(
+    boundsA.minDepthMm,
+    boundsA.maxDepthMm,
+    boundsB.minDepthMm,
+    boundsB.maxDepthMm,
+  );
+  const lateralGapMm = intervalGap(
+    boundsA.minLateralMm,
+    boundsA.maxLateralMm,
+    boundsB.minLateralMm,
+    boundsB.maxLateralMm,
+  );
+  const depthGapMm = intervalGap(
+    boundsA.minDepthMm,
+    boundsA.maxDepthMm,
+    boundsB.minDepthMm,
+    boundsB.maxDepthMm,
+  );
+  const pairedAnteriorPosteriorWalls =
+    lateralOverlapRatio >= LIVE_VESSEL_WALL_CLUSTER_OVERLAP_RATIO &&
+    depthGapMm <= LIVE_VESSEL_WALL_CLUSTER_DEPTH_GAP_MM;
+  const pairedLateralWalls =
+    depthOverlapRatio >= LIVE_VESSEL_WALL_CLUSTER_OVERLAP_RATIO &&
+    lateralGapMm <= LIVE_VESSEL_WALL_CLUSTER_LATERAL_GAP_MM;
+
+  return pairedAnteriorPosteriorWalls || pairedLateralWalls;
+}
+
+function mergeVesselWallClusters(clusters: PlaneCrossingPoint[][]) {
+  const merged = clusters.map((cluster) => [...cluster]);
+  let changed = true;
+
+  while (changed) {
+    changed = false;
+
+    for (let index = 0; index < merged.length; index += 1) {
+      for (let candidate = index + 1; candidate < merged.length; candidate += 1) {
+        if (!vesselClustersShouldMerge(merged[index], merged[candidate])) {
+          continue;
+        }
+
+        merged[index] = [...merged[index], ...merged[candidate]];
+        merged.splice(candidate, 1);
+        changed = true;
+        break;
+      }
+
+      if (changed) {
+        break;
+      }
+    }
+  }
+
+  return merged;
 }
 
 function ellipseContourFromCluster(points: Vec2[], kind: 'node' | 'vessel'): Vec2[] {
@@ -648,15 +815,21 @@ export function buildPlaneIntersectionRasterMask({
     const t = clamp(a.outOfPlaneMm / denominator, 0, 1);
     const crossing = interpolateVec3(a.source, b.source, t);
     const projection = projectToSector(crossing, pose, maxDepthMm, sectorAngleDeg, Number.POSITIVE_INFINITY);
+    const sectorPoint = projection.visible
+      ? { depthMm: projection.depthMm, lateralMm: projection.lateralMm, sectorClipped: false }
+      : kind === 'vessel'
+        ? clipProjectedPointToSectorBoundary(projection, maxDepthMm, sectorAngleDeg)
+        : null;
 
-    if (!projection.visible) {
+    if (!sectorPoint) {
       continue;
     }
 
     crossingPoints.push({
       point: crossing,
-      depthMm: projection.depthMm,
-      lateralMm: projection.lateralMm,
+      depthMm: sectorPoint.depthMm,
+      lateralMm: sectorPoint.lateralMm,
+      sectorClipped: !projection.visible,
     });
   }
 
@@ -664,8 +837,9 @@ export function buildPlaneIntersectionRasterMask({
     return null;
   }
 
-  const clusters = clusterCrossingPoints(crossingPoints, kind)
-    .filter((cluster) => cluster.length >= 2);
+  const rawClusters = clusterCrossingPoints(crossingPoints, kind)
+    .filter((cluster) => cluster.length >= 2 && cluster.some((point) => !point.sectorClipped));
+  const clusters = kind === 'vessel' ? mergeVesselWallClusters(rawClusters) : rawClusters;
   const contoursMm: Vec2[][] = [];
   const hullsMm: Vec2[][] = [];
 
@@ -914,6 +1088,8 @@ export function SimulatorPage() {
   const [layers, setLayers] = useState<SimulatorLayerState>(DEFAULT_LAYERS);
   const [teachingView, setTeachingView] = useState(true);
   const [activeStructure, setActiveStructure] = useState<string | null>(null);
+  const [hiddenSceneStructureIds, setHiddenSceneStructureIds] = useState<string[]>([]);
+  const [lockSceneView, setLockSceneView] = useState(false);
 
   const selectedPreset = useMemo(() => {
     if (!caseData?.presets.length) {
@@ -943,6 +1119,8 @@ export function SimulatorPage() {
     );
     setLayers(normalizeSimulatorLayers(persisted?.layers));
     setTeachingView(typeof persisted?.teachingView === 'boolean' ? persisted.teachingView : true);
+    setHiddenSceneStructureIds(normalizeHiddenSceneStructureIds(persisted?.hiddenSceneStructureIds));
+    setLockSceneView(typeof persisted?.lockSceneView === 'boolean' ? persisted.lockSceneView : false);
   }, [caseData, selectedKey]);
 
   useEffect(() => {
@@ -951,14 +1129,16 @@ export function SimulatorPage() {
     }
 
     writePersistedState({
+      hiddenSceneStructureIds,
       layers,
       lineIndex: lineIndex ?? selectedPreset.line_index,
+      lockSceneView,
       rollDeg,
       sMm,
       selectedKey: selectedPreset.preset_key,
       teachingView,
     });
-  }, [layers, lineIndex, rollDeg, sMm, selectedPreset, teachingView]);
+  }, [hiddenSceneStructureIds, layers, lineIndex, lockSceneView, rollDeg, sMm, selectedPreset, teachingView]);
 
   useEffect(() => {
     if (caseData) {
@@ -1063,6 +1243,26 @@ export function SimulatorPage() {
         .map((item) => item.id),
     );
   }, [sectorItems]);
+  const sceneStructureVisibilityItems = useMemo(() => {
+    if (!caseData) {
+      return [];
+    }
+
+    return simulatorSceneStructureVisibilityItems(caseData);
+  }, [caseData]);
+  const hiddenSceneStructureSet = useMemo(() => new Set(hiddenSceneStructureIds), [hiddenSceneStructureIds]);
+  const sceneVisibleCount = sceneStructureVisibilityItems
+    .filter((item) => !hiddenSceneStructureSet.has(item.id))
+    .length;
+
+  useEffect(() => {
+    if (!sceneStructureVisibilityItems.length) {
+      return;
+    }
+
+    const validIds = new Set(sceneStructureVisibilityItems.map((item) => item.id));
+    setHiddenSceneStructureIds((current) => current.filter((id) => validIds.has(id)));
+  }, [sceneStructureVisibilityItems]);
 
   if (error) {
     return (
@@ -1098,6 +1298,20 @@ export function SimulatorPage() {
   const updateLayer = (key: keyof SimulatorLayerState) => {
     setLayers((current) => ({ ...current, [key]: !current[key] }));
   };
+  const updateSceneStructureVisibility = (id: string, visible: boolean) => {
+    setHiddenSceneStructureIds((current) => {
+      const next = new Set(current);
+
+      if (visible) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+
+      return Array.from(next);
+    });
+  };
+  const showAllSceneStructures = () => setHiddenSceneStructureIds([]);
 
   return (
     <div className="simulator-page">
@@ -1180,6 +1394,10 @@ export function SimulatorPage() {
             <input checked={teachingView} onChange={() => setTeachingView((current) => !current)} type="checkbox" />
             <span>teaching</span>
           </label>
+          <label>
+            <input checked={lockSceneView} onChange={() => setLockSceneView((current) => !current)} type="checkbox" />
+            <span>lock view</span>
+          </label>
           {VIEWABLE_LAYER_KEYS.map((key) => (
             <label key={key}>
               <input checked={layers[key]} onChange={() => updateLayer(key)} type="checkbox" />
@@ -1196,17 +1414,61 @@ export function SimulatorPage() {
               <span className="eyebrow">External anatomy</span>
               <h2>Scope, airway, vessels, lymph nodes, and fan</h2>
             </div>
-            <button className="simulator-button" onClick={() => snapToPreset(selectedPreset)} type="button">
-              Snap
-            </button>
+            <div className="simulator-scene-actions">
+              <details className="simulator-structure-dropdown">
+                <summary>
+                  <span>3D structures</span>
+                  <span>{sceneVisibleCount}/{sceneStructureVisibilityItems.length}</span>
+                </summary>
+                <div className="simulator-structure-dropdown__menu">
+                  <div className="simulator-structure-dropdown__actions">
+                    <span>Visible in 3D</span>
+                    <button type="button" onClick={showAllSceneStructures}>
+                      Show all
+                    </button>
+                  </div>
+                  {(['node', 'vessel'] as const).map((kind) => {
+                    const groupItems = sceneStructureVisibilityItems.filter((item) => item.kind === kind);
+
+                    if (!groupItems.length) {
+                      return null;
+                    }
+
+                    return (
+                      <div className="simulator-structure-dropdown__group" key={kind}>
+                        <div className="simulator-structure-dropdown__group-label">
+                          {kind === 'node' ? 'Lymph nodes' : 'Vessels'}
+                        </div>
+                        {groupItems.map((item) => (
+                          <label className="simulator-structure-dropdown__row" key={item.id}>
+                            <input
+                              checked={!hiddenSceneStructureSet.has(item.id)}
+                              onChange={(event) => updateSceneStructureVisibility(item.id, event.target.checked)}
+                              type="checkbox"
+                            />
+                            <span className="simulator-swatch" style={{ backgroundColor: item.color }} />
+                            <span>{item.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </details>
+              <button className="simulator-button" onClick={() => snapToPreset(selectedPreset)} type="button">
+                Snap
+              </button>
+            </div>
           </div>
           <AnatomyScene
-            activeStructure={activeStructure}
+            activeStructure={null}
             assets={assets}
             cameraPose={cameraPose}
             caseData={caseData}
+            hiddenStructureIds={hiddenSceneStructureSet}
             intersectedStructureIds={intersectedStructureIds}
             layers={layers}
+            lockView={lockSceneView}
             pose={pose}
             selectedPreset={selectedPreset}
             teachingView={teachingView}
