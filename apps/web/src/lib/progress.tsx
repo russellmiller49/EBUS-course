@@ -59,12 +59,20 @@ export interface QuizHistoryEntry {
   completedAt: string;
 }
 
+export interface AssessmentAnswerRecord {
+  questionId: string;
+  selectedOptionIds: string[];
+  correctOptionIds: string[];
+  isCorrect: boolean;
+}
+
 export interface CourseAssessmentProgress {
   completedAt: string | null;
   correctCount: number;
   totalCount: number;
   percent: number;
   attemptCount: number;
+  answers: AssessmentAnswerRecord[];
 }
 
 export interface CourseSurveyProgress {
@@ -128,6 +136,7 @@ type Action =
       correctCount: number;
       totalCount: number;
       percent: number;
+      answers: AssessmentAnswerRecord[];
     }
   | { type: 'submitCourseSurvey'; responses: Record<string, string> }
   | { type: 'recordRecognitionAttempt'; stationId: string; correct: boolean }
@@ -156,6 +165,7 @@ interface LearnerProgressContextValue {
     correctCount: number;
     totalCount: number;
     percent: number;
+    answers: AssessmentAnswerRecord[];
   }) => void;
   submitCourseSurvey: (responses: Record<string, string>) => void;
   recordRecognitionAttempt: (stationId: string, correct: boolean) => void;
@@ -484,6 +494,37 @@ function normalizeTnmAttemptStats(candidate: unknown): Record<string, TnmCaseAtt
   );
 }
 
+function normalizeStringArray(candidate: unknown): string[] {
+  return Array.isArray(candidate) ? candidate.filter((value): value is string => typeof value === 'string') : [];
+}
+
+function normalizeAssessmentAnswerRecords(candidate: unknown): AssessmentAnswerRecord[] {
+  if (!Array.isArray(candidate)) {
+    return [];
+  }
+
+  return candidate.flatMap((value) => {
+    if (!value || typeof value !== 'object') {
+      return [];
+    }
+
+    const record = value as Partial<AssessmentAnswerRecord>;
+
+    if (typeof record.questionId !== 'string') {
+      return [];
+    }
+
+    return [
+      {
+        questionId: record.questionId,
+        selectedOptionIds: normalizeStringArray(record.selectedOptionIds),
+        correctOptionIds: normalizeStringArray(record.correctOptionIds),
+        isCorrect: record.isCorrect === true,
+      },
+    ];
+  });
+}
+
 function normalizeCourseAssessmentResults(candidate: unknown): Record<string, CourseAssessmentProgress> {
   if (!candidate || typeof candidate !== 'object') {
     return {};
@@ -517,6 +558,7 @@ function normalizeCourseAssessmentResults(candidate: unknown): Record<string, Co
             totalCount,
             percent,
             attemptCount: typeof record.attemptCount === 'number' ? Math.max(0, Math.floor(record.attemptCount)) : 0,
+            answers: normalizeAssessmentAnswerRecords(record.answers),
           },
         ],
       ];
@@ -669,6 +711,7 @@ export function learnerProgressReducer(state: LearnerProgressState, action: Acti
             totalCount: Math.max(0, action.totalCount),
             percent: Math.max(0, Math.min(100, Math.round(action.percent))),
             attemptCount: (current?.attemptCount ?? 0) + 1,
+            answers: action.answers,
           },
         },
       };
@@ -1028,13 +1071,20 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const recordCourseAssessmentResult = useCallback(
-    (entry: { assessmentId: string; correctCount: number; totalCount: number; percent: number }) => {
+    (entry: {
+      assessmentId: string;
+      correctCount: number;
+      totalCount: number;
+      percent: number;
+      answers: AssessmentAnswerRecord[];
+    }) => {
       dispatch({
         type: 'recordCourseAssessmentResult',
         assessmentId: entry.assessmentId,
         correctCount: entry.correctCount,
         totalCount: entry.totalCount,
         percent: entry.percent,
+        answers: entry.answers,
       });
     },
     [],

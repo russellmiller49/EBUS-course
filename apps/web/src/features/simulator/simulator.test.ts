@@ -244,9 +244,11 @@ describe('simulator static assets', () => {
   it('loads the simplified model trial manifest with mesh-derived point clouds and no snapshots', () => {
     const manifest = readCaseAsset<SimulatorCaseManifest>('case_manifest.simplified.web.json');
     const primaryModel = manifest.assets.clean_models?.find((model) => model.primary);
+    const primaryModelPath = resolve(process.cwd(), `public/simulator/case-001/${primaryModel?.asset}`);
 
     expect(manifest.case_id).toContain('simplified');
-    expect(primaryModel?.asset).toBe('models/simplified_sim_model.gltf');
+    expect(primaryModel?.asset).toBe('models/simplified_sim_model.glb');
+    expect(readFileSync(primaryModelPath).subarray(0, 4).toString()).toBe('glTF');
     expect(manifest.render_defaults.sector_realism).toBe('realistic');
     expect(Object.keys(manifest.sector_snapshots ?? {})).toHaveLength(0);
     expect(manifest.presets).toHaveLength(11);

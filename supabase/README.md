@@ -3,9 +3,9 @@
 This app now supports:
 
 - invited learner login with Supabase Auth
-- self-service learner signup
+- self-service learner signup with separate login and institutional email fields
 - course leadership approval before self-service signups can access modules
-- shared-passcode admin dashboard at `/admin`
+- shared-passcode admin dashboard at `/admin` with pretest and post-test answer review
 - password recovery emails
 - learner profile editing
 - first-password setup after invite acceptance
@@ -38,7 +38,7 @@ INVITE_REDIRECT_TO="https://your-app-host/auth" \
 npm run invite:learners -- --emails ./learners.txt
 ```
 
-The script also accepts `NEXT_PUBLIC_SUPABASE_URL` or `NEXT_PUBLIC_SUPABASE_PROJECT_REF` as fallbacks for the project URL. It uses the admin API to send Supabase invite emails and seeds a `learner_profiles` row with `must_set_password = true`.
+The script also accepts `NEXT_PUBLIC_SUPABASE_URL` or `NEXT_PUBLIC_SUPABASE_PROJECT_REF` as fallbacks for the project URL. It uses the admin API to send Supabase invite emails and seeds a `learner_profiles` row with `must_set_password = true`. Invite emails become the learner login email; institutional email can be added separately in the profile.
 
 Invited learners are marked approved by the script. Self-service signups remain pending until course leadership opens `/admin`, enters the shared leadership password, and approves the learner.
 

@@ -65,6 +65,7 @@ describe('courseWorkflow', () => {
       correctCount: 5,
       totalCount: 5,
       percent: 100,
+      answers: [],
     });
 
     expect(getCourseStepModels(afterQuiz).find((step) => step.id === 'lecture-03')?.unlocked).toBe(true);
@@ -90,6 +91,7 @@ describe('courseWorkflow', () => {
         totalCount: assessment.questions.length,
         percent: 100,
         attemptCount: 1,
+        answers: [],
       };
     }
 

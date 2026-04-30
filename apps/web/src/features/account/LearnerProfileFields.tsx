@@ -81,6 +81,7 @@ export function LearnerProfileFields({
           type="email"
           value={values.institutionalEmail}
         />
+        <small className="field__help">Used for program records. It can match your login email.</small>
       </label>
       <label className="field">
         <span>Fellowship year</span>

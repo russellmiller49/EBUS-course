@@ -62,7 +62,7 @@ interface AuthContextValue {
   refreshProfile: () => Promise<void>;
   requestPasswordRecovery: (email: string) => Promise<void>;
   signInWithPassword: (email: string, password: string) => Promise<void>;
-  signUpWithProfile: (profile: LearnerProfileInput, password: string) => Promise<void>;
+  signUpWithProfile: (loginEmail: string, profile: LearnerProfileInput, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateLearnerProfile: (profile: LearnerProfileInput) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
@@ -360,7 +360,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsPasswordRecoverySession(false);
   }, []);
 
-  const signUpWithProfile = useCallback(async (nextProfile: LearnerProfileInput, password: string) => {
+  const signUpWithProfile = useCallback(async (loginEmail: string, nextProfile: LearnerProfileInput, password: string) => {
     const client = getSupabaseBrowserClient();
 
     if (!client) {
@@ -368,9 +368,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const normalizedProfile = toProfileRow(nextProfile);
+    const normalizedLoginEmail = loginEmail.trim().toLowerCase();
     const institutionalEmail = normalizedProfile.institutional_email;
+
+    if (!normalizedLoginEmail) {
+      throw new Error('Enter your login email.');
+    }
+
     const { data, error } = await client.auth.signUp({
-      email: institutionalEmail,
+      email: normalizedLoginEmail,
       password,
       options: {
         data: {
@@ -390,7 +396,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await upsertLearnerProfile(
         {
           id: data.session.user.id,
-          email: data.session.user.email ?? institutionalEmail,
+          email: data.session.user.email ?? normalizedLoginEmail,
           ...normalizedProfile,
           last_sign_in_at: new Date().toISOString(),
           must_set_password: false,

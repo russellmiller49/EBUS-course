@@ -30,6 +30,8 @@ function createLearner(overrides: Partial<AdminLearnerOverview> = {}): AdminLear
     snapshotUpdatedAt: null,
     pretestPercent: null,
     pretestSubmittedAt: null,
+    pretestAnswers: [],
+    postTestAnswers: [],
     totalTimeSpentSeconds: 0,
     moduleProgress: [],
     lectureSummary: {
@@ -49,6 +51,21 @@ describe('admin learner overview helpers', () => {
       full_name: 'Learner One',
       approval_status: 'approved',
       pretest_percent: 86,
+      pretest_answers: {
+        'pretest-01': 'b',
+      },
+      assessment_results: {
+        'post-test': {
+          answers: [
+            {
+              questionId: 'post-test-q01',
+              selectedOptionIds: ['a'],
+              correctOptionIds: ['a'],
+              isCorrect: true,
+            },
+          ],
+        },
+      },
       total_time_spent_seconds: 1200,
       module_progress: [
         {
@@ -68,6 +85,18 @@ describe('admin learner overview helpers', () => {
 
     expect(learner.approvalStatus).toBe('approved');
     expect(learner.pretestPercent).toBe(86);
+    expect(learner.pretestAnswers[0]).toMatchObject({
+      questionId: 'pretest-01',
+      isCorrect: true,
+      selectedOptionIds: ['b'],
+      correctOptionIds: ['b'],
+    });
+    expect(learner.postTestAnswers[0]).toMatchObject({
+      questionId: 'post-test-q01',
+      isCorrect: true,
+      selectedOptionIds: ['a'],
+      correctOptionIds: ['a'],
+    });
     expect(learner.totalTimeSpentSeconds).toBe(1200);
     expect(learner.moduleProgress[0]).toMatchObject({
       moduleId: 'knobology',

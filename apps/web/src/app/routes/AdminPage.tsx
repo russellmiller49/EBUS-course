@@ -5,6 +5,7 @@ import {
   buildAdminProgressSummary,
   fetchAdminLearnerOverview,
   getLearnerAverageProgress,
+  type AdminAnswerDetail,
   type AdminLearnerOverview,
 } from '@/lib/admin';
 import {
@@ -74,6 +75,69 @@ function formatFellowshipYear(value: string | null) {
 
 function getProgressByModule(learner: AdminLearnerOverview) {
   return new Map(learner.moduleProgress.map((module) => [module.moduleId, module]));
+}
+
+function formatAnswerLabels(labels: string[]) {
+  return labels.length > 0 ? labels.join(' | ') : 'Not answered';
+}
+
+function getCorrectAnswerCount(answers: AdminAnswerDetail[]) {
+  return answers.filter((answer) => answer.isCorrect).length;
+}
+
+function AdminAssessmentAnswers({
+  answers,
+  emptyLabel,
+  title,
+}: {
+  answers: AdminAnswerDetail[];
+  emptyLabel: string;
+  title: string;
+}) {
+  if (answers.length === 0) {
+    return (
+      <div className="admin-answer-panel">
+        <strong>{title}</strong>
+        <p>{emptyLabel}</p>
+      </div>
+    );
+  }
+
+  return (
+    <details className="admin-answer-panel">
+      <summary>
+        <strong>{title}</strong>
+        <span>{getCorrectAnswerCount(answers)}/{answers.length} correct</span>
+      </summary>
+      <div className="admin-answer-list">
+        {answers.map((answer, index) => (
+          <article
+            key={answer.questionId}
+            className={`admin-answer-row${answer.isCorrect ? ' admin-answer-row--correct' : ' admin-answer-row--incorrect'}`}
+          >
+            <div>
+              <span className="admin-answer-row__index">Q{index + 1}</span>
+              <p>{answer.prompt}</p>
+            </div>
+            <dl>
+              <div>
+                <dt>Selected</dt>
+                <dd>{formatAnswerLabels(answer.selectedLabels)}</dd>
+              </div>
+              <div>
+                <dt>Correct</dt>
+                <dd>{formatAnswerLabels(answer.correctLabels)}</dd>
+              </div>
+              <div>
+                <dt>Result</dt>
+                <dd>{answer.isCorrect ? 'Correct' : 'Incorrect'}</dd>
+              </div>
+            </dl>
+          </article>
+        ))}
+      </div>
+    </details>
+  );
 }
 
 export function AdminPage() {
@@ -294,8 +358,12 @@ export function AdminPage() {
 
                 <dl className="admin-info-grid">
                   <div>
-                    <dt>Email</dt>
-                    <dd>{learner.email ?? learner.institutionalEmail ?? 'Not provided'}</dd>
+                    <dt>Login email</dt>
+                    <dd>{learner.email ?? 'Not provided'}</dd>
+                  </div>
+                  <div>
+                    <dt>Institutional email</dt>
+                    <dd>{learner.institutionalEmail ?? 'Not provided'}</dd>
                   </div>
                   <div>
                     <dt>Training year</dt>
@@ -344,6 +412,19 @@ export function AdminPage() {
                     <span>Total time</span>
                     <strong>{formatDuration(learner.totalTimeSpentSeconds)}</strong>
                   </div>
+                </div>
+
+                <div className="admin-answer-stack">
+                  <AdminAssessmentAnswers
+                    answers={learner.pretestAnswers}
+                    emptyLabel="No synced pretest submission answers yet."
+                    title="Pretest answers"
+                  />
+                  <AdminAssessmentAnswers
+                    answers={learner.postTestAnswers}
+                    emptyLabel="No synced post-test submission answers yet."
+                    title="Post-test answers"
+                  />
                 </div>
 
                 <div className="admin-module-progress" aria-label={`${learner.fullName ?? 'Learner'} module progress`}>

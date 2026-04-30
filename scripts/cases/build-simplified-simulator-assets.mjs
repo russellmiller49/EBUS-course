@@ -4,7 +4,8 @@ import path from 'node:path';
 const repoRoot = process.cwd();
 const sourceModelPath = path.join(repoRoot, 'Simplified _sim_model.gltf');
 const caseRoot = path.join(repoRoot, 'apps/web/public/simulator/case-001');
-const outputModelPath = path.join(caseRoot, 'models/simplified_sim_model.gltf');
+const outputGltfModelPath = path.join(caseRoot, 'models/simplified_sim_model.gltf');
+const outputGlbModelPath = path.join(caseRoot, 'models/simplified_sim_model.glb');
 const outputGeometryRoot = path.join(caseRoot, 'geometry/simplified');
 const sourceManifestPath = path.join(caseRoot, 'case_manifest.web.json');
 const outputManifestPath = path.join(caseRoot, 'case_manifest.simplified.web.json');
@@ -197,6 +198,71 @@ function loadGltfBuffers(gltf) {
 
     return Buffer.from(uri.split(',')[1], 'base64');
   });
+}
+
+function align4(value) {
+  return (value + 3) & ~3;
+}
+
+function writeEmbeddedGltfAsGlb(gltf, buffers, outputPath) {
+  const output = JSON.parse(JSON.stringify(gltf));
+  const offsets = [];
+  const binaryParts = [];
+  let binaryLength = 0;
+
+  for (let index = 0; index < buffers.length; index += 1) {
+    const alignedLength = align4(binaryLength);
+    if (alignedLength > binaryLength) {
+      binaryParts.push(Buffer.alloc(alignedLength - binaryLength));
+      binaryLength = alignedLength;
+    }
+
+    offsets[index] = binaryLength;
+    binaryParts.push(buffers[index]);
+    binaryLength += buffers[index].length;
+  }
+
+  const paddedBinaryLength = align4(binaryLength);
+  if (paddedBinaryLength > binaryLength) {
+    binaryParts.push(Buffer.alloc(paddedBinaryLength - binaryLength));
+  }
+
+  const binaryChunk = Buffer.concat(binaryParts, paddedBinaryLength);
+
+  for (const view of output.bufferViews ?? []) {
+    const sourceBufferIndex = view.buffer ?? 0;
+    view.buffer = 0;
+    view.byteOffset = (view.byteOffset ?? 0) + offsets[sourceBufferIndex];
+  }
+
+  output.buffers = [{ byteLength: binaryChunk.length }];
+
+  const jsonBuffer = Buffer.from(JSON.stringify(output), 'utf8');
+  const jsonChunk = Buffer.alloc(align4(jsonBuffer.length), 0x20);
+  jsonBuffer.copy(jsonChunk);
+
+  const totalLength = 12 + 8 + jsonChunk.length + 8 + binaryChunk.length;
+  const glb = Buffer.alloc(totalLength);
+  let cursor = 0;
+  glb.writeUInt32LE(0x46546c67, cursor); // glTF
+  cursor += 4;
+  glb.writeUInt32LE(2, cursor);
+  cursor += 4;
+  glb.writeUInt32LE(totalLength, cursor);
+  cursor += 4;
+  glb.writeUInt32LE(jsonChunk.length, cursor);
+  cursor += 4;
+  glb.writeUInt32LE(0x4e4f534a, cursor); // JSON
+  cursor += 4;
+  jsonChunk.copy(glb, cursor);
+  cursor += jsonChunk.length;
+  glb.writeUInt32LE(binaryChunk.length, cursor);
+  cursor += 4;
+  glb.writeUInt32LE(0x004e4942, cursor); // BIN
+  cursor += 4;
+  binaryChunk.copy(glb, cursor);
+
+  fs.writeFileSync(outputPath, glb);
 }
 
 function accessorRows(gltf, buffers, accessorIndex) {
@@ -640,11 +706,12 @@ if (!fs.existsSync(sourceModelPath)) {
   throw new Error(`Missing simplified GLTF at ${sourceModelPath}`);
 }
 
-fs.mkdirSync(path.dirname(outputModelPath), { recursive: true });
-fs.copyFileSync(sourceModelPath, outputModelPath);
+fs.mkdirSync(path.dirname(outputGltfModelPath), { recursive: true });
+fs.copyFileSync(sourceModelPath, outputGltfModelPath);
 
 const gltf = JSON.parse(fs.readFileSync(sourceModelPath, 'utf8'));
 const buffers = loadGltfBuffers(gltf);
+writeEmbeddedGltfAsGlb(gltf, buffers, outputGlbModelPath);
 const meshes = collectMeshes(gltf, buffers);
 const generatedVessels = new Map();
 const generatedStations = new Map();
@@ -692,7 +759,7 @@ manifest.assets = {
   ...manifest.assets,
   clean_models: [
     {
-      asset: 'models/simplified_sim_model.gltf',
+      asset: 'models/simplified_sim_model.glb',
       coordinate_frame: 'slicer_gltf_scene_units_aligned_to_web_axes',
       key: 'simplified_sim_model',
       label: 'Simplified simulator model',
@@ -713,13 +780,14 @@ manifest.sector_snapshots = {};
 manifest.notes = {
   ...(manifest.notes ?? {}),
   simplified_model_trial:
-    'Uses Simplified _sim_model.gltf for anatomy and mesh-derived point clouds. Station snap targets are updated from Simplified_point_list when markers are available.',
+    'Uses Simplified _sim_model.gltf converted to GLB for anatomy and mesh-derived point clouds. Station snap targets are updated from Simplified_point_list when markers are available.',
 };
 
 fs.writeFileSync(outputManifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
 process.stdout.write([
-  `Copied ${path.relative(repoRoot, outputModelPath)}`,
+  `Copied ${path.relative(repoRoot, outputGltfModelPath)}`,
+  `Wrote ${path.relative(repoRoot, outputGlbModelPath)}`,
   `Wrote ${path.relative(repoRoot, outputManifestPath)}`,
   `Generated ${generatedVessels.size} vessel point clouds`,
   `Generated ${generatedStations.size} station point clouds`,

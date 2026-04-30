@@ -1,3 +1,6 @@
+import { finalPostTestAssessment } from '@/content/courseAssessments';
+import { pretestContent } from '@/content/pretest';
+import type { PretestQuestionContent, QuizQuestionContent } from '@/content/types';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 
 export interface AdminModuleProgress {
@@ -12,6 +15,16 @@ export interface AdminLectureSummary {
   completedCount: number;
   totalWatchedSeconds: number;
   lastOpenedAt: string | null;
+}
+
+export interface AdminAnswerDetail {
+  questionId: string;
+  prompt: string;
+  selectedOptionIds: string[];
+  selectedLabels: string[];
+  correctOptionIds: string[];
+  correctLabels: string[];
+  isCorrect: boolean;
 }
 
 export interface AdminLearnerOverview {
@@ -36,6 +49,8 @@ export interface AdminLearnerOverview {
   snapshotUpdatedAt: string | null;
   pretestPercent: number | null;
   pretestSubmittedAt: string | null;
+  pretestAnswers: AdminAnswerDetail[];
+  postTestAnswers: AdminAnswerDetail[];
   totalTimeSpentSeconds: number;
   moduleProgress: AdminModuleProgress[];
   lectureSummary: AdminLectureSummary;
@@ -60,6 +75,10 @@ function readString(value: unknown) {
 
 function readNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function normalizeStringArray(candidate: unknown): string[] {
+  return Array.isArray(candidate) ? candidate.filter((value): value is string => typeof value === 'string') : [];
 }
 
 function readApprovalStatus(value: unknown): 'pending' | 'approved' {
@@ -109,6 +128,97 @@ function normalizeLectureSummary(candidate: unknown): AdminLectureSummary {
   };
 }
 
+function getPretestOptionLabel(question: PretestQuestionContent, optionId: string) {
+  return question.options.find((option) => option.id === optionId)?.label ?? optionId;
+}
+
+function getQuizOptionLabel(question: QuizQuestionContent, optionId: string) {
+  return question.options.find((option) => option.id === optionId)?.label ?? optionId;
+}
+
+function normalizePretestAnswerDetails(candidate: unknown): AdminAnswerDetail[] {
+  const rawAnswers = candidate && typeof candidate === 'object' ? (candidate as Record<string, unknown>) : {};
+
+  if (Object.keys(rawAnswers).length === 0) {
+    return [];
+  }
+
+  return pretestContent.questions.map((question) => {
+    const selectedOptionId = readString(rawAnswers[question.id]);
+    const selectedOptionIds = selectedOptionId ? [selectedOptionId] : [];
+    const correctOptionIds = [question.correctOptionId];
+
+    return {
+      questionId: question.id,
+      prompt: question.prompt,
+      selectedOptionIds,
+      selectedLabels: selectedOptionIds.map((optionId) => getPretestOptionLabel(question, optionId)),
+      correctOptionIds,
+      correctLabels: correctOptionIds.map((optionId) => getPretestOptionLabel(question, optionId)),
+      isCorrect: selectedOptionId === question.correctOptionId,
+    };
+  });
+}
+
+function normalizePostTestAnswerDetails(candidate: unknown): AdminAnswerDetail[] {
+  if (!finalPostTestAssessment || !candidate || typeof candidate !== 'object') {
+    return [];
+  }
+
+  const assessmentResults = candidate as Record<string, unknown>;
+  const postTestResult = assessmentResults[finalPostTestAssessment.id];
+
+  if (!postTestResult || typeof postTestResult !== 'object') {
+    return [];
+  }
+
+  const answerRecords = (postTestResult as Record<string, unknown>).answers;
+
+  if (!Array.isArray(answerRecords)) {
+    return [];
+  }
+
+  const answerByQuestionId = new Map(
+    answerRecords.flatMap((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        return [];
+      }
+
+      const raw = entry as Record<string, unknown>;
+      const questionId = readString(raw.questionId);
+
+      return questionId
+        ? [
+            [
+              questionId,
+              {
+                selectedOptionIds: normalizeStringArray(raw.selectedOptionIds),
+                correctOptionIds: normalizeStringArray(raw.correctOptionIds),
+                isCorrect: raw.isCorrect === true,
+              },
+            ] as const,
+          ]
+        : [];
+    }),
+  );
+
+  return finalPostTestAssessment.questions.map((question) => {
+    const answer = answerByQuestionId.get(question.id);
+    const selectedOptionIds = answer?.selectedOptionIds ?? [];
+    const correctOptionIds = answer?.correctOptionIds.length ? answer.correctOptionIds : question.correctOptionIds;
+
+    return {
+      questionId: question.id,
+      prompt: question.prompt,
+      selectedOptionIds,
+      selectedLabels: selectedOptionIds.map((optionId) => getQuizOptionLabel(question, optionId)),
+      correctOptionIds,
+      correctLabels: correctOptionIds.map((optionId) => getQuizOptionLabel(question, optionId)),
+      isCorrect: answer?.isCorrect ?? false,
+    };
+  });
+}
+
 export function normalizeAdminLearnerOverview(candidate: unknown): AdminLearnerOverview {
   const raw = candidate && typeof candidate === 'object' ? (candidate as Record<string, unknown>) : {};
 
@@ -134,6 +244,8 @@ export function normalizeAdminLearnerOverview(candidate: unknown): AdminLearnerO
     snapshotUpdatedAt: readString(raw.snapshot_updated_at),
     pretestPercent: readNumber(raw.pretest_percent),
     pretestSubmittedAt: readString(raw.pretest_submitted_at),
+    pretestAnswers: normalizePretestAnswerDetails(raw.pretest_answers),
+    postTestAnswers: normalizePostTestAnswerDetails(raw.assessment_results),
     totalTimeSpentSeconds: Math.max(0, Math.floor(readNumber(raw.total_time_spent_seconds) ?? 0)),
     moduleProgress: normalizeModuleProgress(raw.module_progress),
     lectureSummary: normalizeLectureSummary(raw.lecture_summary),

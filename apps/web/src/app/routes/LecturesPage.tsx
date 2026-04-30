@@ -20,6 +20,7 @@ import {
   isCourseSurveyComplete,
   type CourseWorkflowStepModel,
 } from '@/lib/courseWorkflow';
+import type { QuizResult } from '@/lib/quiz';
 import { type CourseAssessmentProgress, useLearnerProgress } from '@/lib/progress';
 
 const VIDEO_TABS = [
@@ -214,16 +215,23 @@ export function LecturesPage() {
 
   function handleCourseAssessmentComplete(
     assessment: CourseAssessmentContent,
-    result: { correctCount: number; totalCount: number; percent: number },
+    result: QuizResult,
   ) {
     const wasComplete = Boolean(state.courseAssessmentResults[assessment.id]?.completedAt);
     const nextCompletedCount = lectureModuleProgress.completedCount + (wasComplete ? 0 : 1);
+    const answers = result.items.map((item) => ({
+      questionId: item.question.id,
+      selectedOptionIds: item.selectedOptionIds,
+      correctOptionIds: item.question.correctOptionIds,
+      isCorrect: item.isCorrect,
+    }));
 
     recordCourseAssessmentResult({
       assessmentId: assessment.id,
       correctCount: result.correctCount,
       totalCount: result.totalCount,
       percent: result.percent,
+      answers,
     });
     recordQuizResult({
       id: `${assessment.id}-${Date.now()}`,
@@ -364,11 +372,11 @@ export function LecturesPage() {
                           {active && workflow?.unlocked ? (
                             <QuizCard
                               key={`${assessment.id}-${progress?.attemptCount ?? 0}`}
-                              deferFeedbackUntilComplete
+                              deferFeedbackUntilComplete={assessment.kind !== 'post-test'}
                               label={assessment.title}
                               onComplete={(result) => handleCourseAssessmentComplete(assessment, result)}
                               questions={assessment.questions}
-                              revealAnswers={assessment.kind !== 'post-test' || completionArtifactsUnlocked}
+                              revealAnswers
                               showRunningScore={false}
                             />
                           ) : null}

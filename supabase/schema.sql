@@ -407,6 +407,8 @@ returns table (
   snapshot_updated_at timestamptz,
   pretest_percent integer,
   pretest_submitted_at timestamptz,
+  pretest_answers jsonb,
+  assessment_results jsonb,
   total_time_spent_seconds integer,
   module_progress jsonb,
   lecture_summary jsonb
@@ -441,6 +443,8 @@ begin
     snapshot.updated_at as snapshot_updated_at,
     pretest_row.percent as pretest_percent,
     pretest_row.submitted_at as pretest_submitted_at,
+    coalesce(pretest_row.answers, '{}'::jsonb) as pretest_answers,
+    coalesce(snapshot.payload->'courseAssessmentResults', '{}'::jsonb) as assessment_results,
     coalesce(module_rows.total_time_spent_seconds, 0)::integer as total_time_spent_seconds,
     coalesce(module_rows.module_progress, '[]'::jsonb) as module_progress,
     coalesce(lecture_rows.lecture_summary, '{"completedCount": 0, "totalWatchedSeconds": 0, "lastOpenedAt": null}'::jsonb) as lecture_summary
@@ -476,7 +480,8 @@ begin
   left join lateral (
     select
       pretest_attempt.percent,
-      pretest_attempt.submitted_at
+      pretest_attempt.submitted_at,
+      pretest_attempt.answers
     from public.learner_pretest_attempts as pretest_attempt
     where pretest_attempt.learner_id = profile.id
     order by pretest_attempt.submitted_at desc

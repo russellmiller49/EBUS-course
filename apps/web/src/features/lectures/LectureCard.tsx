@@ -104,20 +104,15 @@ export function LectureCard({
         </div>
       </div>
 
-      <div className="lecture-card__media">
-        {lecture.poster && !posterBroken ? (
+      {lecture.poster && !posterBroken ? (
+        <div className="lecture-card__media">
           <img
             alt={`${lecture.title} poster`}
             onError={() => setPosterBroken(true)}
             src={lecture.poster}
           />
-        ) : (
-          <div className="lecture-card__placeholder">
-            <strong>Poster slot ready</strong>
-            <span>{lecture.poster ?? 'Add poster path in lectures.json'}</span>
-          </div>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       <div className="tag-row">
         {lecture.topics.map((topic) => (

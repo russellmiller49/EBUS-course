@@ -2033,6 +2033,12 @@ iframe {
   color: var(--text-soft);
 }
 
+.field__help {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
 .field input,
 .field select,
 .field textarea {
@@ -2278,6 +2284,77 @@ iframe {
 
 .admin-progress-summary strong {
   font-family: 'Space Mono', monospace;
+  color: var(--text);
+}
+
+.admin-answer-stack,
+.admin-answer-list,
+.admin-answer-row,
+.admin-answer-row dl {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-answer-stack {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.admin-answer-panel {
+  min-width: 0;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(123, 163, 200, 0.14);
+  background: rgba(7, 17, 29, 0.34);
+}
+
+.admin-answer-panel summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.admin-answer-panel summary span,
+.admin-answer-row dt,
+.admin-answer-row__index {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.admin-answer-panel p,
+.admin-answer-row p {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.admin-answer-list {
+  margin-top: 12px;
+}
+
+.admin-answer-row {
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(123, 163, 200, 0.12);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.admin-answer-row--correct {
+  border-color: rgba(143, 224, 192, 0.22);
+}
+
+.admin-answer-row--incorrect {
+  border-color: rgba(225, 161, 168, 0.2);
+}
+
+.admin-answer-row dl {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  margin: 0;
+}
+
+.admin-answer-row dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
   color: var(--text);
 }
 

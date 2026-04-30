@@ -5,12 +5,12 @@ import { emptyProfileInput, LearnerProfileFields, validateProfileInput } from '@
 import type { LearnerProfile, LearnerProfileInput } from '@/lib/auth';
 import { useAuth } from '@/lib/auth';
 
-function profileToInput(profile: LearnerProfile | null, fallbackEmail: string): LearnerProfileInput {
+function profileToInput(profile: LearnerProfile | null): LearnerProfileInput {
   return {
     fullName: profile?.fullName ?? '',
     degree: profile?.degree ?? 'MD',
     institution: profile?.institution ?? '',
-    institutionalEmail: profile?.institutionalEmail ?? profile?.email ?? fallbackEmail,
+    institutionalEmail: profile?.institutionalEmail ?? '',
     fellowshipYear: profile?.fellowshipYear ?? 'first',
     flexibleBronchoscopyCount: profile?.flexibleBronchoscopyCount ?? 0,
     ebusCount: profile?.ebusCount ?? 0,
@@ -26,8 +26,8 @@ export function AccountPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setFormValues(profileToInput(profile, user?.email ?? ''));
-  }, [profile, user?.email]);
+    setFormValues(profileToInput(profile));
+  }, [profile]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -86,7 +86,7 @@ export function AccountPage() {
         <div className="eyebrow">Account</div>
         <h2>Learner profile</h2>
         <p>
-          Update your training profile for course tracking. Your sign-in email is managed by Supabase and remains{' '}
+          Update your training profile for course tracking. Your login email is managed by Supabase and remains{' '}
           {user?.email ?? 'your account email'}.
         </p>
         {message ? <p className="auth-card__message">{message}</p> : null}

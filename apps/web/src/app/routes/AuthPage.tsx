@@ -112,7 +112,13 @@ export function AuthPage() {
   async function handleSignUp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    const loginEmail = email.trim();
     const profileError = validateProfileInput(signupProfile);
+
+    if (!loginEmail) {
+      setError('Enter your login email.');
+      return;
+    }
 
     if (profileError) {
       setError(profileError);
@@ -129,7 +135,7 @@ export function AuthPage() {
     setMessage(null);
 
     try {
-      await signUpWithProfile(signupProfile, password);
+      await signUpWithProfile(loginEmail, signupProfile, password);
       setMessage('Account created. Course leadership will approve access before the modules open.');
       setPassword('');
     } catch (caught) {
@@ -324,10 +330,10 @@ export function AuthPage() {
           {isPasswordForm
             ? 'Use a new password for your learner account, then continue into the course workspace.'
             : mode === 'sign-up'
-              ? 'Use your institutional email so course participation and progress stay tied to the correct training program.'
+              ? 'Choose the email you will use to log in, then add the institutional email tied to your training program.'
               : mode === 'recover'
-                ? 'Enter your account email and Supabase will send a recovery link.'
-                : 'Use the email and password from your invite or the account you created for the course.'}
+                ? 'Enter your login email and Supabase will send a recovery link.'
+                : 'Use the login email and password from your invite or the account you created for the course.'}
         </p>
         {message ? <p className="auth-card__message">{message}</p> : null}
         {error ? <p className="auth-card__error">{error}</p> : null}
@@ -349,45 +355,58 @@ export function AuthPage() {
               </div>
             </div>
           ) : (
-          <form className="auth-form" onSubmit={handlePasswordUpdate}>
-            <label className="field">
-              <span>Account email</span>
-              <input disabled type="email" value={user?.email ?? ''} />
-            </label>
-            <label className="field">
-              <span>New password</span>
-              <input
-                autoComplete="new-password"
-                onChange={(event) => setNewPassword(event.target.value)}
-                required
-                type="password"
-                value={newPassword}
-              />
-            </label>
-            <label className="field">
-              <span>Confirm password</span>
-              <input
-                autoComplete="new-password"
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                required
-                type="password"
-                value={confirmPassword}
-              />
-            </label>
-            <div className="button-row button-row--wrap">
-              <button className="button" disabled={isSubmitting} type="submit">
-                {isSubmitting ? 'Saving password...' : 'Save password'}
-              </button>
-              {user ? (
-                <button className="button button--ghost" onClick={() => void signOut()} type="button">
-                  Sign out
+            <form className="auth-form" onSubmit={handlePasswordUpdate}>
+              <label className="field">
+                <span>Login email</span>
+                <input disabled type="email" value={user?.email ?? ''} />
+              </label>
+              <label className="field">
+                <span>New password</span>
+                <input
+                  autoComplete="new-password"
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  required
+                  type="password"
+                  value={newPassword}
+                />
+              </label>
+              <label className="field">
+                <span>Confirm password</span>
+                <input
+                  autoComplete="new-password"
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  required
+                  type="password"
+                  value={confirmPassword}
+                />
+              </label>
+              <div className="button-row button-row--wrap">
+                <button className="button" disabled={isSubmitting} type="submit">
+                  {isSubmitting ? 'Saving password...' : 'Save password'}
                 </button>
-              ) : null}
-            </div>
-          </form>
+                {user ? (
+                  <button className="button button--ghost" onClick={() => void signOut()} type="button">
+                    Sign out
+                  </button>
+                ) : null}
+              </div>
+            </form>
           )
         ) : mode === 'sign-up' ? (
           <form className="auth-form" onSubmit={handleSignUp}>
+            <label className="field">
+              <span>Login email</span>
+              <input
+                autoComplete="email"
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                type="email"
+                value={email}
+              />
+              <small className="field__help">
+                This can be the same as your institutional email, or a different address you prefer for sign in.
+              </small>
+            </label>
             <LearnerProfileFields onChange={setSignupProfile} values={signupProfile} />
             <label className="field">
               <span>Password</span>
@@ -411,7 +430,7 @@ export function AuthPage() {
         ) : mode === 'recover' ? (
           <form className="auth-form" onSubmit={handleRecovery}>
             <label className="field">
-              <span>Email</span>
+              <span>Login email</span>
               <input
                 autoComplete="email"
                 onChange={(event) => setEmail(event.target.value)}
@@ -432,7 +451,7 @@ export function AuthPage() {
         ) : (
           <form className="auth-form" onSubmit={handleSignIn}>
             <label className="field">
-              <span>Email</span>
+              <span>Login email</span>
               <input
                 autoComplete="email"
                 onChange={(event) => setEmail(event.target.value)}

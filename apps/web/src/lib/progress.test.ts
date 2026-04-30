@@ -105,6 +105,14 @@ describe('learnerProgressReducer', () => {
       correctCount: 4,
       totalCount: 5,
       percent: 80,
+      answers: [
+        {
+          questionId: 'quiz-q1',
+          selectedOptionIds: ['a'],
+          correctOptionIds: ['a'],
+          isCorrect: true,
+        },
+      ],
     });
     const surveyed = learnerProgressReducer(assessed, {
       type: 'submitCourseSurvey',
@@ -118,6 +126,14 @@ describe('learnerProgressReducer', () => {
       totalCount: 5,
       percent: 80,
       attemptCount: 1,
+      answers: [
+        {
+          questionId: 'quiz-q1',
+          selectedOptionIds: ['a'],
+          correctOptionIds: ['a'],
+          isCorrect: true,
+        },
+      ],
       completedAt: expect.any(String),
     });
     expect(surveyed.courseSurvey.submittedAt).toEqual(expect.any(String));
