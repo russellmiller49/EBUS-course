@@ -23,46 +23,33 @@ import { useSimulatorCase, useSimulatorSectorSnapshot } from './useSimulatorCase
 
 const SIMULATOR_STATE_STORAGE_KEY = 'socal-ebus-prep:simulator-state:v2';
 const SNAP_TARGET_SLAB_HALF_THICKNESS_MM = 18;
-const LIVE_CAPTURE_HALF_THICKNESS_MM = {
-  node: 6,
-  vessel: 18,
-} as const;
-const LIVE_KERNEL_SIGMA_MM = {
-  node: 3,
-  vessel: 5,
-} as const;
-const LIVE_CORE_WEIGHT_THRESHOLD = {
-  node: 0.35,
-  vessel: 0.28,
-} as const;
-const LIVE_MINIMUM_POINTS = {
-  node: 8,
+const LIVE_KNN_NEIGHBORS = 10;
+const LIVE_MINIMUM_CROSSING_POINTS = {
+  node: 5,
   vessel: 6,
-} as const;
-const LIVE_MINIMUM_CORE_POINTS = {
-  node: 4,
-  vessel: 3,
 } as const;
 const LIVE_PLANE_INTERSECTION_EPSILON_MM = {
   node: 0.5,
   vessel: 0.5,
 } as const;
-const LIVE_PLANE_RENDER_HALF_THICKNESS_MM = {
-  node: 18,
-  vessel: 42,
+const LIVE_CLUSTER_RADIUS_MM = {
+  node: 7,
+  vessel: 9.5,
 } as const;
-const LIVE_PLANE_RENDER_SIGMA_MM = {
-  node: 8,
-  vessel: 16,
+const LIVE_VESSEL_WALL_CLUSTER_DEPTH_GAP_MM = 30;
+const LIVE_VESSEL_WALL_CLUSTER_LATERAL_GAP_MM = 14;
+const LIVE_VESSEL_WALL_CLUSTER_OVERLAP_RATIO = 0.45;
+const LIVE_VESSEL_SECTOR_CLIP_MARGIN_MM = 18;
+const LIVE_MIN_GRAPH_EDGE_MM = {
+  node: 4,
+  vessel: 4.5,
 } as const;
-const LIVE_NEAR_PLANE_SIGMA_MM = {
-  node: 1.8,
-  vessel: 2.4,
+const LIVE_MAX_GRAPH_EDGE_MM = {
+  node: 12,
+  vessel: 14,
 } as const;
-const LIVE_PLANE_RENDER_RADIUS_PX = {
-  node: 4.8,
-  vessel: 4.2,
-} as const;
+const LIVE_RASTER_MASK_SIZE = 320;
+const LIVE_DEBUG_POINT_LIMIT = 650;
 const ROLL_MIN_DEG = -180;
 const ROLL_MAX_DEG = 180;
 
@@ -101,12 +88,21 @@ const VIEWABLE_LAYER_KEYS: Array<keyof SimulatorLayerState> = [
 ];
 
 interface PersistedSimulatorState {
+  hiddenSceneStructureIds?: string[];
   layers?: Partial<SimulatorLayerState>;
   lineIndex?: number;
+  lockSceneView?: boolean;
   rollDeg?: number;
   sMm?: number;
   selectedKey?: string;
   teachingView?: boolean;
+}
+
+interface SceneStructureVisibilityItem {
+  color: string;
+  id: string;
+  kind: 'node' | 'vessel';
+  label: string;
 }
 
 function readPersistedState(): PersistedSimulatorState | null {
@@ -133,6 +129,31 @@ function normalizeSimulatorLayers(layers: Partial<SimulatorLayerState> | null | 
     nodes: false,
     centerline: false,
   };
+}
+
+function normalizeHiddenSceneStructureIds(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(new Set(value.filter((item): item is string => typeof item === 'string' && item.length > 0)));
+}
+
+export function simulatorSceneStructureVisibilityItems(caseData: SimulatorCaseManifest): SceneStructureVisibilityItem[] {
+  const nodeItems = caseData.assets.stations.map((station) => ({
+    color: caseData.color_map.lymph_node ?? station.color,
+    id: station.key,
+    kind: 'node' as const,
+    label: station.label.replace(/\s+region$/i, ''),
+  }));
+  const vesselItems = caseData.assets.vessels.map((vessel) => ({
+    color: vessel.color,
+    id: vessel.key,
+    kind: 'vessel' as const,
+    label: vessel.label,
+  }));
+
+  return [...nodeItems, ...vesselItems];
 }
 
 function clampProbeRollDeg(value: number): number {
@@ -167,22 +188,39 @@ interface ProjectedSectorPoint {
   depthMm: number;
   lateralMm: number;
   outOfPlaneMm: number;
-  inPlaneWeight: number;
 }
 
-interface FanSectorPoint {
+interface PlaneSample extends ProjectedSectorPoint {
+  source: Vec3;
+  inFan: boolean;
+}
+
+interface PlaneCrossingPoint {
+  point: Vec3;
   depthMm: number;
   lateralMm: number;
-  outOfPlaneMm: number;
+  sectorClipped?: boolean;
 }
 
-function planeProximityWeight(outOfPlaneMm: number, captureHalfThicknessMm: number, kernelSigmaMm: number) {
-  const absoluteDistance = Math.abs(outOfPlaneMm);
-  const captureRatio = clamp(absoluteDistance / captureHalfThicknessMm, 0, 1);
-  const gaussian = Math.exp(-0.5 * (absoluteDistance / kernelSigmaMm) ** 2);
-  const edgeTaper = 1 - captureRatio * captureRatio;
+interface CrossingClusterBounds {
+  maxDepthMm: number;
+  maxLateralMm: number;
+  minDepthMm: number;
+  minLateralMm: number;
+}
 
-  return gaussian * edgeTaper;
+interface PointCloudGraphEdge {
+  a: number;
+  b: number;
+  distanceSq: number;
+}
+
+interface PlaneIntersectionMaskResult {
+  rasterMask: SimulatorSectorRasterMask;
+  contoursMm: Vec2[][];
+  hullsMm: Vec2[][];
+  crossingPointsMm: Vec2[];
+  rawPointsMm: Vec2[];
 }
 
 function rasterCoordinatesForProjectedPoint(
@@ -210,56 +248,33 @@ function rasterCoordinatesForProjectedPoint(
   return { x, y };
 }
 
-function addWeightedDisc(
-  alpha: Float32Array,
-  width: number,
-  height: number,
-  x: number,
-  y: number,
-  radius: number,
-  weight: number,
-) {
-  if (weight <= 0 || x < -radius || x > width - 1 + radius || y < -radius || y > height - 1 + radius) {
-    return;
-  }
-
-  const minX = Math.max(0, Math.floor(x - radius));
-  const maxX = Math.min(width - 1, Math.ceil(x + radius));
-  const minY = Math.max(0, Math.floor(y - radius));
-  const maxY = Math.min(height - 1, Math.ceil(y + radius));
-
-  for (let yy = minY; yy <= maxY; yy += 1) {
-    for (let xx = minX; xx <= maxX; xx += 1) {
-      const dx = (xx - x) / radius;
-      const dy = (yy - y) / radius;
-      const distanceSq = dx * dx + dy * dy;
-
-      if (distanceSq > 1) {
-        continue;
-      }
-
-      const falloff = (1 - distanceSq) * (1 - distanceSq);
-      const index = yy * width + xx;
-      alpha[index] = Math.max(alpha[index], falloff * weight);
-    }
-  }
+function sectorHalfWidthMm(depthMm: number, sectorAngleDeg: number) {
+  return Math.max(depthMm, 0) * Math.tan((sectorAngleDeg * Math.PI) / 360);
 }
 
-function hasFanPlaneIntersection(points: FanSectorPoint[], kind: 'node' | 'vessel'): boolean {
-  if (points.length < LIVE_MINIMUM_POINTS[kind]) {
-    return false;
+function clipProjectedPointToSectorBoundary(
+  point: Pick<ProjectedSectorPoint, 'depthMm' | 'lateralMm'>,
+  maxDepthMm: number,
+  sectorAngleDeg: number,
+): Pick<ProjectedSectorPoint, 'depthMm' | 'lateralMm'> | null {
+  const depthMm = clamp(point.depthMm, 0.5, maxDepthMm);
+  const halfWidthMm = sectorHalfWidthMm(depthMm, sectorAngleDeg);
+  const lateralMm = clamp(point.lateralMm, -halfWidthMm, halfWidthMm);
+  const gapMm = Math.hypot(point.depthMm - depthMm, point.lateralMm - lateralMm);
+
+  if (gapMm > LIVE_VESSEL_SECTOR_CLIP_MARGIN_MM) {
+    return null;
   }
 
-  const outOfPlaneValues = points.map((point) => point.outOfPlaneMm);
-  const minimum = Math.min(...outOfPlaneValues);
-  const maximum = Math.max(...outOfPlaneValues);
-  const epsilon = LIVE_PLANE_INTERSECTION_EPSILON_MM[kind];
+  if (point.depthMm < 0.5 - LIVE_VESSEL_SECTOR_CLIP_MARGIN_MM) {
+    return null;
+  }
 
-  return minimum <= -epsilon && maximum >= epsilon;
+  return { depthMm, lateralMm };
 }
 
 function convexHull(points: Vec2[]): Vec2[] {
-  if (points.length <= 3) {
+  if (points.length <= 2) {
     return points;
   }
 
@@ -287,121 +302,592 @@ function convexHull(points: Vec2[]): Vec2[] {
   return lower.slice(0, -1).concat(upper.slice(0, -1));
 }
 
-function smoothAlphaMask(alpha: Float32Array, width: number, height: number) {
-  let source = alpha;
+function squaredDistance3(a: Vec3, b: Vec3) {
+  const dx = a[0] - b[0];
+  const dy = a[1] - b[1];
+  const dz = a[2] - b[2];
+  return dx * dx + dy * dy + dz * dz;
+}
 
-  for (let pass = 0; pass < 2; pass += 1) {
-    const next = new Float32Array(source.length);
+function interpolateVec3(a: Vec3, b: Vec3, t: number): Vec3 {
+  return [
+    a[0] + (b[0] - a[0]) * t,
+    a[1] + (b[1] - a[1]) * t,
+    a[2] + (b[2] - a[2]) * t,
+  ];
+}
 
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        let total = 0;
-        let weight = 0;
+function median(values: number[]) {
+  if (!values.length) {
+    return 0;
+  }
 
-        for (let dy = -1; dy <= 1; dy += 1) {
-          const yy = y + dy;
-          if (yy < 0 || yy >= height) {
-            continue;
-          }
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[middle - 1] + sorted[middle]) / 2 : sorted[middle];
+}
 
-          for (let dx = -1; dx <= 1; dx += 1) {
-            const xx = x + dx;
-            if (xx < 0 || xx >= width) {
-              continue;
-            }
+function dedupeVec2(points: Vec2[], precisionMm = 0.08) {
+  const seen = new Set<string>();
+  const deduped: Vec2[] = [];
 
-            const sampleWeight = dx === 0 && dy === 0 ? 4 : dx === 0 || dy === 0 ? 2 : 1;
-            total += source[yy * width + xx] * sampleWeight;
-            weight += sampleWeight;
-          }
+  for (const point of points) {
+    const key = `${Math.round(point[0] / precisionMm)}:${Math.round(point[1] / precisionMm)}`;
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    deduped.push(point);
+  }
+
+  return deduped;
+}
+
+function closeContour(points: Vec2[]): Vec2[] {
+  if (points.length < 3) {
+    return points;
+  }
+
+  const first = points[0];
+  const last = points[points.length - 1];
+  if (Math.hypot(first[0] - last[0], first[1] - last[1]) <= 1e-6) {
+    return points;
+  }
+
+  return [...points, first];
+}
+
+function polygonArea(points: Vec2[]) {
+  if (points.length < 3) {
+    return 0;
+  }
+
+  let area = 0;
+  for (let index = 0; index < points.length; index += 1) {
+    const current = points[index];
+    const next = points[(index + 1) % points.length];
+    area += current[0] * next[1] - next[0] * current[1];
+  }
+
+  return Math.abs(area) / 2;
+}
+
+function sampleDebugPoints(points: Vec2[], limit = LIVE_DEBUG_POINT_LIMIT) {
+  if (points.length <= limit) {
+    return points;
+  }
+
+  const step = points.length / limit;
+  const sampled: Vec2[] = [];
+
+  for (let index = 0; index < limit; index += 1) {
+    sampled.push(points[Math.floor(index * step)]);
+  }
+
+  return sampled;
+}
+
+function buildKnnGraph(points: Vec3[], kind: 'node' | 'vessel'): PointCloudGraphEdge[] {
+  const edgeMap = new Map<string, PointCloudGraphEdge>();
+  const nearestDistances: number[] = [];
+
+  for (let index = 0; index < points.length; index += 1) {
+    const nearest: Array<{ index: number; distanceSq: number }> = [];
+
+    for (let candidate = 0; candidate < points.length; candidate += 1) {
+      if (candidate === index) {
+        continue;
+      }
+
+      const distanceSq = squaredDistance3(points[index], points[candidate]);
+      if (distanceSq <= 1e-8) {
+        continue;
+      }
+
+      const insertionIndex = nearest.findIndex((entry) => distanceSq < entry.distanceSq);
+      if (insertionIndex === -1) {
+        if (nearest.length < LIVE_KNN_NEIGHBORS) {
+          nearest.push({ index: candidate, distanceSq });
         }
-
-        next[y * width + x] = total / Math.max(weight, 1);
+      } else {
+        nearest.splice(insertionIndex, 0, { index: candidate, distanceSq });
+        if (nearest.length > LIVE_KNN_NEIGHBORS) {
+          nearest.pop();
+        }
       }
     }
 
-    source = next;
+    if (nearest.length > 0) {
+      nearestDistances.push(Math.sqrt(nearest[0].distanceSq));
+    }
+
+    for (const neighbor of nearest) {
+      const a = Math.min(index, neighbor.index);
+      const b = Math.max(index, neighbor.index);
+      const key = `${a}:${b}`;
+
+      if (!edgeMap.has(key)) {
+        edgeMap.set(key, { a, b, distanceSq: neighbor.distanceSq });
+      }
+    }
   }
 
-  return source;
+  const medianNearestDistanceMm = median(nearestDistances);
+  const adaptiveMaxEdgeMm = clamp(
+    medianNearestDistanceMm * 4.5,
+    LIVE_MIN_GRAPH_EDGE_MM[kind],
+    LIVE_MAX_GRAPH_EDGE_MM[kind],
+  );
+  const maxDistanceSq = adaptiveMaxEdgeMm * adaptiveMaxEdgeMm;
+
+  return Array.from(edgeMap.values()).filter((edge) => edge.distanceSq <= maxDistanceSq);
 }
 
-function rasterMaskFromPlaneCrossingPoints(
-  points: FanSectorPoint[],
+function clusterCrossingPoints(points: PlaneCrossingPoint[], kind: 'node' | 'vessel') {
+  if (!points.length) {
+    return [];
+  }
+
+  const radius = LIVE_CLUSTER_RADIUS_MM[kind];
+  const radiusSq = radius * radius;
+  const visited = new Uint8Array(points.length);
+  const clusters: PlaneCrossingPoint[][] = [];
+
+  for (let index = 0; index < points.length; index += 1) {
+    if (visited[index]) {
+      continue;
+    }
+
+    const cluster: PlaneCrossingPoint[] = [];
+    const stack = [index];
+    visited[index] = 1;
+
+    while (stack.length > 0) {
+      const currentIndex = stack.pop()!;
+      const current = points[currentIndex];
+      cluster.push(current);
+
+      for (let candidate = 0; candidate < points.length; candidate += 1) {
+        if (visited[candidate]) {
+          continue;
+        }
+
+        const next = points[candidate];
+        const dx = current.lateralMm - next.lateralMm;
+        const dy = current.depthMm - next.depthMm;
+
+        if (dx * dx + dy * dy > radiusSq) {
+          continue;
+        }
+
+        visited[candidate] = 1;
+        stack.push(candidate);
+      }
+    }
+
+    clusters.push(cluster);
+  }
+
+  return clusters;
+}
+
+function crossingClusterBounds(cluster: PlaneCrossingPoint[]): CrossingClusterBounds {
+  let minLateralMm = Number.POSITIVE_INFINITY;
+  let maxLateralMm = Number.NEGATIVE_INFINITY;
+  let minDepthMm = Number.POSITIVE_INFINITY;
+  let maxDepthMm = Number.NEGATIVE_INFINITY;
+
+  for (const point of cluster) {
+    minLateralMm = Math.min(minLateralMm, point.lateralMm);
+    maxLateralMm = Math.max(maxLateralMm, point.lateralMm);
+    minDepthMm = Math.min(minDepthMm, point.depthMm);
+    maxDepthMm = Math.max(maxDepthMm, point.depthMm);
+  }
+
+  return { maxDepthMm, maxLateralMm, minDepthMm, minLateralMm };
+}
+
+function intervalGap(minA: number, maxA: number, minB: number, maxB: number) {
+  return Math.max(0, Math.max(minB - maxA, minA - maxB));
+}
+
+function intervalOverlapRatio(minA: number, maxA: number, minB: number, maxB: number) {
+  const overlap = Math.min(maxA, maxB) - Math.max(minA, minB);
+  const smallestSpan = Math.min(maxA - minA, maxB - minB);
+
+  if (smallestSpan <= 1e-6) {
+    return overlap >= -1e-6 ? 1 : 0;
+  }
+
+  return Math.max(0, overlap) / smallestSpan;
+}
+
+function vesselClustersShouldMerge(a: PlaneCrossingPoint[], b: PlaneCrossingPoint[]) {
+  const boundsA = crossingClusterBounds(a);
+  const boundsB = crossingClusterBounds(b);
+  const lateralOverlapRatio = intervalOverlapRatio(
+    boundsA.minLateralMm,
+    boundsA.maxLateralMm,
+    boundsB.minLateralMm,
+    boundsB.maxLateralMm,
+  );
+  const depthOverlapRatio = intervalOverlapRatio(
+    boundsA.minDepthMm,
+    boundsA.maxDepthMm,
+    boundsB.minDepthMm,
+    boundsB.maxDepthMm,
+  );
+  const lateralGapMm = intervalGap(
+    boundsA.minLateralMm,
+    boundsA.maxLateralMm,
+    boundsB.minLateralMm,
+    boundsB.maxLateralMm,
+  );
+  const depthGapMm = intervalGap(
+    boundsA.minDepthMm,
+    boundsA.maxDepthMm,
+    boundsB.minDepthMm,
+    boundsB.maxDepthMm,
+  );
+  const pairedAnteriorPosteriorWalls =
+    lateralOverlapRatio >= LIVE_VESSEL_WALL_CLUSTER_OVERLAP_RATIO &&
+    depthGapMm <= LIVE_VESSEL_WALL_CLUSTER_DEPTH_GAP_MM;
+  const pairedLateralWalls =
+    depthOverlapRatio >= LIVE_VESSEL_WALL_CLUSTER_OVERLAP_RATIO &&
+    lateralGapMm <= LIVE_VESSEL_WALL_CLUSTER_LATERAL_GAP_MM;
+
+  return pairedAnteriorPosteriorWalls || pairedLateralWalls;
+}
+
+function mergeVesselWallClusters(clusters: PlaneCrossingPoint[][]) {
+  const merged = clusters.map((cluster) => [...cluster]);
+  let changed = true;
+
+  while (changed) {
+    changed = false;
+
+    for (let index = 0; index < merged.length; index += 1) {
+      for (let candidate = index + 1; candidate < merged.length; candidate += 1) {
+        if (!vesselClustersShouldMerge(merged[index], merged[candidate])) {
+          continue;
+        }
+
+        merged[index] = [...merged[index], ...merged[candidate]];
+        merged.splice(candidate, 1);
+        changed = true;
+        break;
+      }
+
+      if (changed) {
+        break;
+      }
+    }
+  }
+
+  return merged;
+}
+
+function ellipseContourFromCluster(points: Vec2[], kind: 'node' | 'vessel'): Vec2[] {
+  const center = points.reduce<Vec2>(
+    (sum, point) => [sum[0] + point[0], sum[1] + point[1]],
+    [0, 0],
+  );
+  center[0] /= Math.max(points.length, 1);
+  center[1] /= Math.max(points.length, 1);
+
+  let cxx = 0;
+  let cxy = 0;
+  let cyy = 0;
+  for (const point of points) {
+    const dx = point[0] - center[0];
+    const dy = point[1] - center[1];
+    cxx += dx * dx;
+    cxy += dx * dy;
+    cyy += dy * dy;
+  }
+  cxx /= Math.max(points.length, 1);
+  cxy /= Math.max(points.length, 1);
+  cyy /= Math.max(points.length, 1);
+
+  const trace = cxx + cyy;
+  const delta = Math.sqrt(Math.max(0, ((cxx - cyy) / 2) ** 2 + cxy * cxy));
+  const lambdaMajor = Math.max(trace / 2 + delta, 0);
+  const lambdaMinor = Math.max(trace / 2 - delta, 0);
+  const angle = Math.abs(cxy) > 1e-6 || Math.abs(lambdaMajor - cxx) > 1e-6
+    ? Math.atan2(lambdaMajor - cxx, cxy)
+    : 0;
+  const fallbackMajor = kind === 'vessel' ? 7 : 8;
+  const fallbackMinor = kind === 'vessel' ? 4 : 6;
+  const major = Math.max(Math.sqrt(lambdaMajor) * 2.7, fallbackMajor);
+  const minor = Math.max(Math.sqrt(lambdaMinor) * 2.7, fallbackMinor);
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const contour: Vec2[] = [];
+
+  for (let index = 0; index < 36; index += 1) {
+    const theta = (index / 36) * Math.PI * 2;
+    const x = Math.cos(theta) * major * 0.5;
+    const y = Math.sin(theta) * minor * 0.5;
+    contour.push([
+      center[0] + x * cos - y * sin,
+      center[1] + x * sin + y * cos,
+    ]);
+  }
+
+  return contour;
+}
+
+function smoothClosedContour(points: Vec2[], iterations = 2): Vec2[] {
+  let current = points;
+
+  for (let pass = 0; pass < iterations; pass += 1) {
+    if (current.length < 3) {
+      return current;
+    }
+
+    const next: Vec2[] = [];
+    for (let index = 0; index < current.length; index += 1) {
+      const point = current[index];
+      const following = current[(index + 1) % current.length];
+      next.push([
+        point[0] * 0.75 + following[0] * 0.25,
+        point[1] * 0.75 + following[1] * 0.25,
+      ]);
+      next.push([
+        point[0] * 0.25 + following[0] * 0.75,
+        point[1] * 0.25 + following[1] * 0.75,
+      ]);
+    }
+
+    current = next;
+  }
+
+  return current;
+}
+
+function contourFromCluster(cluster: PlaneCrossingPoint[], kind: 'node' | 'vessel') {
+  const points = dedupeVec2(cluster.map((point) => [point.lateralMm, point.depthMm]));
+  const sparse = points.length < 3;
+  const hull = sparse ? ellipseContourFromCluster(points, kind) : convexHull(points);
+  const stableHull = polygonArea(hull) < 2 ? ellipseContourFromCluster(points, kind) : hull;
+  const contour = smoothClosedContour(stableHull, kind === 'vessel' ? 2 : 3);
+
+  return {
+    hull: closeContour(stableHull),
+    contour: closeContour(contour),
+  };
+}
+
+function rasterizePolygonIntoAlpha(
+  alpha: Uint8Array,
+  width: number,
+  height: number,
+  polygon: Array<{ x: number; y: number }>,
+) {
+  if (polygon.length < 3) {
+    return;
+  }
+
+  const minY = Math.max(0, Math.floor(Math.min(...polygon.map((point) => point.y))));
+  const maxY = Math.min(height - 1, Math.ceil(Math.max(...polygon.map((point) => point.y))));
+
+  for (let y = minY; y <= maxY; y += 1) {
+    const scanY = y + 0.5;
+    const intersections: number[] = [];
+
+    for (let index = 0; index < polygon.length; index += 1) {
+      const current = polygon[index];
+      const next = polygon[(index + 1) % polygon.length];
+
+      if ((current.y <= scanY && next.y > scanY) || (next.y <= scanY && current.y > scanY)) {
+        const t = (scanY - current.y) / (next.y - current.y);
+        intersections.push(current.x + (next.x - current.x) * t);
+      }
+    }
+
+    intersections.sort((a, b) => a - b);
+    for (let index = 0; index < intersections.length - 1; index += 2) {
+      const startX = Math.max(0, Math.ceil(intersections[index]));
+      const endX = Math.min(width - 1, Math.floor(intersections[index + 1]));
+
+      for (let x = startX; x <= endX; x += 1) {
+        alpha[y * width + x] = 255;
+      }
+    }
+  }
+}
+
+function rasterizeContours(
+  contoursMm: Vec2[][],
   {
-    kind,
     maxDepthMm,
     sectorAngleDeg,
   }: {
-    kind: 'node' | 'vessel';
     maxDepthMm: number;
     sectorAngleDeg: number;
   },
-): SimulatorSectorRasterMask | null {
-  const width = 160;
-  const height = 160;
-  const negative = new Float32Array(width * height);
-  const positive = new Float32Array(width * height);
-  const nearPlane = new Float32Array(width * height);
-  const searchHalfThicknessMm = LIVE_PLANE_RENDER_HALF_THICKNESS_MM[kind];
-  const searchSigmaMm = LIVE_PLANE_RENDER_SIGMA_MM[kind];
-  const nearSigmaMm = LIVE_NEAR_PLANE_SIGMA_MM[kind];
-  const epsilon = LIVE_PLANE_INTERSECTION_EPSILON_MM[kind];
-  const radius = LIVE_PLANE_RENDER_RADIUS_PX[kind];
+) {
+  const width = LIVE_RASTER_MASK_SIZE;
+  const height = LIVE_RASTER_MASK_SIZE;
+  const alpha = new Uint8Array(width * height);
 
-  for (const point of points) {
-    const coordinates = rasterCoordinatesForProjectedPoint(point, width, height, maxDepthMm, sectorAngleDeg);
+  for (const contour of contoursMm) {
+    const polygon = contour
+      .map((point) => rasterCoordinatesForProjectedPoint(
+        { lateralMm: point[0], depthMm: point[1] },
+        width,
+        height,
+        maxDepthMm,
+        sectorAngleDeg,
+      ))
+      .filter((point): point is { x: number; y: number } => Boolean(point));
 
-    if (!coordinates) {
+    if (polygon.length < 3) {
       continue;
     }
 
-    const absoluteDistance = Math.abs(point.outOfPlaneMm);
-    if (absoluteDistance > searchHalfThicknessMm) {
-      continue;
-    }
-
-    const distanceRatio = clamp(absoluteDistance / searchHalfThicknessMm, 0, 1);
-    const crossingWeight = Math.exp(-0.5 * (absoluteDistance / searchSigmaMm) ** 2) * (1 - distanceRatio * distanceRatio * 0.55);
-    const nearWeight = Math.exp(-0.5 * (absoluteDistance / nearSigmaMm) ** 2);
-
-    if (point.outOfPlaneMm <= -epsilon) {
-      addWeightedDisc(negative, width, height, coordinates.x, coordinates.y, radius, crossingWeight);
-    } else if (point.outOfPlaneMm >= epsilon) {
-      addWeightedDisc(positive, width, height, coordinates.x, coordinates.y, radius, crossingWeight);
-    }
-
-    addWeightedDisc(nearPlane, width, height, coordinates.x, coordinates.y, radius * 0.72, nearWeight);
-  }
-
-  const smoothedNegative = smoothAlphaMask(negative, width, height);
-  const smoothedPositive = smoothAlphaMask(positive, width, height);
-  const smoothedNear = smoothAlphaMask(nearPlane, width, height);
-  const values = Array.from(smoothedNegative, (_, index) => {
-    const crossing = Math.min(smoothedNegative[index], smoothedPositive[index]);
-    const near = smoothedNear[index];
-    const raw = crossing * 1.9 + near * 0.38;
-
-    if (raw < 0.045) {
-      return 0;
-    }
-
-    const t = clamp((raw - 0.045) / 0.34, 0, 1);
-    const ramp = t * t * (3 - 2 * t);
-    return Math.round(ramp * 255);
-  });
-
-  if (!values.some((value) => value > 0)) {
-    return null;
+    rasterizePolygonIntoAlpha(alpha, width, height, polygon);
   }
 
   return {
-    width,
+    alpha,
     height,
-    alpha: values,
-    source: 'browser_point_cloud_plane_crossing',
-    depth_samples: height,
-    lateral_samples: width,
+    width,
+  };
+}
+
+export function buildPlaneIntersectionRasterMask({
+  kind,
+  maxDepthMm,
+  points,
+  pose,
+  sectorAngleDeg,
+}: {
+  kind: 'node' | 'vessel';
+  maxDepthMm: number;
+  points: Vec3[];
+  pose: SimulatorProbePose;
+  sectorAngleDeg: number;
+}): PlaneIntersectionMaskResult | null {
+  if (points.length < 4) {
+    return null;
+  }
+
+  const samples: PlaneSample[] = points.map((point) => {
+    const projection = projectToSector(point, pose, maxDepthMm, sectorAngleDeg, Number.POSITIVE_INFINITY);
+    return {
+      source: point,
+      depthMm: projection.depthMm,
+      lateralMm: projection.lateralMm,
+      outOfPlaneMm: projection.outOfPlaneMm,
+      inFan: projection.visible,
+    };
+  });
+  const rawPointsMm = sampleDebugPoints(
+    samples
+      .filter((sample) => sample.inFan)
+      .map((sample) => [sample.lateralMm, sample.depthMm]),
+  );
+  const graphEdges = buildKnnGraph(points, kind);
+  const epsilon = LIVE_PLANE_INTERSECTION_EPSILON_MM[kind];
+  const crossingPoints: PlaneCrossingPoint[] = [];
+
+  for (const edge of graphEdges) {
+    const a = samples[edge.a];
+    const b = samples[edge.b];
+    const crossesPlane =
+      (a.outOfPlaneMm <= -epsilon && b.outOfPlaneMm >= epsilon) ||
+      (b.outOfPlaneMm <= -epsilon && a.outOfPlaneMm >= epsilon) ||
+      (a.outOfPlaneMm * b.outOfPlaneMm <= 0 &&
+        (Math.abs(a.outOfPlaneMm) > epsilon || Math.abs(b.outOfPlaneMm) > epsilon));
+
+    if (!crossesPlane) {
+      continue;
+    }
+
+    const denominator = a.outOfPlaneMm - b.outOfPlaneMm;
+    if (Math.abs(denominator) <= 1e-6) {
+      continue;
+    }
+
+    const t = clamp(a.outOfPlaneMm / denominator, 0, 1);
+    const crossing = interpolateVec3(a.source, b.source, t);
+    const projection = projectToSector(crossing, pose, maxDepthMm, sectorAngleDeg, Number.POSITIVE_INFINITY);
+    const sectorPoint = projection.visible
+      ? { depthMm: projection.depthMm, lateralMm: projection.lateralMm, sectorClipped: false }
+      : kind === 'vessel'
+        ? clipProjectedPointToSectorBoundary(projection, maxDepthMm, sectorAngleDeg)
+        : null;
+
+    if (!sectorPoint) {
+      continue;
+    }
+
+    crossingPoints.push({
+      point: crossing,
+      depthMm: sectorPoint.depthMm,
+      lateralMm: sectorPoint.lateralMm,
+      sectorClipped: !projection.visible,
+    });
+  }
+
+  if (crossingPoints.length < LIVE_MINIMUM_CROSSING_POINTS[kind]) {
+    return null;
+  }
+
+  const rawClusters = clusterCrossingPoints(crossingPoints, kind)
+    .filter((cluster) => cluster.length >= 2 && cluster.some((point) => !point.sectorClipped));
+  const clusters = kind === 'vessel' ? mergeVesselWallClusters(rawClusters) : rawClusters;
+  const contoursMm: Vec2[][] = [];
+  const hullsMm: Vec2[][] = [];
+
+  for (const cluster of clusters) {
+    const { contour, hull } = contourFromCluster(cluster, kind);
+
+    if (contour.length < 4 || polygonArea(contour) <= 0.5) {
+      continue;
+    }
+
+    contoursMm.push(contour);
+    hullsMm.push(hull);
+  }
+
+  if (!contoursMm.length) {
+    return null;
+  }
+
+  const rasterized = rasterizeContours(contoursMm, { maxDepthMm, sectorAngleDeg });
+  const alpha = Array.from(rasterized.alpha);
+
+  if (!alpha.some((value) => value > 0)) {
+    return null;
+  }
+
+  const crossingPointsMm = sampleDebugPoints(
+    crossingPoints.map((point) => [point.lateralMm, point.depthMm]),
+  );
+
+  return {
+    contoursMm,
+    crossingPointsMm,
+    hullsMm,
+    rawPointsMm,
+    rasterMask: {
+      width: rasterized.width,
+      height: rasterized.height,
+      alpha,
+      source: 'browser_point_cloud_plane_contour',
+      depth_samples: rasterized.height,
+      lateral_samples: rasterized.width,
+      debug: {
+        rawPointsMm,
+        crossingPointsMm,
+        hullsMm,
+        finalContoursMm: contoursMm,
+      },
+    },
   };
 }
 
@@ -424,60 +910,25 @@ function projectedPointCloudSectorItem({
   pose: SimulatorProbePose;
   sectorAngleDeg: number;
 }): SimulatorSectorItem | null {
-  const projected: ProjectedSectorPoint[] = [];
-  const fanPoints: FanSectorPoint[] = [];
-  const captureHalfThicknessMm = LIVE_CAPTURE_HALF_THICKNESS_MM[kind];
-  const kernelSigmaMm = LIVE_KERNEL_SIGMA_MM[kind];
+  const planeMask = buildPlaneIntersectionRasterMask({
+    kind,
+    maxDepthMm,
+    points,
+    pose,
+    sectorAngleDeg,
+  });
 
-  for (const point of points) {
-    const fanProjection = projectToSector(point, pose, maxDepthMm, sectorAngleDeg, Number.POSITIVE_INFINITY);
-
-    if (!fanProjection.visible) {
-      continue;
-    }
-
-    fanPoints.push({
-      depthMm: fanProjection.depthMm,
-      lateralMm: fanProjection.lateralMm,
-      outOfPlaneMm: fanProjection.outOfPlaneMm,
-    });
-
-    if (Math.abs(fanProjection.outOfPlaneMm) <= captureHalfThicknessMm) {
-      const weight = planeProximityWeight(fanProjection.outOfPlaneMm, captureHalfThicknessMm, kernelSigmaMm);
-      projected.push({
-        depthMm: fanProjection.depthMm,
-        lateralMm: fanProjection.lateralMm,
-        outOfPlaneMm: fanProjection.outOfPlaneMm,
-        inPlaneWeight: weight,
-      });
-    }
-  }
-
-  if (!hasFanPlaneIntersection(fanPoints, kind)) {
+  if (!planeMask) {
     return null;
   }
 
-  if (projected.length < LIVE_MINIMUM_POINTS[kind]) {
-    return null;
-  }
-
-  const corePoints = projected.filter((point) => point.inPlaneWeight >= LIVE_CORE_WEIGHT_THRESHOLD[kind]);
-  if (corePoints.length < LIVE_MINIMUM_CORE_POINTS[kind]) {
-    return null;
-  }
-
-  const lateralValues = corePoints.map((point) => point.lateralMm);
-  const depthValues = corePoints.map((point) => point.depthMm);
-  const meanLateral = lateralValues.reduce((sum, value) => sum + value, 0) / corePoints.length;
-  const meanDepth = depthValues.reduce((sum, value) => sum + value, 0) / corePoints.length;
+  const contourPoints = planeMask.contoursMm.flat();
+  const lateralValues = contourPoints.map((point) => point[0]);
+  const depthValues = contourPoints.map((point) => point[1]);
+  const meanLateral = lateralValues.reduce((sum, value) => sum + value, 0) / contourPoints.length;
+  const meanDepth = depthValues.reduce((sum, value) => sum + value, 0) / contourPoints.length;
   const lateralExtentMm: [number, number] = [Math.min(...lateralValues), Math.max(...lateralValues)];
   const depthExtentMm: [number, number] = [Math.min(...depthValues), Math.max(...depthValues)];
-  const hull = convexHull(corePoints.map((point) => [point.lateralMm, point.depthMm]));
-  const rasterMask = rasterMaskFromPlaneCrossingPoints(fanPoints, { kind, maxDepthMm, sectorAngleDeg });
-
-  if (!rasterMask) {
-    return null;
-  }
 
   return {
     id,
@@ -489,12 +940,12 @@ function projectedPointCloudSectorItem({
     visible: true,
     depthExtentMm,
     lateralExtentMm,
-    contoursMm: hull.length >= 3 ? [[...hull, hull[0]]] : undefined,
-    contourCount: hull.length >= 3 ? 1 : 0,
-    contourSource: 'browser_point_cloud_hull',
-    contourClosed: hull.length >= 3 ? [true] : undefined,
-    hasClosedContour: hull.length >= 3,
-    rasterMask,
+    contoursMm: planeMask.contoursMm,
+    contourCount: planeMask.contoursMm.length,
+    contourSource: 'browser_point_cloud_plane_contour',
+    contourClosed: planeMask.contoursMm.map(() => true),
+    hasClosedContour: planeMask.contoursMm.length > 0,
+    rasterMask: planeMask.rasterMask,
   };
 }
 
@@ -637,6 +1088,8 @@ export function SimulatorPage() {
   const [layers, setLayers] = useState<SimulatorLayerState>(DEFAULT_LAYERS);
   const [teachingView, setTeachingView] = useState(true);
   const [activeStructure, setActiveStructure] = useState<string | null>(null);
+  const [hiddenSceneStructureIds, setHiddenSceneStructureIds] = useState<string[]>([]);
+  const [lockSceneView, setLockSceneView] = useState(false);
 
   const selectedPreset = useMemo(() => {
     if (!caseData?.presets.length) {
@@ -666,6 +1119,8 @@ export function SimulatorPage() {
     );
     setLayers(normalizeSimulatorLayers(persisted?.layers));
     setTeachingView(typeof persisted?.teachingView === 'boolean' ? persisted.teachingView : true);
+    setHiddenSceneStructureIds(normalizeHiddenSceneStructureIds(persisted?.hiddenSceneStructureIds));
+    setLockSceneView(typeof persisted?.lockSceneView === 'boolean' ? persisted.lockSceneView : false);
   }, [caseData, selectedKey]);
 
   useEffect(() => {
@@ -674,14 +1129,16 @@ export function SimulatorPage() {
     }
 
     writePersistedState({
+      hiddenSceneStructureIds,
       layers,
       lineIndex: lineIndex ?? selectedPreset.line_index,
+      lockSceneView,
       rollDeg,
       sMm,
       selectedKey: selectedPreset.preset_key,
       teachingView,
     });
-  }, [layers, lineIndex, rollDeg, sMm, selectedPreset, teachingView]);
+  }, [hiddenSceneStructureIds, layers, lineIndex, lockSceneView, rollDeg, sMm, selectedPreset, teachingView]);
 
   useEffect(() => {
     if (caseData) {
@@ -786,6 +1243,26 @@ export function SimulatorPage() {
         .map((item) => item.id),
     );
   }, [sectorItems]);
+  const sceneStructureVisibilityItems = useMemo(() => {
+    if (!caseData) {
+      return [];
+    }
+
+    return simulatorSceneStructureVisibilityItems(caseData);
+  }, [caseData]);
+  const hiddenSceneStructureSet = useMemo(() => new Set(hiddenSceneStructureIds), [hiddenSceneStructureIds]);
+  const sceneVisibleCount = sceneStructureVisibilityItems
+    .filter((item) => !hiddenSceneStructureSet.has(item.id))
+    .length;
+
+  useEffect(() => {
+    if (!sceneStructureVisibilityItems.length) {
+      return;
+    }
+
+    const validIds = new Set(sceneStructureVisibilityItems.map((item) => item.id));
+    setHiddenSceneStructureIds((current) => current.filter((id) => validIds.has(id)));
+  }, [sceneStructureVisibilityItems]);
 
   if (error) {
     return (
@@ -821,6 +1298,20 @@ export function SimulatorPage() {
   const updateLayer = (key: keyof SimulatorLayerState) => {
     setLayers((current) => ({ ...current, [key]: !current[key] }));
   };
+  const updateSceneStructureVisibility = (id: string, visible: boolean) => {
+    setHiddenSceneStructureIds((current) => {
+      const next = new Set(current);
+
+      if (visible) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+
+      return Array.from(next);
+    });
+  };
+  const showAllSceneStructures = () => setHiddenSceneStructureIds([]);
 
   return (
     <div className="simulator-page">
@@ -903,6 +1394,10 @@ export function SimulatorPage() {
             <input checked={teachingView} onChange={() => setTeachingView((current) => !current)} type="checkbox" />
             <span>teaching</span>
           </label>
+          <label>
+            <input checked={lockSceneView} onChange={() => setLockSceneView((current) => !current)} type="checkbox" />
+            <span>lock view</span>
+          </label>
           {VIEWABLE_LAYER_KEYS.map((key) => (
             <label key={key}>
               <input checked={layers[key]} onChange={() => updateLayer(key)} type="checkbox" />
@@ -919,17 +1414,61 @@ export function SimulatorPage() {
               <span className="eyebrow">External anatomy</span>
               <h2>Scope, airway, vessels, lymph nodes, and fan</h2>
             </div>
-            <button className="simulator-button" onClick={() => snapToPreset(selectedPreset)} type="button">
-              Snap
-            </button>
+            <div className="simulator-scene-actions">
+              <details className="simulator-structure-dropdown">
+                <summary>
+                  <span>3D structures</span>
+                  <span>{sceneVisibleCount}/{sceneStructureVisibilityItems.length}</span>
+                </summary>
+                <div className="simulator-structure-dropdown__menu">
+                  <div className="simulator-structure-dropdown__actions">
+                    <span>Visible in 3D</span>
+                    <button type="button" onClick={showAllSceneStructures}>
+                      Show all
+                    </button>
+                  </div>
+                  {(['node', 'vessel'] as const).map((kind) => {
+                    const groupItems = sceneStructureVisibilityItems.filter((item) => item.kind === kind);
+
+                    if (!groupItems.length) {
+                      return null;
+                    }
+
+                    return (
+                      <div className="simulator-structure-dropdown__group" key={kind}>
+                        <div className="simulator-structure-dropdown__group-label">
+                          {kind === 'node' ? 'Lymph nodes' : 'Vessels'}
+                        </div>
+                        {groupItems.map((item) => (
+                          <label className="simulator-structure-dropdown__row" key={item.id}>
+                            <input
+                              checked={!hiddenSceneStructureSet.has(item.id)}
+                              onChange={(event) => updateSceneStructureVisibility(item.id, event.target.checked)}
+                              type="checkbox"
+                            />
+                            <span className="simulator-swatch" style={{ backgroundColor: item.color }} />
+                            <span>{item.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </details>
+              <button className="simulator-button" onClick={() => snapToPreset(selectedPreset)} type="button">
+                Snap
+              </button>
+            </div>
           </div>
           <AnatomyScene
-            activeStructure={activeStructure}
+            activeStructure={null}
             assets={assets}
             cameraPose={cameraPose}
             caseData={caseData}
+            hiddenStructureIds={hiddenSceneStructureSet}
             intersectedStructureIds={intersectedStructureIds}
             layers={layers}
+            lockView={lockSceneView}
             pose={pose}
             selectedPreset={selectedPreset}
             teachingView={teachingView}

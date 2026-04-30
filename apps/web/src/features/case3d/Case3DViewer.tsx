@@ -1,5 +1,4 @@
 import { useMemo, useReducer, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import { axisNameToIndex } from '../../../../../features/case3d/patient-space';
 import type { CasePlane, RuntimeCaseManifest, SliceIndex } from '../../../../../features/case3d/types';
@@ -659,5 +658,5 @@ export function Case3DViewer({ manifest }: Case3DViewerProps) {
     </div>
   );
 
-  return typeof document === 'undefined' ? module : createPortal(module, document.body);
+  return module;
 }
