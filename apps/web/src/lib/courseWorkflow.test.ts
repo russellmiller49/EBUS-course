@@ -71,7 +71,7 @@ describe('courseWorkflow', () => {
     expect(getCourseStepModels(afterQuiz).find((step) => step.id === 'lecture-03')?.unlocked).toBe(true);
   });
 
-  it('unlocks post-test answers and certificate after the survey', () => {
+  it('unlocks the certificate after the survey', () => {
     const state = createInitialLearnerProgress();
     state.pretest.submittedAt = '2026-04-10T10:00:00.000Z';
 
@@ -96,11 +96,10 @@ describe('courseWorkflow', () => {
     }
 
     expect(getCourseStepModels(state).find((step) => step.id === 'post-course-survey')?.unlocked).toBe(true);
-    expect(getCourseStepModels(state).find((step) => step.id === 'post-test-answers')?.unlocked).toBe(false);
+    expect(getCourseStepModels(state).find((step) => step.id === 'certificate')?.unlocked).toBe(false);
 
     state.courseSurvey.submittedAt = '2026-04-12T12:15:00.000Z';
 
-    expect(getCourseStepModels(state).find((step) => step.id === 'post-test-answers')?.unlocked).toBe(true);
     expect(getCourseStepModels(state).find((step) => step.id === 'certificate')?.unlocked).toBe(true);
   });
 
@@ -110,7 +109,7 @@ describe('courseWorkflow', () => {
 
     expect(steps.every((step) => step.unlocked)).toBe(true);
     expect(steps.find((step) => step.id === 'pretest')?.completed).toBe(false);
-    expect(steps.find((step) => step.id === 'post-test-answers')?.lockedReason).toBeNull();
+    expect(steps.find((step) => step.id === 'certificate')?.lockedReason).toBeNull();
     expect(getNextCourseStep(state, { admin: true })?.id).toBe('lecture-01');
     expect(getLectureWorkflowStatus(state, 'lecture-20', { admin: true })?.unlocked).toBe(true);
     expect(getAssessmentWorkflowStatus(state, courseAssessments[0]!, { admin: true })?.unlocked).toBe(true);

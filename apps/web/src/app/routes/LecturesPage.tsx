@@ -393,10 +393,9 @@ export function LecturesPage() {
             <div className="section-card__heading">
               <div>
                 <div className="eyebrow">Course completion</div>
-                <h2>Post-course survey, post-test answers, and certificate</h2>
+                <h2>Post-course survey and certificate</h2>
                 <p>
-                  These open after the final post-test, so the whole course assessment path stays inside the lecture
-                  module.
+                  These open after the final post-test, so the whole course assessment path stays inside the lecture module.
                 </p>
               </div>
             </div>
@@ -407,13 +406,13 @@ export function LecturesPage() {
               <div className="section-card__heading">
                 <div>
                   <div className="eyebrow">Post-course survey</div>
-                  <h2>{surveyComplete ? 'Survey submitted' : 'Submit the survey to unlock answers and certificate'}</h2>
+                  <h2>{surveyComplete ? 'Survey submitted' : 'Submit the survey to unlock the certificate'}</h2>
                   <p>Survey status: {formatTimestamp(state.courseSurvey.submittedAt)}</p>
                 </div>
               </div>
               {surveyComplete ? (
                 <div className="feedback-banner feedback-banner--success">
-                  <strong>Post-test answers and certificate are unlocked.</strong>
+                  <strong>Certificate is unlocked.</strong>
                   <p>
                     {previewSessionActive && !surveyComplete
                       ? `${previewLabel} is active without changing learner survey status.`
@@ -455,36 +454,6 @@ export function LecturesPage() {
                   </button>
                 </form>
               )}
-            </section>
-          ) : null}
-
-          {completionArtifactsUnlocked && finalPostTestAssessment ? (
-            <section className="section-card">
-              <div className="section-card__heading">
-                <div>
-                  <div className="eyebrow">Post-test answers</div>
-                  <h2>Answer key and teaching explanations</h2>
-                </div>
-                <div className="tag-row">
-                  <span className="tag">{postTestProgress?.percent ?? 0}% post-test score</span>
-                </div>
-              </div>
-              <div className="stack-list">
-                {finalPostTestAssessment.questions.map((question, index) => {
-                  const correctLabels = question.correctOptionIds
-                    .map((optionId) => question.options.find((option) => option.id === optionId)?.label ?? optionId)
-                    .join(', ');
-
-                  return (
-                    <article key={question.id} className="mini-card">
-                      <strong>
-                        {index + 1}. {correctLabels}
-                      </strong>
-                      <p>{question.explanation}</p>
-                    </article>
-                  );
-                })}
-              </div>
             </section>
           ) : null}
 

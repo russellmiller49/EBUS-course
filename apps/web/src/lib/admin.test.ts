@@ -52,7 +52,7 @@ describe('admin learner overview helpers', () => {
       approval_status: 'approved',
       pretest_percent: 86,
       pretest_answers: {
-        'pretest-01': 'b',
+        'pretest-01': 'd',
       },
       assessment_results: {
         'post-test': {
@@ -88,8 +88,8 @@ describe('admin learner overview helpers', () => {
     expect(learner.pretestAnswers[0]).toMatchObject({
       questionId: 'pretest-01',
       isCorrect: true,
-      selectedOptionIds: ['b'],
-      correctOptionIds: ['b'],
+      selectedOptionIds: ['d'],
+      correctOptionIds: ['d'],
     });
     expect(learner.postTestAnswers[0]).toMatchObject({
       questionId: 'post-test-q01',

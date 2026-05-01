@@ -438,6 +438,13 @@ export function chooseStoredLearnerProgress(
     return local;
   }
 
+  const localCompleteness = getLearnerProgressCompletenessScore(local.state);
+  const remoteCompleteness = getLearnerProgressCompletenessScore(remote.state);
+
+  if (localCompleteness !== remoteCompleteness) {
+    return remoteCompleteness > localCompleteness ? remote : local;
+  }
+
   const localSavedAt = isValidTimestamp(local.savedAt) ? Date.parse(local.savedAt!) : null;
   const remoteSavedAt = isValidTimestamp(remote.savedAt) ? Date.parse(remote.savedAt!) : null;
 
@@ -450,6 +457,20 @@ export function chooseStoredLearnerProgress(
   }
 
   return localSavedAt >= remoteSavedAt ? local : remote;
+}
+
+function getLearnerProgressCompletenessScore(state: LearnerProgressState) {
+  const moduleScore = Object.values(state.moduleProgress).reduce((sum, progress) => sum + progress.percentComplete, 0);
+  const lectureScore = Object.values(state.lectureWatchStatus).reduce((sum, lecture) => {
+    return sum + (lecture.completed ? 100 : Math.min(95, Math.round((lecture.watchedSeconds / 600) * 100)));
+  }, 0);
+  const assessmentScore = Object.values(state.courseAssessmentResults).reduce((sum, assessment) => {
+    return sum + (assessment.completedAt ? 100 : assessment.percent);
+  }, 0);
+  const pretestScore = state.pretest.submittedAt || state.pretest.unlockedByPasscodeAt ? 100 : state.pretest.answeredCount;
+  const surveyScore = state.courseSurvey.submittedAt ? 100 : 0;
+
+  return moduleScore + lectureScore + assessmentScore + pretestScore + surveyScore;
 }
 
 function normalizeEngagementRecord(candidate: unknown): ModuleEngagementSummary {
@@ -866,6 +887,8 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
   const activeStorageKey = getLearnerProgressStorageKey(activeUserId);
 
   useEffect(() => {
+    setRemoteReady(false);
+
     try {
       const raw = window.localStorage.getItem(activeStorageKey);
       const parsed = raw ? parseStoredLearnerProgress(JSON.parse(raw)) : null;
@@ -895,7 +918,10 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
   }, [activeStorageKey]);
 
   useEffect(() => {
-    if (!hydrated || loadedStorageKey !== activeStorageKey) {
+    const waitingForRemoteSnapshot =
+      isSupabaseEnabled && Boolean(activeUserId) && loadedRemoteForUserRef.current !== activeUserId;
+
+    if (!hydrated || loadedStorageKey !== activeStorageKey || waitingForRemoteSnapshot) {
       return;
     }
 
@@ -906,7 +932,7 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
         state,
       } satisfies StoredLearnerProgressRecord),
     );
-  }, [activeStorageKey, hydrated, loadedStorageKey, state]);
+  }, [activeStorageKey, activeUserId, hydrated, isSupabaseEnabled, loadedStorageKey, state]);
 
   useEffect(() => {
     if (!hydrated || loadedStorageKey !== activeStorageKey) {
@@ -996,7 +1022,7 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
   }, [activeStorageKey, activeUserId, hydrated, isSupabaseEnabled, loadedStorageKey]);
 
   useEffect(() => {
-    if (!hydrated || !remoteReady || !isSupabaseEnabled || !user) {
+    if (!hydrated || !remoteReady || !isSupabaseEnabled || !user || loadedRemoteForUserRef.current !== user.id) {
       return;
     }
 

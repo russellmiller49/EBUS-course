@@ -205,4 +205,42 @@ describe('learnerProgressReducer', () => {
 
     expect(chooseStoredLearnerProgress(local, remote)).toBe(remote);
   });
+
+  it('prefers the more complete remote snapshot over a newer stale local save', () => {
+    const localState = createInitialLearnerProgress();
+    localState.lectureWatchStatus['lecture-01'] = {
+      completed: true,
+      completedAt: '2026-05-01T17:00:00.000Z',
+      lastOpenedAt: '2026-05-01T17:00:00.000Z',
+      watchedSeconds: 60,
+    };
+
+    const remoteState = createInitialLearnerProgress();
+    remoteState.pretest.submittedAt = '2026-05-01T15:00:00.000Z';
+    remoteState.pretest.answeredCount = 25;
+    remoteState.pretest.totalQuestions = 25;
+    remoteState.lectureWatchStatus['lecture-01'] = {
+      completed: true,
+      completedAt: '2026-05-01T15:00:00.000Z',
+      lastOpenedAt: '2026-05-01T15:00:00.000Z',
+      watchedSeconds: 600,
+    };
+    remoteState.lectureWatchStatus['lecture-02'] = {
+      completed: true,
+      completedAt: '2026-05-01T15:00:00.000Z',
+      lastOpenedAt: '2026-05-01T15:00:00.000Z',
+      watchedSeconds: 600,
+    };
+
+    const local = {
+      savedAt: '2026-05-01T17:30:00.000Z',
+      state: localState,
+    };
+    const remote = {
+      savedAt: '2026-05-01T15:30:00.000Z',
+      state: remoteState,
+    };
+
+    expect(chooseStoredLearnerProgress(local, remote)).toBe(remote);
+  });
 });

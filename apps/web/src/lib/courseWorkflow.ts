@@ -10,7 +10,6 @@ export type CourseWorkflowStepKind =
   | 'assessment'
   | 'post-test'
   | 'survey'
-  | 'answers'
   | 'certificate';
 
 export interface CourseWorkflowStepDefinition {
@@ -118,12 +117,6 @@ export const courseWorkflowSteps: CourseWorkflowStepDefinition[] = [
     path: '/lectures?section=course-completion',
   },
   {
-    id: 'post-test-answers',
-    kind: 'answers',
-    title: 'Post-test answers',
-    path: '/lectures?section=course-completion',
-  },
-  {
     id: 'certificate',
     kind: 'certificate',
     title: 'Certificate of completion',
@@ -210,7 +203,7 @@ export function isCourseStepComplete(state: LearnerProgressState, step: CourseWo
     return isCourseAssessmentComplete(state, step.assessmentId);
   }
 
-  if (step.kind === 'survey' || step.kind === 'answers' || step.kind === 'certificate') {
+  if (step.kind === 'survey' || step.kind === 'certificate') {
     return isCourseSurveyComplete(state);
   }
 
@@ -239,7 +232,7 @@ function getLockedReason(previousStep: CourseWorkflowStepDefinition | null) {
   }
 
   if (previousStep.kind === 'survey') {
-    return 'Complete the post-course survey to unlock the post-test answers and certificate.';
+    return 'Complete the post-course survey to unlock the certificate.';
   }
 
   return `Complete ${previousStep.title} to unlock this step.`;
