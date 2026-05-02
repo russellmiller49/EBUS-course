@@ -153,6 +153,13 @@ export function QuizCard({
         </div>
       ) : null}
 
+      {currentQuestion.imageAsset ? (
+        <figure className="pretest-figure quiz-card__figure">
+          <img alt={currentQuestion.imageAsset.alt} loading="lazy" src={currentQuestion.imageAsset.src} />
+          <figcaption>{currentQuestion.imageAsset.caption}</figcaption>
+        </figure>
+      ) : null}
+
       {currentQuestion.type === 'ordering' ? (
         <div className="education-card education-card--checklist">
           <div className="eyebrow">Current order</div>
@@ -182,9 +189,7 @@ export function QuizCard({
                 answeredCurrent && shouldRevealAnswers
                   ? isCorrect
                     ? ' choice-card--correct'
-                    : isSelected
-                      ? ' choice-card--incorrect'
-                      : ''
+                    : ' choice-card--incorrect'
                   : isSelected
                     ? ' choice-card--selected'
                     : ''

@@ -8,7 +8,7 @@ export const homeModuleCards: AppModuleCard[] = [
   {
     id: 'pretest',
     title: 'Course Pretest',
-    description: '20-question baseline assessment with hidden answers and course progression logging.',
+    description: '25-question baseline assessment with hidden answers and course progression logging.',
     accent: 'var(--accent-rose)',
     icon: '◇',
     path: '/pretest',

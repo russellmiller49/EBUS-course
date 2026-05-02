@@ -188,8 +188,20 @@ export interface QuizQuestionOption {
   rationale: string;
 }
 
+export interface QuestionImageAsset {
+  alt: string;
+  caption: string;
+  src: string;
+}
+
 export type PretestQuestionType = 'single-best-answer' | 'scenario' | 'image-interpretation';
-export type PretestImageAssetKey = 'pretest-q2-figure' | 'pretest-q8-figure' | 'pretest-q22-figure';
+export type PretestImageAssetKey =
+  | 'pretest-q2-figure'
+  | 'pretest-q8-figure'
+  | 'pretest-q22-figure'
+  | 'ebus-2026-final-station-4r'
+  | 'ebus-2026-final-mediastinal-pet'
+  | 'ebus-2026-final-reverberation';
 
 export interface PretestQuestionOption {
   id: string;
@@ -219,6 +231,7 @@ export interface QuizQuestionContent {
   moduleId: RootModuleId;
   prompt: string;
   type: QuizQuestionType;
+  imageAsset?: QuestionImageAsset;
   options: QuizQuestionOption[];
   correctOptionIds: string[];
   explanation: string;

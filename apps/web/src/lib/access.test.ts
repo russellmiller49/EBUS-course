@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   canAccessRoute,
+  clearCourseAdminPasscode,
   getLockedRoutePath,
   getRouteLockReason,
   isCourseAdminSessionActive,
@@ -14,10 +15,16 @@ import {
 import { createInitialLearnerProgress } from '@/lib/progress';
 
 function createAdminStorage(passcode: string) {
+  let storedPasscode = passcode;
+
   return {
-    getItem: () => passcode,
-    removeItem: () => undefined,
-    setItem: () => undefined,
+    getItem: () => storedPasscode,
+    removeItem: () => {
+      storedPasscode = '';
+    },
+    setItem: (_key: string, value: string) => {
+      storedPasscode = value;
+    },
   };
 }
 
@@ -78,6 +85,16 @@ describe('course access helpers', () => {
     expect(canAccessRoute('simulator', state, { admin: true })).toBe(true);
     expect(getLockedRoutePath('simulator', '/simulator', state, { admin: true })).toBe('/simulator');
     expect(getRouteLockReason('simulator', state, { admin: true })).toBeNull();
+  });
+
+  it('clears the course admin browser session when the admin logs out', () => {
+    const storage = createAdminStorage('EBUS_2026');
+
+    expect(isCourseAdminSessionActive(storage)).toBe(true);
+
+    clearCourseAdminPasscode(storage);
+
+    expect(isCourseAdminSessionActive(storage)).toBe(false);
   });
 
   it('unlocks learning routes for vendor preview without activating admin access', () => {

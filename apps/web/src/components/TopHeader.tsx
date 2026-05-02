@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { courseInfo } from '@/content/course';
 import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
 import { useAuth } from '@/lib/auth';
-import { clearCourseVendorPasscode, isPretestComplete } from '@/lib/access';
+import { clearCourseAdminPasscode, clearCourseVendorPasscode, isPretestComplete } from '@/lib/access';
 import { useLearnerProgress } from '@/lib/progress';
 
 export function TopHeader() {
@@ -54,6 +54,11 @@ export function TopHeader() {
               <Link className="button button--ghost top-header__action" to="/admin">
                 {adminSessionActive ? 'Dashboard' : 'Admin'}
               </Link>
+              {adminSessionActive ? (
+                <button className="button button--ghost top-header__action" onClick={() => clearCourseAdminPasscode()} type="button">
+                  Log out admin
+                </button>
+              ) : null}
               {user ? (
                 <>
                   <Link className="button button--ghost top-header__action" to="/account">

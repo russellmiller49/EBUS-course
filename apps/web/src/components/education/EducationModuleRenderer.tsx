@@ -238,8 +238,8 @@ export function QuizExplanationPanel({
             <article
               key={option.id}
               className={`education-option-rationale${
-                isCorrect ? ' education-option-rationale--correct' : wasSelected ? ' education-option-rationale--selected' : ''
-              }`}
+                isCorrect ? ' education-option-rationale--correct' : ' education-option-rationale--incorrect'
+              }${!isCorrect && wasSelected ? ' education-option-rationale--selected' : ''}`}
             >
               <strong>{option.label}</strong>
               <p>{option.rationale}</p>

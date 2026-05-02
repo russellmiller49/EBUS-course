@@ -517,6 +517,41 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                   </div>
                 ) : null}
               </div>
+
+              <div className="knobology-keyboard-feedback">
+                <div className="eyebrow">Keyboard feedback</div>
+                <p>
+                  The processor is now the only control surface here. Depth, gain, and contrast highlight as you change
+                  them from the keyboard.
+                </p>
+                <div className="knobology-keyboard-feedback__grid">
+                  {keyboardFeedbackCards.map((card) => (
+                    <article
+                      key={card.controlId}
+                      className={`knobology-keyboard-feedback__card${card.isKeyboardActive ? ' knobology-keyboard-feedback__card--active' : ''}${card.isExerciseFocus ? ' knobology-keyboard-feedback__card--focus' : ''}`}
+                    >
+                      <div className="knobology-keyboard-feedback__header">
+                        <div className="mini-card__title">
+                          <span>{knobologyControlMeta[card.controlId].icon}</span>
+                          <strong>{knobologyControlMeta[card.controlId].shortLabel}</strong>
+                        </div>
+                        <div className="tag-row">
+                          {card.isExerciseFocus ? <span className="tag">Exercise focus</span> : null}
+                          {card.hasRecentKeyboardChange ? <span className="tag">Recent keyboard change</span> : null}
+                        </div>
+                      </div>
+                      <div className="knobology-keyboard-feedback__values">
+                        <span>Current {card.currentValue}</span>
+                        <span>Target {card.targetValue}</span>
+                      </div>
+                      <strong className="knobology-keyboard-feedback__status">
+                        {card.hasRecentKeyboardChange ? frameState.statusMessage : card.status}
+                      </strong>
+                      <p>{card.guidance}</p>
+                    </article>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="stack-card knobology-console">
@@ -585,40 +620,6 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
 
             <div className="eyebrow">Instructions</div>
             <p>{activeExercise.instructions}</p>
-            <div className="knobology-keyboard-feedback">
-              <div className="eyebrow">Keyboard feedback</div>
-              <p>
-                The processor is now the only control surface here. Depth, gain, and contrast highlight as you change
-                them from the keyboard.
-              </p>
-              <div className="knobology-keyboard-feedback__grid">
-                {keyboardFeedbackCards.map((card) => (
-                  <article
-                    key={card.controlId}
-                    className={`knobology-keyboard-feedback__card${card.isKeyboardActive ? ' knobology-keyboard-feedback__card--active' : ''}${card.isExerciseFocus ? ' knobology-keyboard-feedback__card--focus' : ''}`}
-                  >
-                    <div className="knobology-keyboard-feedback__header">
-                      <div className="mini-card__title">
-                        <span>{knobologyControlMeta[card.controlId].icon}</span>
-                        <strong>{knobologyControlMeta[card.controlId].shortLabel}</strong>
-                      </div>
-                      <div className="tag-row">
-                        {card.isExerciseFocus ? <span className="tag">Exercise focus</span> : null}
-                        {card.hasRecentKeyboardChange ? <span className="tag">Recent keyboard change</span> : null}
-                      </div>
-                    </div>
-                    <div className="knobology-keyboard-feedback__values">
-                      <span>Current {card.currentValue}</span>
-                      <span>Target {card.targetValue}</span>
-                    </div>
-                    <strong className="knobology-keyboard-feedback__status">
-                      {card.hasRecentKeyboardChange ? frameState.statusMessage : card.status}
-                    </strong>
-                    <p>{card.guidance}</p>
-                  </article>
-                ))}
-              </div>
-            </div>
 
             <div className={`feedback-banner${evaluation.solved ? ' feedback-banner--success' : ''}`}>
               <strong>{evaluation.solved ? 'Solved' : `Score ${evaluation.score}`}</strong>

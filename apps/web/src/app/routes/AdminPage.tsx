@@ -202,7 +202,7 @@ export function AdminPage() {
     clearCourseAdminPasscode();
     setAdminPasscode('');
     setLearners([]);
-    setMessage(null);
+    setMessage('Admin session ended.');
     setError(null);
   }
 
@@ -281,7 +281,7 @@ export function AdminPage() {
             {isLoading ? 'Refreshing...' : 'Refresh'}
           </button>
           <button className="button button--ghost" onClick={handleAdminLogout} type="button">
-            Lock dashboard
+            Log out admin
           </button>
         </div>
       </section>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { pretestContent } from '@/content/pretest';
 import {
   buildAdminProgressSummary,
   getLearnerAverageProgress,
@@ -45,6 +46,8 @@ function createLearner(overrides: Partial<AdminLearnerOverview> = {}): AdminLear
 
 describe('admin learner overview helpers', () => {
   it('normalizes RPC rows into dashboard-friendly learner records', () => {
+    const firstPretestQuestion = pretestContent.questions[0]!;
+
     const learner = normalizeAdminLearnerOverview({
       learner_id: 'learner-1',
       email: 'learner@example.edu',
@@ -52,7 +55,7 @@ describe('admin learner overview helpers', () => {
       approval_status: 'approved',
       pretest_percent: 86,
       pretest_answers: {
-        'pretest-01': 'd',
+        [firstPretestQuestion.id]: firstPretestQuestion.correctOptionId,
       },
       assessment_results: {
         'post-test': {
@@ -86,10 +89,10 @@ describe('admin learner overview helpers', () => {
     expect(learner.approvalStatus).toBe('approved');
     expect(learner.pretestPercent).toBe(86);
     expect(learner.pretestAnswers[0]).toMatchObject({
-      questionId: 'pretest-01',
+      questionId: firstPretestQuestion.id,
       isCorrect: true,
-      selectedOptionIds: ['d'],
-      correctOptionIds: ['d'],
+      selectedOptionIds: [firstPretestQuestion.correctOptionId],
+      correctOptionIds: [firstPretestQuestion.correctOptionId],
     });
     expect(learner.postTestAnswers[0]).toMatchObject({
       questionId: 'post-test-q01',

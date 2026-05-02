@@ -189,10 +189,16 @@
 
 .education-option-rationale--correct {
   border-color: rgba(74, 222, 128, 0.28);
+  background: rgba(17, 74, 55, 0.42);
+}
+
+.education-option-rationale--incorrect {
+  border-color: rgba(244, 114, 182, 0.26);
+  background: rgba(91, 28, 39, 0.38);
 }
 
 .education-option-rationale--selected {
-  border-color: rgba(244, 114, 182, 0.22);
+  border-color: rgba(244, 114, 182, 0.36);
 }
 
 @media (min-width: 900px) {

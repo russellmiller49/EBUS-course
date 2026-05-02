@@ -35,9 +35,9 @@ describe('courseWorkflow', () => {
 
     const afterPretest = learnerProgressReducer(afterIntro, {
       type: 'submitPretest',
-      score: 16,
-      answeredCount: 20,
-      totalQuestions: 20,
+      score: 20,
+      answeredCount: 25,
+      totalQuestions: 25,
     });
 
     expect(getCourseStepModels(afterPretest).find((step) => step.id === 'lecture-02')?.unlocked).toBe(true);
