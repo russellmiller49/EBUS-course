@@ -31,6 +31,8 @@ import {
 import { mapNestedAssetPaths } from '@/lib/assets';
 import { useLearnerProgress } from '@/lib/progress';
 
+import './knobology.css';
+
 const euMe2Layout = mapNestedAssetPaths(euMe2LayoutData as EuMe2Layout);
 
 const KEYBOARD_FEEDBACK_CONTROLS = ['depth', 'gain', 'contrast'] as const;
@@ -518,39 +520,101 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                 ) : null}
               </div>
 
-              <div className="knobology-keyboard-feedback">
-                <div className="eyebrow">Keyboard feedback</div>
-                <p>
-                  The processor is now the only control surface here. Depth, gain, and contrast highlight as you change
-                  them from the keyboard.
-                </p>
-                <div className="knobology-keyboard-feedback__grid">
-                  {keyboardFeedbackCards.map((card) => (
-                    <article
-                      key={card.controlId}
-                      className={`knobology-keyboard-feedback__card${card.isKeyboardActive ? ' knobology-keyboard-feedback__card--active' : ''}${card.isExerciseFocus ? ' knobology-keyboard-feedback__card--focus' : ''}`}
+              <div
+                aria-label="Control lab keyboard feedback, rescue guidance, and learn more reference"
+                className="knobology-lab-notes"
+                tabIndex={0}
+              >
+                <section className="knobology-lab-notes__section knobology-keyboard-feedback">
+                  <div className="eyebrow">Keyboard feedback</div>
+                  <p>
+                    The processor is now the only control surface here. Depth, gain, and contrast highlight as you change
+                    them from the keyboard.
+                  </p>
+                  <div className="knobology-keyboard-feedback__grid">
+                    {keyboardFeedbackCards.map((card) => (
+                      <article
+                        key={card.controlId}
+                        className={`knobology-keyboard-feedback__card${card.isKeyboardActive ? ' knobology-keyboard-feedback__card--active' : ''}${card.isExerciseFocus ? ' knobology-keyboard-feedback__card--focus' : ''}`}
+                      >
+                        <div className="knobology-keyboard-feedback__header">
+                          <div className="mini-card__title">
+                            <span>{knobologyControlMeta[card.controlId].icon}</span>
+                            <strong>{knobologyControlMeta[card.controlId].shortLabel}</strong>
+                          </div>
+                          <div className="tag-row">
+                            {card.isExerciseFocus ? <span className="tag">Exercise focus</span> : null}
+                            {card.hasRecentKeyboardChange ? <span className="tag">Recent keyboard change</span> : null}
+                          </div>
+                        </div>
+                        <div className="knobology-keyboard-feedback__values">
+                          <span>Current {card.currentValue}</span>
+                          <span>Target {card.targetValue}</span>
+                        </div>
+                        <strong className="knobology-keyboard-feedback__status">
+                          {card.hasRecentKeyboardChange ? frameState.statusMessage : card.status}
+                        </strong>
+                        <p>{card.guidance}</p>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="knobology-lab-notes__section knobology-rescue-panel">
+                  <div className="knobology-lab-notes__heading">
+                    <div className="eyebrow">Rescue</div>
+                    <h3>{activeExercise.title}</h3>
+                    <p>{activeExercise.symptom}</p>
+                  </div>
+                  <p className="knobology-frame__status-line">{frameState.statusMessage}</p>
+                  {activeVideoMedia.caption ? (
+                    <p className="knobology-frame__media-note">{activeVideoMedia.caption}</p>
+                  ) : null}
+                  <div>
+                    <div className="eyebrow">Instructions</div>
+                    <p>{activeExercise.instructions}</p>
+                  </div>
+                  <div className={`feedback-banner${evaluation.solved ? ' feedback-banner--success' : ''}`}>
+                    <strong>{evaluation.solved ? 'Solved' : `Score ${evaluation.score}`}</strong>
+                    <p>{evaluation.feedback}</p>
+                  </div>
+                  <div className="button-row">
+                    <button
+                      className="button button--ghost"
+                      onClick={() => dispatchFrame({ type: 'RESET_FOR_EXERCISE', exercise: activeExercise })}
+                      type="button"
                     >
-                      <div className="knobology-keyboard-feedback__header">
-                        <div className="mini-card__title">
-                          <span>{knobologyControlMeta[card.controlId].icon}</span>
-                          <strong>{knobologyControlMeta[card.controlId].shortLabel}</strong>
-                        </div>
-                        <div className="tag-row">
-                          {card.isExerciseFocus ? <span className="tag">Exercise focus</span> : null}
-                          {card.hasRecentKeyboardChange ? <span className="tag">Recent keyboard change</span> : null}
-                        </div>
-                      </div>
-                      <div className="knobology-keyboard-feedback__values">
-                        <span>Current {card.currentValue}</span>
-                        <span>Target {card.targetValue}</span>
-                      </div>
-                      <strong className="knobology-keyboard-feedback__status">
-                        {card.hasRecentKeyboardChange ? frameState.statusMessage : card.status}
-                      </strong>
-                      <p>{card.guidance}</p>
-                    </article>
-                  ))}
-                </div>
+                      Reset frame
+                    </button>
+                    <button className="button" onClick={markExerciseSolved} type="button">
+                      Save progress
+                    </button>
+                  </div>
+                </section>
+
+                <section className="learn-more-drawer knobology-lab-notes__section">
+                  <div className="learn-more-drawer__header">
+                    <div>
+                      <div className="eyebrow">Learn More</div>
+                      <h3>{knobologyControlMeta[activeControl].shortLabel} in context</h3>
+                      <p>Reference content now follows the control you are actively adjusting.</p>
+                    </div>
+                    <button
+                      className="button button--ghost"
+                      onClick={() => setShowLearnMore((current) => !current)}
+                      type="button"
+                    >
+                      {showLearnMore ? 'Hide reference' : 'Show reference'}
+                    </button>
+                  </div>
+                  {showLearnMore ? (
+                    <div className="learn-more-drawer__content">
+                      {learnMoreSections.map((section) => (
+                        <EducationSectionCard key={section.id} section={section} />
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
               </div>
             </div>
 
@@ -608,61 +672,6 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
             </div>
           </div>
 
-          <div className="stack-card knobology-controls">
-            <div className="knobology-rescue-card">
-              <strong>{activeExercise.title}</strong>
-              <p>{activeExercise.symptom}</p>
-              <p className="knobology-frame__status-line">{frameState.statusMessage}</p>
-              {activeVideoMedia.caption ? (
-                <p className="knobology-frame__media-note">{activeVideoMedia.caption}</p>
-              ) : null}
-            </div>
-
-            <div className="eyebrow">Instructions</div>
-            <p>{activeExercise.instructions}</p>
-
-            <div className={`feedback-banner${evaluation.solved ? ' feedback-banner--success' : ''}`}>
-              <strong>{evaluation.solved ? 'Solved' : `Score ${evaluation.score}`}</strong>
-              <p>{evaluation.feedback}</p>
-            </div>
-
-            <div className="button-row">
-              <button
-                className="button button--ghost"
-                onClick={() => dispatchFrame({ type: 'RESET_FOR_EXERCISE', exercise: activeExercise })}
-                type="button"
-              >
-                Reset frame
-              </button>
-              <button className="button" onClick={markExerciseSolved} type="button">
-                Save progress
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="learn-more-drawer">
-          <div className="learn-more-drawer__header">
-            <div>
-              <div className="eyebrow">Learn More</div>
-              <h3>{knobologyControlMeta[activeControl].shortLabel} in context</h3>
-              <p>Reference content now follows the control you are actively adjusting instead of sitting above the simulator.</p>
-            </div>
-            <button
-              className="button button--ghost"
-              onClick={() => setShowLearnMore((current) => !current)}
-              type="button"
-            >
-              {showLearnMore ? 'Hide reference' : 'Show reference'}
-            </button>
-          </div>
-          {showLearnMore ? (
-            <div className="learn-more-drawer__content">
-              {learnMoreSections.map((section) => (
-                <EducationSectionCard key={section.id} section={section} />
-              ))}
-            </div>
-          ) : null}
         </div>
       </section>
 

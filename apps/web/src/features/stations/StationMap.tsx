@@ -22,6 +22,7 @@ export function StationMap({
   layout,
   stations,
   selectedStationId,
+  correctStationId,
   onSelect,
   quizMode,
   stationStatuses,
@@ -29,6 +30,7 @@ export function StationMap({
   layout: StationMapLayout;
   stations: CombinedStation[];
   selectedStationId: string | null;
+  correctStationId?: string | null;
   onSelect: (stationId: string) => void;
   quizMode?: boolean;
   stationStatuses?: Record<string, TnmStationStatusValue | undefined>;
@@ -79,6 +81,7 @@ export function StationMap({
         <StationNode
           key={station.id}
           isQuizMode={quizMode}
+          isCorrectAnswer={correctStationId === station.id}
           isSelected={selectedStationId === station.id}
           onSelect={onSelect}
           station={station}

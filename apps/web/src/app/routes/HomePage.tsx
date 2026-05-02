@@ -31,8 +31,8 @@ export function HomePage() {
   const lastAssessment = state.quizScoreHistory[0];
   const pretestTag =
     state.pretest.submittedAt && state.pretest.totalQuestions > 0
-      ? `Pretest ${Math.round(((state.pretest.score ?? 0) / state.pretest.totalQuestions) * 100)}%`
-      : 'Pretest not submitted';
+      ? `Pre-test ${Math.round(((state.pretest.score ?? 0) / state.pretest.totalQuestions) * 100)}%`
+      : 'Pre-test not submitted';
   const progressHighlights = [
     pretestTag,
     `${state.bookmarkedStations.length} bookmarked stations`,
@@ -136,7 +136,7 @@ export function HomePage() {
               <div className="eyebrow">Course unlock</div>
               <h2>
                 {pretestUnlocked
-                  ? 'Finish the baseline pre-test before the practice modules and lecture 2 open.'
+                  ? 'Finish the account, survey, and baseline pre-test flow before Lecture 1 opens.'
                   : 'Start with the welcome video to unlock the baseline pre-test.'}
               </h2>
             </div>
@@ -294,7 +294,7 @@ export function HomePage() {
           <div>
             <div className="eyebrow">Digital prep workspace</div>
             <h2>The app mirrors the course flow so fellows can study in sequence before the live event.</h2>
-            <p>Use the pretest, lecture module, knobology labs, station tools, and case review to arrive ready for the sim day.</p>
+            <p>Use the pre-course test, lecture module, knobology labs, station tools, and case review to arrive ready for the sim day.</p>
           </div>
         </div>
 
@@ -348,6 +348,7 @@ export function HomePage() {
                 <ModuleCard
                   key={module.id}
                   locked={!canAccessRoute(module.id, state, accessOptions)}
+                  lockedPath={getLockedRoutePath(module.id, module.path, state, accessOptions)}
                   lockedReason={getRouteLockReason(module.id, state, accessOptions)}
                   module={module}
                 />

@@ -1,5 +1,10 @@
 import type { AppRouteId } from '@/content/types';
-import { isCoursePretestUnlocked, isPracticeGateUnlocked, isPretestComplete } from '@/lib/courseWorkflow';
+import {
+  getCourseStepModels,
+  getLockedReason,
+  isCoursePretestUnlocked,
+  isPretestComplete,
+} from '@/lib/courseWorkflow';
 import type { LearnerProgressState } from '@/lib/progress';
 
 export const COURSE_ADMIN_SHARED_PASSCODE = 'EBUS_2026';
@@ -14,6 +19,8 @@ type CourseAccessStorage = Pick<Storage, 'getItem' | 'removeItem' | 'setItem'>;
 
 export interface CourseAccessOptions {
   admin?: boolean;
+  accountComplete?: boolean;
+  nowMs?: number;
   preview?: boolean;
 }
 
@@ -100,12 +107,44 @@ export function clearCourseVendorPasscode(storage: CourseAccessStorage | null = 
 }
 
 export function routeRequiresPretest(routeId: AppRouteId | null) {
-  return Boolean(routeId && !['home', 'admin', 'sponsors', 'lectures', 'pretest'].includes(routeId));
+  return Boolean(routeId && !['home', 'admin', 'sponsors', 'lectures', 'pretest', 'post-course'].includes(routeId));
+}
+
+function getRoutePrerequisiteStepId(routeId: AppRouteId): string | null {
+  if (routeId === 'pretest') {
+    return 'lecture-01';
+  }
+
+  if (routeId === 'knobology') {
+    return 'post-lecture-02';
+  }
+
+  if (routeId === 'stations') {
+    return 'post-lecture-05';
+  }
+
+  if (routeId === 'tnm-staging' || routeId === 'case-001' || routeId === 'simulator') {
+    return 'post-lecture-08';
+  }
+
+  return null;
+}
+
+function getRouteFallbackPath(routeId: AppRouteId) {
+  if (routeId === 'pretest') {
+    return '/';
+  }
+
+  if (routeId === 'post-course') {
+    return '/lectures';
+  }
+
+  return '/lectures';
 }
 
 export function canAccessRoute(
   routeId: AppRouteId,
-  state: Pick<LearnerProgressState, 'pretest' | 'lectureWatchStatus'>,
+  state: LearnerProgressState,
   options: CourseAccessOptions = {},
 ) {
   if (options.admin || options.preview) {
@@ -117,28 +156,44 @@ export function canAccessRoute(
   }
 
   if (routeId === 'pretest') {
-    return isCoursePretestUnlocked(state);
+    return isCoursePretestUnlocked(state, options);
   }
 
-  return isPracticeGateUnlocked(state);
+  const steps = getCourseStepModels(state, options);
+
+  if (routeId === 'post-course') {
+    return true;
+  }
+
+  const prerequisiteId = getRoutePrerequisiteStepId(routeId);
+
+  if (!prerequisiteId) {
+    return true;
+  }
+
+  return Boolean(steps.find((step) => step.id === prerequisiteId)?.completed);
 }
 
 export function getLockedRoutePath(
   routeId: AppRouteId,
   path: string,
-  state: Pick<LearnerProgressState, 'pretest' | 'lectureWatchStatus'>,
+  state: LearnerProgressState,
   options: CourseAccessOptions = {},
 ) {
   if (canAccessRoute(routeId, state, options)) {
     return path;
   }
 
-  return isCoursePretestUnlocked(state) ? '/pretest' : '/lectures';
+  if (routeId !== 'pretest' && canAccessRoute('pretest', state, options) && !isPretestComplete(state)) {
+    return '/pretest';
+  }
+
+  return getRouteFallbackPath(routeId);
 }
 
 export function getRouteLockReason(
   routeId: AppRouteId,
-  state: Pick<LearnerProgressState, 'pretest' | 'lectureWatchStatus'>,
+  state: LearnerProgressState,
   options: CourseAccessOptions = {},
 ) {
   if (canAccessRoute(routeId, state, options)) {
@@ -146,8 +201,19 @@ export function getRouteLockReason(
   }
 
   if (routeId === 'pretest') {
-    return 'Complete the welcome and course intro video to unlock the pre-test.';
+    return 'Complete "Welcome, acknowledgments, course intro" to unlock this step.';
   }
 
-  return 'Complete the pre-test to unlock this module.';
+  if (routeId === 'post-course') {
+    return getCourseStepModels(state, options).find((step) => step.id === 'post-test')?.lockedReason ?? null;
+  }
+
+  const prerequisiteId = getRoutePrerequisiteStepId(routeId);
+  const prerequisite = prerequisiteId ? getCourseStepModels(state, options).find((step) => step.id === prerequisiteId) : null;
+
+  if (!prerequisite) {
+    return null;
+  }
+
+  return getLockedReason(prerequisite);
 }

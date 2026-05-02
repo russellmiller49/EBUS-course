@@ -98,7 +98,7 @@ export interface TnmCaseAttemptStat {
 }
 
 export interface LearnerProgressState {
-  version: 7;
+  version: 8;
   moduleProgress: Record<ModuleProgressId, ModuleProgress>;
   bookmarkedStations: string[];
   stationRecognitionStats: Record<string, { attempts: number; correct: number }>;
@@ -108,6 +108,7 @@ export interface LearnerProgressState {
   engagement: Record<TrackedLearningRouteId, ModuleEngagementSummary>;
   quizScoreHistory: QuizHistoryEntry[];
   courseAssessmentResults: Record<string, CourseAssessmentProgress>;
+  preCourseSurvey: CourseSurveyProgress;
   courseSurvey: CourseSurveyProgress;
   pretest: PretestProgress;
   lastViewedStationId: string | null;
@@ -138,6 +139,7 @@ type Action =
       percent: number;
       answers: AssessmentAnswerRecord[];
     }
+  | { type: 'submitPreCourseSurvey'; responses: Record<string, string> }
   | { type: 'submitCourseSurvey'; responses: Record<string, string> }
   | { type: 'recordRecognitionAttempt'; stationId: string; correct: boolean }
   | { type: 'recordTnmCaseAttempt'; caseId: string; tags: string[]; correct: boolean }
@@ -167,6 +169,7 @@ interface LearnerProgressContextValue {
     percent: number;
     answers: AssessmentAnswerRecord[];
   }) => void;
+  submitPreCourseSurvey: (responses: Record<string, string>) => void;
   submitCourseSurvey: (responses: Record<string, string>) => void;
   recordRecognitionAttempt: (stationId: string, correct: boolean) => void;
   recordTnmCaseAttempt: (caseId: string, tags: string[], correct: boolean) => void;
@@ -205,7 +208,7 @@ function createPretestProgress(): PretestProgress {
 
 export function createInitialLearnerProgress(): LearnerProgressState {
   return {
-    version: 7,
+    version: 8,
     moduleProgress: {
       pretest: createModuleProgress(),
       knobology: createModuleProgress(),
@@ -234,6 +237,10 @@ export function createInitialLearnerProgress(): LearnerProgressState {
     lectureWatchStatus: {},
     quizScoreHistory: [],
     courseAssessmentResults: {},
+    preCourseSurvey: {
+      submittedAt: null,
+      responses: {},
+    },
     courseSurvey: {
       submittedAt: null,
       responses: {},
@@ -273,7 +280,7 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
   }
 
   return {
-    version: 7,
+    version: 8,
     moduleProgress: nextModuleProgress,
     bookmarkedStations: Array.isArray(raw.bookmarkedStations)
       ? raw.bookmarkedStations.filter((stationId): stationId is string => typeof stationId === 'string')
@@ -344,6 +351,23 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
         })
       : [],
     courseAssessmentResults: normalizeCourseAssessmentResults(raw.courseAssessmentResults),
+    preCourseSurvey:
+      raw.preCourseSurvey && typeof raw.preCourseSurvey === 'object'
+        ? {
+            submittedAt: typeof raw.preCourseSurvey.submittedAt === 'string' ? raw.preCourseSurvey.submittedAt : null,
+            responses:
+              raw.preCourseSurvey.responses && typeof raw.preCourseSurvey.responses === 'object'
+                ? Object.fromEntries(
+                    Object.entries(raw.preCourseSurvey.responses).flatMap(([questionId, value]) =>
+                      typeof value === 'string' ? [[questionId, value]] : [],
+                    ),
+                  )
+                : {},
+          }
+        : {
+            submittedAt: null,
+            responses: {},
+          },
     courseSurvey:
       raw.courseSurvey && typeof raw.courseSurvey === 'object'
         ? {
@@ -468,9 +492,10 @@ function getLearnerProgressCompletenessScore(state: LearnerProgressState) {
     return sum + (assessment.completedAt ? 100 : assessment.percent);
   }, 0);
   const pretestScore = state.pretest.submittedAt || state.pretest.unlockedByPasscodeAt ? 100 : state.pretest.answeredCount;
+  const preCourseSurveyScore = state.preCourseSurvey.submittedAt ? 100 : 0;
   const surveyScore = state.courseSurvey.submittedAt ? 100 : 0;
 
-  return moduleScore + lectureScore + assessmentScore + pretestScore + surveyScore;
+  return moduleScore + lectureScore + assessmentScore + preCourseSurveyScore + pretestScore + surveyScore;
 }
 
 function normalizeEngagementRecord(candidate: unknown): ModuleEngagementSummary {
@@ -590,6 +615,10 @@ function normalizeCourseAssessmentResults(candidate: unknown): Record<string, Co
 function getModuleForRoute(routeId: AppRouteId): ModuleProgressId | null {
   if (routeId === 'home' || routeId === 'admin' || routeId === 'sponsors') {
     return null;
+  }
+
+  if (routeId === 'post-course') {
+    return 'lectures';
   }
 
   if (routeId === 'stations') {
@@ -737,6 +766,14 @@ export function learnerProgressReducer(state: LearnerProgressState, action: Acti
         },
       };
     }
+    case 'submitPreCourseSurvey':
+      return {
+        ...state,
+        preCourseSurvey: {
+          submittedAt: state.preCourseSurvey.submittedAt ?? new Date().toISOString(),
+          responses: action.responses,
+        },
+      };
     case 'submitCourseSurvey':
       return {
         ...state,
@@ -1120,6 +1157,10 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'submitCourseSurvey', responses });
   }, []);
 
+  const submitPreCourseSurvey = useCallback((responses: Record<string, string>) => {
+    dispatch({ type: 'submitPreCourseSurvey', responses });
+  }, []);
+
   const recordRecognitionAttempt = useCallback((stationId: string, correct: boolean) => {
     dispatch({ type: 'recordRecognitionAttempt', stationId, correct });
   }, []);
@@ -1171,6 +1212,7 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
       recordModuleEngagement,
       recordQuizResult,
       recordCourseAssessmentResult,
+      submitPreCourseSurvey,
       submitCourseSurvey,
       recordRecognitionAttempt,
       recordTnmCaseAttempt,
@@ -1196,6 +1238,7 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
       setLastViewedTnmCase,
       setLectureState,
       setModuleProgress,
+      submitPreCourseSurvey,
       submitCourseSurvey,
       setPretestAnswer,
       setPretestQuestionIndex,

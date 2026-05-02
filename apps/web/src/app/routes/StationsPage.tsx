@@ -12,6 +12,7 @@ const stations = getStations();
 
 const stationTabs = [
   { id: 'explore', label: 'Explore', to: 'explore' },
+  { id: 'sonographic-interpretation', label: 'Sonographic Interpretation', to: 'sonographic-interpretation' },
   { id: 'flashcards', label: 'Flashcards', to: 'flashcards' },
   { id: 'quiz', label: 'Quiz', to: 'quiz' },
   { id: 'handbook', label: 'Handbook', to: 'handbook' },

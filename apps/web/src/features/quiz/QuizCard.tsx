@@ -189,7 +189,9 @@ export function QuizCard({
                 answeredCurrent && shouldRevealAnswers
                   ? isCorrect
                     ? ' choice-card--correct'
-                    : ' choice-card--incorrect'
+                    : isSelected
+                      ? ' choice-card--incorrect'
+                      : ''
                   : isSelected
                     ? ' choice-card--selected'
                     : ''
@@ -197,6 +199,11 @@ export function QuizCard({
               onClick={() => handleSelect(option.id)}
               type="button"
             >
+              {answeredCurrent && shouldRevealAnswers && (isSelected || isCorrect) ? (
+                <span className="choice-card__mark" aria-hidden="true">
+                  {isCorrect ? '✓' : '✕'}
+                </span>
+              ) : null}
               <strong>
                 {currentQuestion.type === 'ordering' && orderIndex >= 0 ? `${orderIndex + 1}. ` : ''}
                 {option.label}

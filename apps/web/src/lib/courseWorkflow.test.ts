@@ -12,7 +12,7 @@ import {
 import { createInitialLearnerProgress, learnerProgressReducer } from '@/lib/progress';
 
 describe('courseWorkflow', () => {
-  it('starts with lecture 1 unlocked and the pre-test locked', () => {
+  it('starts with welcome unlocked and the pre-course test locked', () => {
     const state = createInitialLearnerProgress();
     const steps = getCourseStepModels(state);
 
@@ -22,7 +22,7 @@ describe('courseWorkflow', () => {
     expect(getNextCourseStep(state)?.id).toBe('lecture-01');
   });
 
-  it('unlocks the pre-test after the welcome video and lecture 2 after pre-test submission', () => {
+  it('unlocks the pre-course survey after welcome and Lecture 1 after survey and pre-test submission', () => {
     const afterIntro = learnerProgressReducer(createInitialLearnerProgress(), {
       type: 'setLectureState',
       lectureId: 'lecture-01',
@@ -31,9 +31,15 @@ describe('courseWorkflow', () => {
     });
 
     expect(isCoursePretestUnlocked(afterIntro)).toBe(true);
-    expect(getCourseStepModels(afterIntro).find((step) => step.id === 'pretest')?.unlocked).toBe(true);
+    expect(getCourseStepModels(afterIntro).find((step) => step.id === 'pre-course-survey')?.unlocked).toBe(true);
+    expect(getCourseStepModels(afterIntro).find((step) => step.id === 'pretest')?.unlocked).toBe(false);
 
-    const afterPretest = learnerProgressReducer(afterIntro, {
+    const afterSurvey = learnerProgressReducer(afterIntro, {
+      type: 'submitPreCourseSurvey',
+      responses: { confidence: 'moderate' },
+    });
+
+    const afterPretest = learnerProgressReducer(afterSurvey, {
       type: 'submitPretest',
       score: 20,
       answeredCount: 25,
@@ -45,6 +51,13 @@ describe('courseWorkflow', () => {
 
   it('requires a post-lecture quiz before unlocking the next lecture', () => {
     const state = createInitialLearnerProgress();
+    state.lectureWatchStatus['lecture-01'] = {
+      completed: true,
+      completedAt: '2026-04-10T09:00:00.000Z',
+      watchedSeconds: 120,
+      lastOpenedAt: '2026-04-10T08:30:00.000Z',
+    };
+    state.preCourseSurvey.submittedAt = '2026-04-10T09:30:00.000Z';
     state.pretest.submittedAt = '2026-04-10T10:00:00.000Z';
     state.lectureWatchStatus['lecture-02'] = {
       completed: true,
@@ -73,6 +86,13 @@ describe('courseWorkflow', () => {
 
   it('unlocks the certificate after the survey', () => {
     const state = createInitialLearnerProgress();
+    state.lectureWatchStatus['lecture-01'] = {
+      completed: true,
+      completedAt: '2026-04-10T09:00:00.000Z',
+      watchedSeconds: 120,
+      lastOpenedAt: '2026-04-10T08:30:00.000Z',
+    };
+    state.preCourseSurvey.submittedAt = '2026-04-10T09:30:00.000Z';
     state.pretest.submittedAt = '2026-04-10T10:00:00.000Z';
 
     for (const lecture of lectureManifest) {
@@ -95,12 +115,12 @@ describe('courseWorkflow', () => {
       };
     }
 
-    expect(getCourseStepModels(state).find((step) => step.id === 'post-course-survey')?.unlocked).toBe(true);
-    expect(getCourseStepModels(state).find((step) => step.id === 'certificate')?.unlocked).toBe(false);
+    expect(getCourseStepModels(state, { nowMs: Date.parse('2026-05-31T15:01:00-07:00') }).find((step) => step.id === 'post-course-survey')?.unlocked).toBe(true);
+    expect(getCourseStepModels(state, { nowMs: Date.parse('2026-05-31T15:01:00-07:00') }).find((step) => step.id === 'certificate')?.unlocked).toBe(false);
 
     state.courseSurvey.submittedAt = '2026-04-12T12:15:00.000Z';
 
-    expect(getCourseStepModels(state).find((step) => step.id === 'certificate')?.unlocked).toBe(true);
+    expect(getCourseStepModels(state, { nowMs: Date.parse('2026-05-31T15:01:00-07:00') }).find((step) => step.id === 'certificate')?.unlocked).toBe(true);
   });
 
   it('unlocks the full course workflow for admin preview without marking steps complete', () => {

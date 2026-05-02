@@ -68,7 +68,7 @@ describe('learnerProgressReducer', () => {
       correct: true,
     });
 
-    expect(attempted.version).toBe(7);
+    expect(attempted.version).toBe(8);
     expect(attempted.moduleProgress['tnm-staging'].percentComplete).toBe(15);
     expect(attempted.tnmCaseStats['tnm-case-01']).toMatchObject({ attempts: 1, correct: 1 });
     expect(attempted.tnmTagStats.T1c).toMatchObject({ attempts: 1, correct: 1 });

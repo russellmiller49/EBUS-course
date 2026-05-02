@@ -238,7 +238,7 @@ function LungSchematic({ builder, t }: { builder: TnmBuilderState; t: TnmStageab
     mediastinal: { x: builder.primarySide === 'right' ? -18 : 18, y: 0 },
     diaphragmatic: { x: builder.primarySide === 'right' ? 0 : 0, y: 22 },
   }[builder.locationId];
-  const tumorRadius = Math.min(12, Math.max(4, builder.sizeCm * 1.2));
+  const tumorRadius = Math.min(12, 1.8 + builder.sizeCm * 1.15);
   const tumorX = sideX + locationOffset.x;
   const tumorY = 43 + locationOffset.y;
 

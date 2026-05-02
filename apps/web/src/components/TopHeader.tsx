@@ -5,10 +5,12 @@ import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib
 import { useAuth } from '@/lib/auth';
 import { clearCourseAdminPasscode, clearCourseVendorPasscode, isPretestComplete } from '@/lib/access';
 import { useLearnerProgress } from '@/lib/progress';
+import { useTheme } from '@/lib/theme';
 
 export function TopHeader() {
   const { isSupabaseEnabled, profile, signOut, user } = useAuth();
   const { state } = useLearnerProgress();
+  const { effectiveTheme, toggleTheme } = useTheme();
   const adminSessionActive = useCourseAdminSessionActive();
   const vendorSessionActive = useCourseVendorSessionActive();
   const pretestReady = isPretestComplete(state);
@@ -40,6 +42,12 @@ export function TopHeader() {
           <>
             <span>{vendorSessionActive ? 'Sponsor preview' : profile?.fullName || user?.email || profile?.email || 'Signed out'}</span>
             <div className="top-header__actions">
+              <button className="button button--ghost top-header__action" onClick={toggleTheme} type="button">
+                {effectiveTheme === 'dark' ? 'Light mode' : 'Dark mode'}
+              </button>
+              <Link className="button button--ghost top-header__action" to="/auth?mode=support">
+                Help / Feedback
+              </Link>
               {!adminSessionActive ? (
                 vendorSessionActive ? (
                   <button className="button button--ghost top-header__action" onClick={() => clearCourseVendorPasscode()} type="button">
@@ -60,19 +68,24 @@ export function TopHeader() {
                 </button>
               ) : null}
               {user ? (
-                <>
-                  <Link className="button button--ghost top-header__action" to="/account">
-                    Account
-                  </Link>
-                  <button className="button button--ghost top-header__action" onClick={() => void signOut()} type="button">
-                    Sign out
-                  </button>
-                </>
+                <button className="button button--ghost top-header__action" onClick={() => void signOut()} type="button">
+                  Sign out
+                </button>
               ) : null}
             </div>
           </>
         ) : (
-          <span>Local mode</span>
+          <>
+            <span>Local mode</span>
+            <div className="top-header__actions">
+              <button className="button button--ghost top-header__action" onClick={toggleTheme} type="button">
+                {effectiveTheme === 'dark' ? 'Light mode' : 'Dark mode'}
+              </button>
+              <Link className="button button--ghost top-header__action" to="/auth?mode=support">
+                Help / Feedback
+              </Link>
+            </div>
+          </>
         )}
       </div>
     </header>

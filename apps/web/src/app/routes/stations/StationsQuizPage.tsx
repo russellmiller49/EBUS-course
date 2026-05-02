@@ -33,6 +33,7 @@ export function StationsQuizPage() {
           </div>
         </div>
         <StationMap
+          correctStationId={mapQuizAnswer ? currentQuizRound.stationId : null}
           layout={layout}
           onSelect={(stationId) => {
             setMapQuizAnswer(stationId);

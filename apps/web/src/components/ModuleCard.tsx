@@ -5,14 +5,16 @@ import type { AppModuleCard } from '@/content/types';
 export function ModuleCard({
   module,
   locked = false,
+  lockedPath = '/pretest',
   lockedReason,
 }: {
   module: AppModuleCard;
   locked?: boolean;
+  lockedPath?: string;
   lockedReason?: string | null;
 }) {
   return (
-    <Link className={`module-card${locked ? ' module-card--locked' : ''}`} to={locked ? '/pretest' : module.path}>
+    <Link className={`module-card${locked ? ' module-card--locked' : ''}`} to={locked ? lockedPath : module.path}>
       <div className="module-card__icon" style={{ color: module.accent }}>
         {module.icon}
       </div>

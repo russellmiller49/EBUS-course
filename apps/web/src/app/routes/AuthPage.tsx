@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 
+import { SupportContactForm } from '@/components/SupportContactForm';
 import { emptyProfileInput, LearnerProfileFields, validateProfileInput } from '@/features/account/LearnerProfileFields';
 import { useCourseVendorSessionActive } from '@/lib/adminSession';
 import { storeCourseVendorPasscode, validateCourseVendorPasscode } from '@/lib/access';
@@ -8,7 +9,7 @@ import type { LearnerProfileInput } from '@/lib/auth';
 import { useAuth } from '@/lib/auth';
 import { getBrowserRecoverySessionTokens } from '@/lib/supabase';
 
-type AuthMode = 'sign-in' | 'sign-up' | 'recover' | 'reset-password' | 'vendor';
+type AuthMode = 'sign-in' | 'sign-up' | 'recover' | 'reset-password' | 'support' | 'vendor';
 
 function normalizeNextPath(candidate: string | null) {
   if (!candidate || !candidate.startsWith('/')) {
@@ -19,7 +20,13 @@ function normalizeNextPath(candidate: string | null) {
 }
 
 function getInitialMode(candidate: string | null): AuthMode {
-  if (candidate === 'sign-up' || candidate === 'recover' || candidate === 'reset-password' || candidate === 'vendor') {
+  if (
+    candidate === 'sign-up' ||
+    candidate === 'recover' ||
+    candidate === 'reset-password' ||
+    candidate === 'support' ||
+    candidate === 'vendor'
+  ) {
     return candidate;
   }
 
@@ -55,15 +62,22 @@ export function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const nextPath = useMemo(() => normalizeNextPath(searchParams.get('next')), [searchParams]);
   const routeMode = searchParams.get('mode');
+  const isSupportMode = mode === 'support';
   const requiresPasswordSetup = Boolean(user && profile?.mustSetPassword);
   const isPasswordForm = requiresPasswordSetup || mode === 'reset-password' || isPasswordRecoverySession;
-  const isPendingApproval = Boolean(user && profile?.approvalStatus === 'pending' && !isPasswordForm);
+  const isPendingApproval = Boolean(user && profile?.approvalStatus === 'pending' && !isPasswordForm && !isSupportMode);
   const hasRecoverySessionTokens = Boolean(getBrowserRecoverySessionTokens());
   const isMissingRecoverySession = mode === 'reset-password' && !requiresPasswordSetup && !user && !hasRecoverySessionTokens;
   const vendorRedirectPath = nextPath.startsWith('/auth') ? '/' : nextPath;
 
   useEffect(() => {
-    if (routeMode === 'sign-up' || routeMode === 'recover' || routeMode === 'reset-password' || routeMode === 'vendor') {
+    if (
+      routeMode === 'sign-up' ||
+      routeMode === 'recover' ||
+      routeMode === 'reset-password' ||
+      routeMode === 'support' ||
+      routeMode === 'vendor'
+    ) {
       setMode(routeMode);
     }
   }, [routeMode]);
@@ -210,6 +224,25 @@ export function AuthPage() {
     }
   }
 
+  if (isSupportMode) {
+    return (
+      <div className="page-stack">
+        <section className="hero-card auth-card">
+          <div className="eyebrow">Support and feedback</div>
+          <h2>Send a message to the course team</h2>
+          <p>
+            Share a technical problem, login issue, or course feedback. Your email app will open a draft addressed to
+            the support contacts.
+          </p>
+          <SupportContactForm
+            defaultContactInfo={profile?.email ?? user?.email ?? email}
+            onCancel={() => switchMode('sign-in')}
+          />
+        </section>
+      </div>
+    );
+  }
+
   if (mode === 'vendor') {
     if (vendorSessionActive) {
       return <Navigate replace to={vendorRedirectPath} />;
@@ -307,7 +340,7 @@ export function AuthPage() {
     );
   }
 
-  if (user && !isPasswordForm) {
+  if (user && !isPasswordForm && !isSupportMode) {
     return <Navigate replace to={nextPath} />;
   }
 
@@ -479,6 +512,9 @@ export function AuthPage() {
               </button>
               <button className="button button--ghost" onClick={() => switchMode('recover')} type="button">
                 Forgot password
+              </button>
+              <button className="button button--ghost" onClick={() => switchMode('support')} type="button">
+                Login help / feedback
               </button>
               <button className="button button--ghost" onClick={() => switchMode('vendor')} type="button">
                 Vendor Login

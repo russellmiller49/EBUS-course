@@ -1,8 +1,7 @@
-import type { FormEvent } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { courseAssessments, finalPostTestAssessment, getCourseAssessmentById } from '@/content/courseAssessments';
+import { getCourseAssessmentById, postLectureCourseAssessments } from '@/content/courseAssessments';
 import { courseInfo } from '@/content/course';
 import { lectureManifest } from '@/content/lectures';
 import type { CourseAssessmentContent } from '@/content/types';
@@ -10,14 +9,13 @@ import { AabipVideoLibrary } from '@/features/lectures/AabipVideoLibrary';
 import { LectureCard } from '@/features/lectures/LectureCard';
 import { QuizCard } from '@/features/quiz/QuizCard';
 import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
-import { useAuth } from '@/lib/auth';
+import { useCourseNow } from '@/lib/courseClock';
 import {
   getAssessmentWorkflowStatus,
   getCourseAssessmentProgress,
   getLectureModuleProgressSummary,
   getLectureWorkflowStatus,
   getNextCourseStep,
-  isCourseSurveyComplete,
   type CourseWorkflowStepModel,
 } from '@/lib/courseWorkflow';
 import type { QuizResult } from '@/lib/quiz';
@@ -27,24 +25,6 @@ const VIDEO_TABS = [
   { id: 'course-videos', label: 'Course Videos' },
   { id: 'aabip-videos', label: 'AABIP Videos' },
 ] as const;
-
-const surveyItems = [
-  {
-    id: 'confidence',
-    label: 'Confidence after the course',
-    options: ['More confident with cpEBUS fundamentals', 'About the same', 'Less confident'],
-  },
-  {
-    id: 'pacing',
-    label: 'Online curriculum pacing',
-    options: ['About right', 'Too compressed', 'Too slow'],
-  },
-  {
-    id: 'readiness',
-    label: 'Readiness for the live simulation day',
-    options: ['Ready to practice deliberately', 'Need more review time', 'Unsure'],
-  },
-];
 
 type VideoTabId = (typeof VIDEO_TABS)[number]['id'];
 
@@ -129,39 +109,30 @@ export function LecturesPage() {
     setLectureState,
     setModuleProgress,
     state,
-    submitCourseSurvey,
   } = useLearnerProgress();
-  const { profile, user } = useAuth();
   const adminSessionActive = useCourseAdminSessionActive();
   const vendorSessionActive = useCourseVendorSessionActive();
-  const previewSessionActive = adminSessionActive || vendorSessionActive;
+  const nowMs = useCourseNow();
   const accessOptions = useMemo(
-    () => ({ admin: adminSessionActive, preview: vendorSessionActive }),
-    [adminSessionActive, vendorSessionActive],
+    () => ({ admin: adminSessionActive, nowMs, preview: vendorSessionActive }),
+    [adminSessionActive, nowMs, vendorSessionActive],
   );
-  const previewLabel = vendorSessionActive ? 'Sponsor preview' : 'Admin preview';
   const reviewedCount = Object.values(state.lectureWatchStatus).filter((lecture) => lecture.completed).length;
   const activeTab = searchParams.get('tab') === 'aabip-videos' ? 'aabip-videos' : 'course-videos';
   const selectedAssessmentParam = searchParams.get('assessment');
-  const selectedCourseAssessmentId = selectedAssessmentParam && getCourseAssessmentById(selectedAssessmentParam) ? selectedAssessmentParam : null;
+  const selectedCourseAssessmentId =
+    selectedAssessmentParam && getCourseAssessmentById(selectedAssessmentParam)?.kind === 'post-lecture-quiz'
+      ? selectedAssessmentParam
+      : null;
   const nextCourseStep = getNextCourseStep(state, accessOptions);
   const activeAssessmentId = selectedCourseAssessmentId ?? nextCourseStep?.assessmentId ?? null;
   const lectureModuleProgress = getLectureModuleProgressSummary(state);
-  const completedAssessments = courseAssessments.filter(
+  const completedAssessments = postLectureCourseAssessments.filter(
     (assessment) => state.courseAssessmentResults[assessment.id]?.completedAt,
   ).length;
-  const postTestProgress = finalPostTestAssessment
-    ? getCourseAssessmentProgress(state, finalPostTestAssessment.id)
-    : null;
-  const surveyComplete = isCourseSurveyComplete(state);
-  const surveyUnlocked = previewSessionActive || Boolean(postTestProgress?.completedAt);
-  const completionArtifactsUnlocked = previewSessionActive || surveyComplete;
-  const certificateName = profile?.fullName || user?.email || 'EBUS learner';
-  const [surveyResponses, setSurveyResponses] = useState<Record<string, string>>({});
-  const canSubmitSurvey = surveyItems.every((item) => surveyResponses[item.id]);
 
   const assessmentsByTrailingLectureId = useMemo(() => {
-    return courseAssessments.reduce<Record<string, CourseAssessmentContent[]>>((grouped, assessment) => {
+    return postLectureCourseAssessments.reduce<Record<string, CourseAssessmentContent[]>>((grouped, assessment) => {
       const lectureId = getTrailingLectureId(assessment);
 
       if (!lectureId) {
@@ -248,38 +219,21 @@ export function LecturesPage() {
     );
   }
 
-  function handleSurveySubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!canSubmitSurvey || !surveyUnlocked) {
-      return;
-    }
-
-    const nextCompletedCount = lectureModuleProgress.completedCount + (surveyComplete ? 0 : 1);
-
-    submitCourseSurvey(surveyResponses);
-    setModuleProgress(
-      'lectures',
-      getProgressPercent(nextCompletedCount, lectureModuleProgress.totalCount),
-      nextCompletedCount >= lectureModuleProgress.totalCount,
-    );
-  }
-
   return (
     <div className="page-stack">
       <section className="section-card">
         <div className="section-card__heading">
           <div>
             <div className="eyebrow">Lecture module</div>
-            <h2>Course videos, post-lecture quizzes, and final post-test</h2>
+            <h2>Course videos and post-lecture quizzes</h2>
             <p>
-              Complete each lecture to unlock its quiz in place. The next lecture opens after the required quiz or
-              post-test step is submitted.
+              Complete each lecture to unlock its quiz in place. The next lecture opens after the required quiz is
+              submitted.
             </p>
           </div>
           <div className="tag-row">
             <span className="tag">{lectureManifest.length} course videos</span>
-            <span className="tag">{completedAssessments}/{courseAssessments.length} assessments</span>
+            <span className="tag">{completedAssessments}/{postLectureCourseAssessments.length} quizzes</span>
             <span className="tag">Current: {nextCourseStep?.title ?? 'Complete'}</span>
           </div>
         </div>
@@ -313,8 +267,8 @@ export function LecturesPage() {
                 <div className="eyebrow">Lecture manifest</div>
                 <h2>Prep window: {courseInfo.prepWindow}</h2>
                 <p>
-                  Start with the welcome video. The pre-test, practice modules, lecture quizzes, final post-test,
-                  survey, answers, and certificate unlock in sequence as each required step is completed.
+                  Start with the welcome tab, then complete the pre-course survey and test. Lecture quizzes unlock in
+                  sequence; the final post-test, survey, answers, and certificate live in the post-course tab.
                 </p>
               </div>
             </div>
@@ -349,6 +303,7 @@ export function LecturesPage() {
                 return (
                   <div key={lecture.id} className="lecture-workflow-item">
                     <LectureCard
+                      defaultExpanded={workflowStatus?.status === 'current'}
                       lecture={lecture}
                       locked={!workflowStatus?.unlocked}
                       lockedReason={workflowStatus?.lockedReason}
@@ -372,7 +327,6 @@ export function LecturesPage() {
                           {active && workflow?.unlocked ? (
                             <QuizCard
                               key={`${assessment.id}-${progress?.attemptCount ?? 0}`}
-                              deferFeedbackUntilComplete={assessment.kind !== 'post-test'}
                               label={assessment.title}
                               onComplete={(result) => handleCourseAssessmentComplete(assessment, result)}
                               questions={assessment.questions}
@@ -388,95 +342,6 @@ export function LecturesPage() {
               })}
             </div>
           </section>
-
-          <section className="section-card">
-            <div className="section-card__heading">
-              <div>
-                <div className="eyebrow">Course completion</div>
-                <h2>Post-course survey and certificate</h2>
-                <p>
-                  These open after the final post-test, so the whole course assessment path stays inside the lecture module.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {surveyUnlocked ? (
-            <section className="section-card">
-              <div className="section-card__heading">
-                <div>
-                  <div className="eyebrow">Post-course survey</div>
-                  <h2>{surveyComplete ? 'Survey submitted' : 'Submit the survey to unlock the certificate'}</h2>
-                  <p>Survey status: {formatTimestamp(state.courseSurvey.submittedAt)}</p>
-                </div>
-              </div>
-              {surveyComplete ? (
-                <div className="feedback-banner feedback-banner--success">
-                  <strong>Certificate is unlocked.</strong>
-                  <p>
-                    {previewSessionActive && !surveyComplete
-                      ? `${previewLabel} is active without changing learner survey status.`
-                      : 'Your survey response is saved in local progress and included in the synced learner snapshot when login-backed sync is enabled.'}
-                  </p>
-                </div>
-              ) : (
-                <form className="survey-form" onSubmit={handleSurveySubmit}>
-                  {surveyItems.map((item) => (
-                    <fieldset key={item.id} className="survey-fieldset">
-                      <legend>{item.label}</legend>
-                      <div className="button-row button-row--wrap">
-                        {item.options.map((option) => (
-                          <label key={option} className="control-pill">
-                            <input
-                              checked={surveyResponses[item.id] === option}
-                              name={item.id}
-                              onChange={() => setSurveyResponses((current) => ({ ...current, [item.id]: option }))}
-                              type="radio"
-                            />
-                            <span>{option}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </fieldset>
-                  ))}
-                  <label className="field">
-                    <span>Optional course note</span>
-                    <textarea
-                      onChange={(event) =>
-                        setSurveyResponses((current) => ({ ...current, courseNote: event.target.value }))
-                      }
-                      rows={4}
-                      value={surveyResponses.courseNote ?? ''}
-                    />
-                  </label>
-                  <button className="button" disabled={!canSubmitSurvey} type="submit">
-                    Submit survey
-                  </button>
-                </form>
-              )}
-            </section>
-          ) : null}
-
-          {completionArtifactsUnlocked ? (
-            <section className="section-card certificate-card">
-              <div className="eyebrow">Certificate of completion</div>
-              <h2>{certificateName}</h2>
-              <p>
-                {previewSessionActive && !surveyComplete
-                  ? `${previewLabel} of the certificate workflow unlocked after learner completion.`
-                  : 'has completed the SoCal EBUS Prep online curriculum, pre-test, lecture quizzes, final post-test, and post-course survey.'}
-              </p>
-              <div className="tag-row">
-                <span className="tag">
-                  {previewSessionActive && !surveyComplete ? previewLabel : `Completed ${formatTimestamp(state.courseSurvey.submittedAt)}`}
-                </span>
-                <span className="tag">SoCal EBUS Prep 2026</span>
-              </div>
-              <button className="button button--ghost" onClick={() => window.print()} type="button">
-                Print certificate
-              </button>
-            </section>
-          ) : null}
         </div>
       ) : (
         <AabipVideoLibrary labelledBy="lectures-tab-aabip-videos" panelId="lectures-panel-aabip-videos" />

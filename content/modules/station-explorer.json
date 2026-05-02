@@ -24,5 +24,5 @@
     "Which confusion pair still slows you down when the representation changes?",
     "Can you name one airway landmark and one ultrasound cue for each hilar or interlobar station?"
   ],
-  "extensionNote": "Future approved CT, bronchoscopy, and ultrasound assets can replace the placeholders by swapping the asset keys referenced from the shared station schema while keeping the explorer copy, checklist content, and challenge items intact."
+  "extensionNote": ""
 }

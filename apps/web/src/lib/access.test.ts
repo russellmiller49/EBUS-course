@@ -38,13 +38,13 @@ describe('course access helpers', () => {
     expect(routeRequiresPretest('knobology')).toBe(true);
   });
 
-  it('unlocks the pretest after the welcome lecture and locks practice modules until pretest submission', () => {
+  it('unlocks the pre-course flow after welcome and locks practice modules until their lecture quiz', () => {
     const state = createInitialLearnerProgress();
 
     expect(canAccessRoute('lectures', state)).toBe(true);
     expect(canAccessRoute('sponsors', state)).toBe(true);
     expect(canAccessRoute('pretest', state)).toBe(false);
-    expect(getLockedRoutePath('pretest', '/pretest', state)).toBe('/lectures');
+    expect(getLockedRoutePath('pretest', '/pretest', state)).toBe('/');
     expect(canAccessRoute('knobology', state)).toBe(false);
 
     state.lectureWatchStatus['lecture-01'] = {
@@ -57,10 +57,22 @@ describe('course access helpers', () => {
     expect(canAccessRoute('pretest', state)).toBe(true);
     expect(getLockedRoutePath('knobology', '/knobology', state)).toBe('/pretest');
 
+    state.preCourseSurvey.submittedAt = '2026-04-06T09:30:00.000Z';
     state.pretest.submittedAt = '2026-04-06T10:00:00.000Z';
 
+    expect(canAccessRoute('knobology', state)).toBe(false);
+    expect(getLockedRoutePath('knobology', '/knobology', state)).toBe('/lectures');
+
+    state.courseAssessmentResults['post-lecture-02'] = {
+      completedAt: '2026-04-06T11:00:00.000Z',
+      correctCount: 5,
+      totalCount: 5,
+      percent: 100,
+      attemptCount: 1,
+      answers: [],
+    };
+
     expect(canAccessRoute('knobology', state)).toBe(true);
-    expect(getLockedRoutePath('knobology', '/knobology', state)).toBe('/knobology');
   });
 
   it('allows the admin/developer passcode to satisfy the pretest gate', () => {
@@ -72,8 +84,8 @@ describe('course access helpers', () => {
 
     state.pretest.unlockedByPasscodeAt = '2026-04-15T10:00:00.000Z';
 
-    expect(canAccessRoute('knobology', state)).toBe(true);
-    expect(getLockedRoutePath('knobology', '/knobology', state)).toBe('/knobology');
+    expect(canAccessRoute('pretest', state)).toBe(true);
+    expect(canAccessRoute('knobology', state)).toBe(false);
   });
 
   it('opens every route while the course admin session is active', () => {

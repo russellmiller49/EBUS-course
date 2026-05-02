@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { LectureManifestItem } from '@/content/types';
 import { getContinuousWatchDelta, isLecturePlaybackComplete } from '@/features/lectures/watchProgress';
@@ -9,31 +9,46 @@ export function LectureCard({
   watchState,
   locked,
   lockedReason,
+  defaultExpanded = false,
   onUpdateWatchState,
 }: {
   lecture: LectureManifestItem;
   watchState?: LectureWatchState;
   locked?: boolean;
   lockedReason?: string | null;
+  defaultExpanded?: boolean;
   onUpdateWatchState: (
     lectureId: string,
     update: { watchedSeconds?: number; completed?: boolean; opened?: boolean },
   ) => void;
 }) {
   const [posterBroken, setPosterBroken] = useState(false);
+  const [detailsExpanded, setDetailsExpanded] = useState(
+    () => defaultExpanded && !watchState?.lastOpenedAt && !watchState?.completed,
+  );
   const [videoExpanded, setVideoExpanded] = useState(false);
   const [lastReportedSecond, setLastReportedSecond] = useState(0);
   const lastMediaTimeRef = useRef<number | null>(null);
   const watchedSecondsRef = useRef(watchState?.watchedSeconds ?? 0);
   const isLocked = locked ?? lecture.status === 'locked';
   const hasPlayableVideo = Boolean(lecture.video || lecture.embedUrl);
+  const thumbnailSrc = lecture.thumbnail ?? lecture.poster;
+
+  useEffect(() => {
+    if (defaultExpanded && !watchState?.lastOpenedAt && !watchState?.completed && !isLocked) {
+      setDetailsExpanded(true);
+    }
+  }, [defaultExpanded, isLocked, lecture.id, watchState?.completed, watchState?.lastOpenedAt]);
 
   function handleTogglePlayer() {
     const nextExpanded = !videoExpanded;
+    setDetailsExpanded(true);
     setVideoExpanded(nextExpanded);
 
     if (nextExpanded) {
       onUpdateWatchState(lecture.id, { opened: true });
+    } else if (watchState?.lastOpenedAt || watchState?.completed) {
+      setDetailsExpanded(false);
     }
   }
 
@@ -88,23 +103,51 @@ export function LectureCard({
         watchedSeconds,
       }),
     });
+    setDetailsExpanded(false);
+    setVideoExpanded(false);
   }
 
   return (
-    <article className={`lecture-card${isLocked ? ' lecture-card--locked' : ''}`}>
+    <article className={`lecture-card${isLocked ? ' lecture-card--locked' : ''}${!detailsExpanded ? ' lecture-card--collapsed' : ''}`}>
       <div className="lecture-card__header">
-        <div>
-          <div className="eyebrow">{lecture.week}</div>
+        {thumbnailSrc && !posterBroken ? (
+          <img
+            alt=""
+            aria-hidden="true"
+            className="lecture-card__thumb"
+            onError={() => setPosterBroken(true)}
+            src={thumbnailSrc}
+          />
+        ) : (
+          <div className="lecture-card__thumb lecture-card__thumb--placeholder" aria-hidden="true">
+            {lecture.week.replace('Lecture ', '')}
+          </div>
+        )}
+        <div className="lecture-card__title-block">
+          <div className="lecture-card__number">{lecture.week}</div>
           <h3>{lecture.title}</h3>
-          <p>{lecture.subtitle}</p>
+          {detailsExpanded ? <p>{lecture.subtitle}</p> : null}
         </div>
         <div className="lecture-card__meta">
           <span>{lecture.duration}</span>
           <span>{watchState?.completed ? 'Completed' : isLocked ? 'Locked' : 'Ready'}</span>
         </div>
+        <button
+          aria-expanded={detailsExpanded}
+          className="lecture-card__toggle"
+          onClick={() => {
+            setDetailsExpanded((current) => !current);
+            if (detailsExpanded) {
+              setVideoExpanded(false);
+            }
+          }}
+          type="button"
+        >
+          {detailsExpanded ? '⌃' : '⌄'}
+        </button>
       </div>
 
-      {lecture.poster && !posterBroken ? (
+      {detailsExpanded && lecture.poster && !posterBroken ? (
         <div className="lecture-card__media">
           <img
             alt={`${lecture.title} poster`}
@@ -114,15 +157,17 @@ export function LectureCard({
         </div>
       ) : null}
 
-      <div className="tag-row">
-        {lecture.topics.map((topic) => (
-          <span key={topic} className="tag">
-            {topic}
-          </span>
-        ))}
-      </div>
+      {detailsExpanded ? (
+        <div className="tag-row">
+          {lecture.topics.map((topic) => (
+            <span key={topic} className="tag">
+              {topic}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
-      {!isLocked ? (
+      {detailsExpanded && !isLocked ? (
         <div className="lecture-card__actions">
           {hasPlayableVideo ? (
             <button className="button button--ghost" onClick={handleTogglePlayer} type="button">
@@ -130,31 +175,38 @@ export function LectureCard({
             </button>
           ) : null}
           {lecture.resourceUrl ? (
-            <a className="button button--ghost" href={lecture.resourceUrl} rel="noreferrer" target="_blank">
+            <a
+              className="button button--ghost"
+              href={lecture.resourceUrl}
+              onClick={() => onUpdateWatchState(lecture.id, { opened: true })}
+              rel="noreferrer"
+              target="_blank"
+            >
               {lecture.resourceLabel ?? 'Open resource'}
             </a>
           ) : null}
           {!hasPlayableVideo ? (
             <button
               className="button"
-              onClick={() =>
+              onClick={() => {
                 onUpdateWatchState(lecture.id, {
                   completed: true,
                   opened: true,
                   watchedSeconds: Math.max(watchState?.watchedSeconds ?? 0, 60),
-                })
-              }
+                });
+                setDetailsExpanded(false);
+              }}
               type="button"
             >
               {watchState?.completed ? 'Completed' : 'Mark reviewed'}
             </button>
           ) : null}
         </div>
-      ) : (
+      ) : isLocked ? (
         <p className="lecture-card__status">{lockedReason ?? 'Complete the previous course step to unlock this lecture.'}</p>
-      )}
+      ) : null}
 
-      {videoExpanded && !isLocked ? (
+      {videoExpanded && detailsExpanded && !isLocked ? (
         <div className="lecture-card__player">
           {lecture.embedUrl ? (
             <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" src={lecture.embedUrl} title={lecture.title} />

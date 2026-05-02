@@ -10,6 +10,7 @@ export type AppRouteId =
   | 'admin'
   | 'sponsors'
   | 'pretest'
+  | 'post-course'
   | 'stations'
   | 'knobology'
   | 'lectures'
@@ -17,7 +18,7 @@ export type AppRouteId =
   | 'case-001'
   | 'simulator'
   | 'tnm-staging';
-export type TrackedLearningRouteId = Exclude<AppRouteId, 'home' | 'admin' | 'sponsors'>;
+export type TrackedLearningRouteId = Exclude<AppRouteId, 'home' | 'admin' | 'sponsors' | 'post-course'>;
 export type StationZoneKey = 'upper' | 'subcarinal' | 'hilar';
 export type ExplorerViewId = 'ct' | 'bronchoscopy' | 'ultrasound';
 export type LessonSectionKind =
@@ -607,6 +608,7 @@ export interface LectureManifestItem {
   week: string;
   duration: string;
   poster?: string;
+  thumbnail?: string;
   video?: string;
   embedUrl?: string;
   resourceUrl?: string;

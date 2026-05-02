@@ -1,25 +1,9 @@
 [
   {
-    "id": "lecture-01",
-    "title": "Welcome, acknowledgments, course intro",
-    "subtitle": "Course welcome and orientation",
-    "week": "Welcome",
-    "duration": "Slide deck",
-    "poster": "/media/lectures/lecture-01/poster.jpg",
-    "resourceUrl": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+1-+Welcome+and+course+2026+introduction.pptx",
-    "resourceLabel": "Open slide deck",
-    "topics": [
-      "Course orientation",
-      "Faculty acknowledgments",
-      "How progression works"
-    ],
-    "status": "available"
-  },
-  {
     "id": "lecture-02",
     "title": "Introduction to US, physics, knobology",
     "subtitle": "Ultrasound foundations for cpEBUS",
-    "week": "Lecture 2",
+    "week": "Lecture 1",
     "duration": "Video",
     "poster": "/media/lectures/lecture-02/poster.jpg",
     "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+2-+EBUS+Physics+and+knobology.mp4",
@@ -28,13 +12,14 @@
       "Image optimization",
       "Knobology"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-02/poster.jpg"
   },
   {
     "id": "lecture-03",
     "title": "EBUS scope, basic tools",
     "subtitle": "Scope handling, tools, and sampling basics",
-    "week": "Lecture 3",
+    "week": "Lecture 2",
     "duration": "Video",
     "poster": "/media/lectures/lecture-03/poster.jpg",
     "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+3-+EBUS+scope+basic+tools+and+technique.mp4",
@@ -43,13 +28,14 @@
       "Needles and tools",
       "Basic technique"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-03/poster.jpg"
   },
   {
     "id": "lecture-04",
     "title": "Sedation and anesthesia for advanced diagnostic bronchoscopy",
     "subtitle": "Airway and anesthesia planning",
-    "week": "Lecture 4",
+    "week": "Lecture 3",
     "duration": "Video",
     "poster": "/media/lectures/lecture-04/poster.jpg",
     "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+4-+Sedation-airway-anesthsia.mp4",
@@ -58,13 +44,14 @@
       "General anesthesia",
       "Airway selection"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-04/poster.jpg"
   },
   {
     "id": "lecture-05",
     "title": "Mediastinal anatomy",
     "subtitle": "IASLC station anatomy for EBUS",
-    "week": "Lecture 5",
+    "week": "Lecture 4",
     "duration": "Video",
     "poster": "/media/lectures/lecture-05/poster.jpg",
     "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+5-+Mediastinal+Anatomy.mp4",
@@ -73,7 +60,24 @@
       "Hilar anatomy",
       "EBUS landmarks"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-05/poster.jpg"
+  },
+  {
+    "id": "lecture-08",
+    "title": "Staging: TNM 9th edition",
+    "subtitle": "TNM-9 categories and stage groups",
+    "week": "Lecture 5",
+    "duration": "Video",
+    "poster": "/media/lectures/lecture-08/poster.jpg",
+    "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+8-+9th+Edition+Lung+Cancer+Classification.mp4",
+    "topics": [
+      "T categories",
+      "N categories",
+      "Stage grouping"
+    ],
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-08/poster.jpg"
   },
   {
     "id": "lecture-06",
@@ -88,7 +92,8 @@
       "Cell block",
       "Specimen handling"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-06/poster.jpg"
   },
   {
     "id": "lecture-07",
@@ -103,28 +108,14 @@
       "Histologic patterns",
       "Ancillary testing"
     ],
-    "status": "available"
-  },
-  {
-    "id": "lecture-08",
-    "title": "Staging: TNM 9th edition",
-    "subtitle": "TNM-9 categories and stage groups",
-    "week": "Lecture 8",
-    "duration": "Video",
-    "poster": "/media/lectures/lecture-08/poster.jpg",
-    "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+8-+9th+Edition+Lung+Cancer+Classification.mp4",
-    "topics": [
-      "T categories",
-      "N categories",
-      "Stage grouping"
-    ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-07/poster.jpg"
   },
   {
     "id": "lecture-09",
     "title": "Approach to lung cancer",
     "subtitle": "Mediastinal staging strategy",
-    "week": "Lecture 9",
+    "week": "Lecture 8",
     "duration": "Video",
     "poster": "/media/lectures/lecture-09/poster.jpg",
     "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+9-+Approach+to+mediastinal+staging.mp4",
@@ -133,13 +124,14 @@
       "Sampling sequence",
       "Treatment planning"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-09/poster.jpg"
   },
   {
     "id": "lecture-10",
     "title": "Comprehensive bronchoscopy for evaluating lung cancer-1",
     "subtitle": "EBUS and diagnostic alternatives",
-    "week": "Lecture 10",
+    "week": "Lecture 9",
     "duration": "Video",
     "poster": "/media/lectures/lecture-10/poster.jpg",
     "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+10-+Comprehensive+bronch-1-EBUS.mp4",
@@ -148,13 +140,14 @@
       "Alternative sampling",
       "ROSE workflows"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-10/poster.jpg"
   },
   {
     "id": "lecture-11",
     "title": "Comprehensive bronchoscopy for evaluating lung cancer-2",
     "subtitle": "Peripheral bronchoscopy and alternatives",
-    "week": "Lecture 11",
+    "week": "Lecture 10",
     "duration": "Video",
     "poster": "/media/lectures/lecture-11/poster.jpg",
     "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+11-+Comprehensive+bronch-2-PNB.mp4",
@@ -163,28 +156,30 @@
       "Combined cases",
       "Procedure sequencing"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-11/poster.jpg"
   },
   {
     "id": "lecture-12",
     "title": "Molecular testing: how much tissue is enough?",
     "subtitle": "Tissue stewardship for molecular testing",
-    "week": "Lecture 12",
+    "week": "Lecture 11",
     "duration": "Video",
     "poster": "/media/lectures/lecture-12/poster.jpg",
-    "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+12+EBUS+and+Molecular+Markers+.mp4",
+    "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE%2012-%20EBUS%20and%20Molecular%20Markers%20.mp4",
     "topics": [
       "NGS",
       "PD-L1",
       "Tissue triage"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-12/poster.jpg"
   },
   {
     "id": "lecture-13",
     "title": "Liquid biopsy: will it replace EBUS?",
     "subtitle": "Biomarker strategy and limitations",
-    "week": "Lecture 13",
+    "week": "Lecture 12",
     "duration": "Video",
     "poster": "/media/lectures/lecture-13/poster.jpg",
     "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+13-+Liquid+Biopsy-+replacing+bronchoscopy%3F.mp4",
@@ -193,13 +188,14 @@
       "Risk stratification",
       "Tissue confirmation"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-13/poster.jpg"
   },
   {
     "id": "lecture-14",
     "title": "Approach to other disorders: sarcoidosis",
     "subtitle": "EBUS for granulomatous disease",
-    "week": "Lecture 14",
+    "week": "Lecture 13",
     "duration": "Video",
     "poster": "/media/lectures/lecture-14/poster.jpg",
     "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+14-+EBUS+Approach+to+Sarcoidosis+.mp4",
@@ -208,13 +204,14 @@
       "Granulomatous disease",
       "Sampling strategy"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-14/poster.jpg"
   },
   {
     "id": "lecture-15",
     "title": "Review of 2016 CHEST EBUS Technical Guidelines",
     "subtitle": "Guideline foundations",
-    "week": "Lecture 15",
+    "week": "Lecture 14",
     "duration": "Video",
     "poster": "/media/lectures/lecture-15/poster.jpg",
     "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+15-+Review+of+CHEST+2016+EBUS+Technical+Guidelines.mp4",
@@ -223,13 +220,14 @@
       "Technique standards",
       "Quality principles"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-15/poster.jpg"
   },
   {
     "id": "lecture-16",
     "title": "Advanced techniques",
     "subtitle": "Miniforceps, cryobiopsy, and EUS-B",
-    "week": "Lecture 16",
+    "week": "Lecture 15",
     "duration": "Video",
     "poster": "/media/lectures/lecture-16/poster.jpg",
     "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+16-+Advanced+EBUS+Techniques.mp4",
@@ -238,13 +236,14 @@
       "EUS-B",
       "Cryobiopsy"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-16/poster.jpg"
   },
   {
     "id": "lecture-17",
     "title": "Complications",
     "subtitle": "Risk reduction and complication recognition",
-    "week": "Lecture 17",
+    "week": "Lecture 16",
     "duration": "Video",
     "poster": "/media/lectures/lecture-17/poster.jpg",
     "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+17-+EBUS+complications.mp4",
@@ -253,13 +252,14 @@
       "Infection",
       "Postprocedure care"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-17/poster.jpg"
   },
   {
     "id": "lecture-18",
     "title": "Rare and special scenarios",
     "subtitle": "Special situations in cpEBUS",
-    "week": "Lecture 18",
+    "week": "Lecture 17",
     "duration": "Video",
     "poster": "/media/lectures/lecture-18/poster.jpg",
     "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+18-+Special+situations+and+complications.mp4",
@@ -268,13 +268,14 @@
       "Special anatomy",
       "Salvage approaches"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-18/poster.jpg"
   },
   {
     "id": "lecture-19",
     "title": "Guideline-based synthesis",
     "subtitle": "Case-based synthesis of current guidance",
-    "week": "Lecture 19",
+    "week": "Lecture 18",
     "duration": "Video",
     "poster": "/media/lectures/lecture-19/poster.jpg",
     "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+19-Guideline+based+synthesis.mp4",
@@ -283,13 +284,14 @@
       "Case synthesis",
       "Decision-making"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-19/poster.jpg"
   },
   {
     "id": "lecture-20",
     "title": "Performing cpEBUS: AABIP Video Review",
     "subtitle": "Procedural video review",
-    "week": "Final video",
+    "week": "Lecture 19",
     "duration": "Video",
     "poster": "/media/lectures/lecture-20/poster.jpg",
     "video": "https://ebus2026.s3.us-east-1.amazonaws.com/LECTURE+20-EBUS+exam+intro.mp4",
@@ -298,6 +300,7 @@
       "Procedure choreography",
       "Technique reinforcement"
     ],
-    "status": "available"
+    "status": "available",
+    "thumbnail": "/media/lectures/lecture-20/poster.jpg"
   }
 ]

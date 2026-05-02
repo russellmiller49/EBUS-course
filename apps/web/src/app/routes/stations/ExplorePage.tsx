@@ -17,7 +17,7 @@ export function StationsExplorePage() {
           <div>
             <div className="eyebrow">Explore</div>
             <h2>Read the mediastinum as map first, then correlate the images</h2>
-            <p>{explorerContent.extensionNote}</p>
+            {explorerContent.extensionNote ? <p>{explorerContent.extensionNote}</p> : null}
           </div>
         </div>
         <div className="mini-card-grid">

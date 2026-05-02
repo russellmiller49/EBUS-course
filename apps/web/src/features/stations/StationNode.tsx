@@ -4,22 +4,24 @@ export function StationNode({
   station,
   isSelected,
   isQuizMode,
+  isCorrectAnswer,
   status,
   onSelect,
 }: {
   station: CombinedStation;
   isSelected: boolean;
   isQuizMode?: boolean;
+  isCorrectAnswer?: boolean;
   status?: TnmStationStatusValue;
   onSelect: (stationId: string) => void;
 }) {
-  const shouldShowLabel = isSelected || isQuizMode || status === 'sampled-negative' || status === 'positive';
+  const shouldShowLabel = isSelected || isCorrectAnswer || isQuizMode || status === 'sampled-negative' || status === 'positive';
   const statusLabel = status === 'positive' ? '+' : status === 'sampled-negative' ? '-' : '';
 
   return (
     <button
       aria-label={`Select station ${station.id}`}
-      className={`station-node${isSelected ? ' station-node--selected' : ''}${isQuizMode ? ' station-node--quiz' : ''}${
+      className={`station-node${isSelected ? ' station-node--selected' : ''}${isCorrectAnswer ? ' station-node--correct' : ''}${isQuizMode ? ' station-node--quiz' : ''}${
         shouldShowLabel ? ' station-node--labeled' : ''
       }${status ? ` station-node--${status}` : ''}`}
       onClick={() => onSelect(station.id)}
@@ -32,7 +34,7 @@ export function StationNode({
       }}
       type="button"
     >
-      {shouldShowLabel ? (isQuizMode ? '?' : statusLabel || station.id) : ''}
+      {shouldShowLabel ? (isCorrectAnswer ? station.id : isQuizMode ? '?' : statusLabel || station.id) : ''}
     </button>
   );
 }

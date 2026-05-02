@@ -1,14 +1,24 @@
-import { courseAssessments, getCourseAssessmentById } from '@/content/courseAssessments';
+import {
+  courseAssessments,
+  finalPostTestAssessment,
+  getCourseAssessmentById,
+  postLectureCourseAssessments,
+} from '@/content/courseAssessments';
 import { lectureManifest } from '@/content/lectures';
+import { welcomeLecture } from '@/content/welcome';
 import type { CourseAssessmentContent } from '@/content/types';
+import { formatCourseEndAvailability, isCourseEndUnlocked } from '@/lib/courseConfig';
 import type { LearnerProgressState } from '@/lib/progress';
 
 export type CourseWorkflowStepKind =
+  | 'account'
+  | 'welcome'
   | 'lecture'
   | 'pretest'
   | 'practice'
   | 'assessment'
   | 'post-test'
+  | 'pre-course-survey'
   | 'survey'
   | 'certificate';
 
@@ -31,6 +41,8 @@ export interface CourseWorkflowStepModel extends CourseWorkflowStepDefinition {
 
 export interface CourseWorkflowOptions {
   admin?: boolean;
+  accountComplete?: boolean;
+  nowMs?: number;
   preview?: boolean;
 }
 
@@ -58,69 +70,59 @@ function assessmentStep(assessmentId: string): CourseWorkflowStepDefinition {
     kind: assessment?.kind === 'post-test' ? 'post-test' : 'assessment',
     assessmentId,
     title: assessment?.title ?? assessmentId,
-    path: `/lectures?assessment=${assessmentId}`,
+    path: assessment?.kind === 'post-test' ? `/post-course?assessment=${assessmentId}` : `/lectures?assessment=${assessmentId}`,
   };
 }
 
+function getTrailingLectureId(assessment: CourseAssessmentContent) {
+  return assessment.requiredLectureIds[assessment.requiredLectureIds.length - 1] ?? null;
+}
+
+const lectureWorkflowSteps = lectureManifest.flatMap((lecture) => {
+  const assessments = postLectureCourseAssessments.filter((assessment) => getTrailingLectureId(assessment) === lecture.id);
+
+  return [lectureStep(lecture.id), ...assessments.map((assessment) => assessmentStep(assessment.id))];
+});
+
 export const courseWorkflowSteps: CourseWorkflowStepDefinition[] = [
-  lectureStep('lecture-01'),
+  {
+    id: welcomeLecture.id,
+    kind: 'welcome',
+    lectureId: welcomeLecture.id,
+    title: welcomeLecture.title,
+    path: '/',
+  },
+  {
+    id: 'account',
+    kind: 'account',
+    title: 'Create account / log in',
+    path: '/pretest',
+  },
+  {
+    id: 'pre-course-survey',
+    kind: 'pre-course-survey',
+    title: 'Pre-course survey',
+    path: '/pretest',
+  },
   {
     id: 'pretest',
     kind: 'pretest',
     title: 'Pre-test',
     path: '/pretest',
   },
-  {
-    id: 'practice-modules',
-    kind: 'practice',
-    title: 'Practice modules unlocked',
-    path: '/knobology',
-  },
-  lectureStep('lecture-02'),
-  assessmentStep('post-lecture-02'),
-  lectureStep('lecture-03'),
-  assessmentStep('post-lecture-03'),
-  lectureStep('lecture-04'),
-  assessmentStep('post-lecture-04'),
-  lectureStep('lecture-05'),
-  assessmentStep('post-lecture-05'),
-  lectureStep('lecture-06'),
-  lectureStep('lecture-07'),
-  assessmentStep('post-lecture-06-07'),
-  lectureStep('lecture-08'),
-  assessmentStep('post-lecture-08'),
-  lectureStep('lecture-09'),
-  assessmentStep('post-lecture-09'),
-  lectureStep('lecture-10'),
-  lectureStep('lecture-11'),
-  assessmentStep('post-lecture-10-11'),
-  lectureStep('lecture-12'),
-  assessmentStep('post-lecture-12'),
-  lectureStep('lecture-13'),
-  assessmentStep('post-lecture-13'),
-  lectureStep('lecture-14'),
-  assessmentStep('post-lecture-14'),
-  lectureStep('lecture-15'),
-  lectureStep('lecture-16'),
-  assessmentStep('post-lecture-16'),
-  lectureStep('lecture-17'),
-  lectureStep('lecture-18'),
-  assessmentStep('post-lecture-17-18'),
-  lectureStep('lecture-19'),
-  assessmentStep('post-lecture-19'),
-  lectureStep('lecture-20'),
-  assessmentStep('post-test'),
+  ...lectureWorkflowSteps,
+  ...(finalPostTestAssessment ? [assessmentStep(finalPostTestAssessment.id)] : []),
   {
     id: 'post-course-survey',
     kind: 'survey',
     title: 'Post-course survey',
-    path: '/lectures?section=course-completion',
+    path: '/post-course?section=survey',
   },
   {
     id: 'certificate',
     kind: 'certificate',
     title: 'Certificate of completion',
-    path: '/lectures?section=course-completion',
+    path: '/post-course?section=certificate',
   },
 ];
 
@@ -128,11 +130,7 @@ export function isPretestComplete(state: Pick<LearnerProgressState, 'pretest'>) 
   return Boolean(state.pretest.submittedAt || state.pretest.unlockedByPasscodeAt);
 }
 
-export function isLectureComplete(state: Pick<LearnerProgressState, 'lectureWatchStatus' | 'pretest'>, lectureId: string) {
-  if (lectureId === 'lecture-01' && isPretestComplete(state)) {
-    return true;
-  }
-
+export function isLectureComplete(state: Pick<LearnerProgressState, 'lectureWatchStatus'>, lectureId: string) {
   return Boolean(state.lectureWatchStatus[lectureId]?.completed);
 }
 
@@ -144,15 +142,11 @@ export function isCoursePretestUnlocked(
     return true;
   }
 
-  return isPretestComplete(state) || isLectureComplete(state, 'lecture-01');
+  return isPretestComplete(state) || isLectureComplete(state, welcomeLecture.id);
 }
 
-export function isPracticeGateUnlocked(state: Pick<LearnerProgressState, 'pretest'>, options: CourseWorkflowOptions = {}) {
-  if (hasFullCoursePreviewAccess(options)) {
-    return true;
-  }
-
-  return isPretestComplete(state);
+export function isPreCourseSurveyComplete(state: Pick<LearnerProgressState, 'preCourseSurvey'>) {
+  return Boolean(state.preCourseSurvey.submittedAt);
 }
 
 export function getCourseAssessmentProgress(
@@ -173,6 +167,10 @@ export function isCourseSurveyComplete(state: Pick<LearnerProgressState, 'course
   return Boolean(state.courseSurvey.submittedAt);
 }
 
+function isAccountComplete(options: CourseWorkflowOptions = {}) {
+  return options.accountComplete ?? true;
+}
+
 function getStepPercent(state: LearnerProgressState, step: CourseWorkflowStepDefinition, completed: boolean) {
   if (completed) {
     return 100;
@@ -191,8 +189,28 @@ function getStepPercent(state: LearnerProgressState, step: CourseWorkflowStepDef
 }
 
 export function isCourseStepComplete(state: LearnerProgressState, step: CourseWorkflowStepDefinition) {
+  return isCourseStepCompleteWithOptions(state, step, {});
+}
+
+function isCourseStepCompleteWithOptions(
+  state: LearnerProgressState,
+  step: CourseWorkflowStepDefinition,
+  options: CourseWorkflowOptions,
+) {
+  if (step.kind === 'account') {
+    return isAccountComplete(options);
+  }
+
   if (step.kind === 'lecture' && step.lectureId) {
     return isLectureComplete(state, step.lectureId);
+  }
+
+  if (step.kind === 'welcome' && step.lectureId) {
+    return isLectureComplete(state, step.lectureId);
+  }
+
+  if (step.kind === 'pre-course-survey') {
+    return isPreCourseSurveyComplete(state);
   }
 
   if (step.kind === 'pretest' || step.kind === 'practice') {
@@ -210,21 +228,45 @@ export function isCourseStepComplete(state: LearnerProgressState, step: CourseWo
   return false;
 }
 
-function getLockedReason(previousStep: CourseWorkflowStepDefinition | null) {
+function getAssessmentLectureTitle(step: CourseWorkflowStepDefinition) {
+  if (!step.assessmentId) {
+    return step.title;
+  }
+
+  const assessment = getCourseAssessmentById(step.assessmentId);
+  const lectureId = assessment ? getTrailingLectureId(assessment) : null;
+  const lecture = lectureId ? lectureManifest.find((entry) => entry.id === lectureId) : null;
+
+  return lecture?.title ?? step.title.replace(/^Post-lecture \d+(?:-\d+)? quiz:\s*/i, '');
+}
+
+export function getLockedReason(previousStep: CourseWorkflowStepDefinition | null) {
   if (!previousStep) {
     return null;
   }
 
+  if (previousStep.kind === 'account') {
+    return 'Create an account or sign in to unlock this step.';
+  }
+
+  if (previousStep.kind === 'welcome') {
+    return `Complete "${previousStep.title}" to unlock this step.`;
+  }
+
+  if (previousStep.kind === 'pre-course-survey') {
+    return 'Complete "Pre-course survey" to unlock this step.';
+  }
+
   if (previousStep.kind === 'lecture') {
-    return `Complete ${previousStep.title} to unlock this step.`;
+    return `Complete "${previousStep.title}" to unlock this step.`;
   }
 
   if (previousStep.kind === 'pretest') {
-    return 'Complete the pre-test to unlock the practice modules and next lecture.';
+    return 'Complete "Pre-test" to unlock this step.';
   }
 
   if (previousStep.kind === 'assessment') {
-    return `Complete ${previousStep.title} to unlock the next lecture.`;
+    return `Pass the "${getAssessmentLectureTitle(previousStep)}" quiz to unlock this step.`;
   }
 
   if (previousStep.kind === 'post-test') {
@@ -235,13 +277,17 @@ function getLockedReason(previousStep: CourseWorkflowStepDefinition | null) {
     return 'Complete the post-course survey to unlock the certificate.';
   }
 
-  return `Complete ${previousStep.title} to unlock this step.`;
+  return `Complete "${previousStep.title}" to unlock this step.`;
+}
+
+function isTimeLockedStep(step: CourseWorkflowStepDefinition, options: CourseWorkflowOptions) {
+  return (step.kind === 'post-test' || step.kind === 'survey') && !isCourseEndUnlocked(options.nowMs);
 }
 
 export function getCourseStepModels(state: LearnerProgressState, options: CourseWorkflowOptions = {}): CourseWorkflowStepModel[] {
   if (hasFullCoursePreviewAccess(options)) {
     return courseWorkflowSteps.map((step) => {
-      const completed = isCourseStepComplete(state, step);
+      const completed = isCourseStepCompleteWithOptions(state, step, options);
 
       return {
         ...step,
@@ -258,19 +304,20 @@ export function getCourseStepModels(state: LearnerProgressState, options: Course
   let priorStepsComplete = true;
 
   return courseWorkflowSteps.map((step) => {
-    const completed = isCourseStepComplete(state, step);
-    const unlocked = completed || priorStepsComplete;
+    const completed = isCourseStepCompleteWithOptions(state, step, options);
+    const timeLocked = isTimeLockedStep(step, options);
+    const unlocked = completed || (priorStepsComplete && !timeLocked);
     const status = completed ? 'completed' : unlocked && priorStepsComplete ? 'current' : unlocked ? 'available' : 'locked';
     const model: CourseWorkflowStepModel = {
       ...step,
       completed,
-      lockedReason: unlocked ? null : getLockedReason(previousBlockingStep),
+      lockedReason: unlocked ? null : timeLocked && priorStepsComplete ? formatCourseEndAvailability() : getLockedReason(previousBlockingStep),
       percent: getStepPercent(state, step, completed),
       status,
       unlocked,
     };
 
-    if (!completed && priorStepsComplete) {
+    if ((!completed || timeLocked) && priorStepsComplete) {
       previousBlockingStep = step;
       priorStepsComplete = false;
     } else if (!completed) {
@@ -289,7 +336,7 @@ export function getLectureModuleProgressSummary(state: LearnerProgressState) {
   const lectureModuleSteps = courseWorkflowSteps.filter((step) =>
     ['lecture', 'assessment', 'post-test', 'survey'].includes(step.kind),
   );
-  const completedCount = lectureModuleSteps.filter((step) => isCourseStepComplete(state, step)).length;
+  const completedCount = lectureModuleSteps.filter((step) => isCourseStepCompleteWithOptions(state, step, {})).length;
   const totalCount = lectureModuleSteps.length;
 
   return {

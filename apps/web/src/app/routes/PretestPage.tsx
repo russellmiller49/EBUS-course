@@ -1,9 +1,12 @@
 import type { FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
+import { preCourseSurveyItems } from '@/content/courseSurveys';
 import { getPretestImage, pretestContent } from '@/content/pretest';
 import { getFirstUnansweredQuestionIndex, getNextUnansweredQuestionIndex, scorePretest } from '@/features/pretest/logic';
 import { validatePretestAdminPasscode } from '@/lib/access';
+import { useAuth } from '@/lib/auth';
 import { useLearnerProgress } from '@/lib/progress';
 
 function formatTimestamp(value: string | null) {
@@ -22,11 +25,14 @@ export function PretestPage() {
     setModuleProgress,
     setPretestAnswer,
     setPretestQuestionIndex,
+    submitPreCourseSurvey,
     submitPretest,
     unlockPretestWithPasscode,
   } = useLearnerProgress();
+  const { isSupabaseEnabled, user } = useAuth();
   const [adminPasscode, setAdminPasscode] = useState('');
   const [adminPasscodeStatus, setAdminPasscodeStatus] = useState<'idle' | 'error' | 'success'>('idle');
+  const [surveyResponses, setSurveyResponses] = useState<Record<string, string>>({});
   const questions = pretestContent.questions;
   const pretest = state.pretest;
   const currentIndex = Math.max(0, Math.min(questions.length - 1, pretest.currentQuestionIndex));
@@ -34,7 +40,9 @@ export function PretestPage() {
   const currentImage = currentQuestion?.imageAssetKey ? getPretestImage(currentQuestion.imageAssetKey) : null;
   const submitted = Boolean(pretest.submittedAt);
   const unlockedByPasscode = Boolean(pretest.unlockedByPasscodeAt);
-  const pretestAccessUnlocked = submitted || unlockedByPasscode;
+  const accountComplete = !isSupabaseEnabled || Boolean(user);
+  const preCourseSurveyComplete = Boolean(state.preCourseSurvey.submittedAt);
+  const pretestAccessUnlocked = submitted || unlockedByPasscode || (accountComplete && preCourseSurveyComplete);
   const result = useMemo(() => scorePretest(questions, pretest.answers), [questions, pretest.answers]);
   const unansweredCount = result.totalCount - result.answeredCount;
   const firstUnansweredQuestionIndex = getFirstUnansweredQuestionIndex(questions, pretest.answers);
@@ -43,9 +51,14 @@ export function PretestPage() {
   const savedTotal = pretest.totalQuestions || questions.length;
   const savedPercent = savedTotal > 0 ? Math.round((savedScore / savedTotal) * 100) : 0;
   const progressPercent =
-    pretestAccessUnlocked || result.totalCount === 0
+    submitted || unlockedByPasscode || result.totalCount === 0
       ? 100
-      : Math.max(12, Math.round((result.answeredCount / result.totalCount) * 92));
+      : preCourseSurveyComplete
+        ? Math.max(38, Math.round((result.answeredCount / result.totalCount) * 92))
+        : accountComplete
+          ? 24
+          : 12;
+  const canSubmitSurvey = preCourseSurveyItems.every((item) => surveyResponses[item.id]);
 
   useEffect(() => {
     setModuleProgress('pretest', progressPercent, pretestAccessUnlocked);
@@ -60,7 +73,7 @@ export function PretestPage() {
   }
 
   function handleSelect(optionId: string) {
-    if (!currentQuestion || submitted) {
+    if (!currentQuestion || submitted || !pretestAccessUnlocked) {
       return;
     }
 
@@ -68,7 +81,7 @@ export function PretestPage() {
   }
 
   function handleSubmit() {
-    if (result.answeredCount < result.totalCount) {
+    if (!pretestAccessUnlocked || result.answeredCount < result.totalCount) {
       if (firstUnansweredQuestionIndex >= 0) {
         openQuestion(firstUnansweredQuestionIndex);
       }
@@ -96,6 +109,16 @@ export function PretestPage() {
     setAdminPasscodeStatus('success');
   }
 
+  function handleSurveySubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!accountComplete || !canSubmitSurvey) {
+      return;
+    }
+
+    submitPreCourseSurvey(surveyResponses);
+  }
+
   if (!currentQuestion) {
     return null;
   }
@@ -107,6 +130,8 @@ export function PretestPage() {
         <h2>{pretestContent.title}</h2>
         <p>{pretestContent.summary}</p>
         <div className="tag-row">
+          <span className="tag">{accountComplete ? 'Account complete' : 'Account required'}</span>
+          <span className="tag">{preCourseSurveyComplete ? 'Survey submitted' : 'Survey first'}</span>
           <span className="tag">{questions.length} questions</span>
           <span className="tag">Answers hidden</span>
           <span className="tag">Demo local logging</span>
@@ -123,12 +148,16 @@ export function PretestPage() {
       <section className="section-card">
         <div className="section-card__heading">
           <div>
-            <div className="eyebrow">Current status</div>
+            <div className="eyebrow">Pre-course flow</div>
             <h2>
               {submitted
-                ? 'Pretest submitted'
+                ? 'Pre-test submitted'
                 : unlockedByPasscode
                   ? 'Admin/developer access unlocked'
+                  : !accountComplete
+                    ? 'Create an account or sign in'
+                    : !preCourseSurveyComplete
+                      ? 'Pre-course survey is next'
                   : 'Assessment in progress'}
             </h2>
           </div>
@@ -163,6 +192,71 @@ export function PretestPage() {
         </div>
       </section>
 
+      <section className="section-card">
+        <div className="section-card__heading">
+          <div>
+            <div className="eyebrow">Step 1</div>
+            <h2>{accountComplete ? 'Account step complete' : 'Create account / log in'}</h2>
+            <p>
+              {accountComplete
+                ? 'Your learner access step is complete for this browser session.'
+                : 'Create your learner account or sign in before submitting the pre-course survey.'}
+            </p>
+          </div>
+        </div>
+        {!accountComplete ? (
+          <div className="button-row button-row--wrap">
+            <Link className="button" to="/auth?mode=sign-up&next=%2Fpretest">
+              Create account
+            </Link>
+            <Link className="button button--ghost" to="/auth?next=%2Fpretest">
+              Sign in
+            </Link>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="section-card">
+        <div className="section-card__heading">
+          <div>
+            <div className="eyebrow">Step 2</div>
+            <h2>{preCourseSurveyComplete ? 'Pre-course survey submitted' : 'Pre-course survey'}</h2>
+            <p>Submit the survey before starting the baseline pre-test.</p>
+          </div>
+          <span className="tag">{formatTimestamp(state.preCourseSurvey.submittedAt)}</span>
+        </div>
+        {preCourseSurveyComplete ? (
+          <div className="feedback-banner feedback-banner--success">
+            <strong>Survey saved</strong>
+            <p>Your pre-course survey response is saved locally with learner progress.</p>
+          </div>
+        ) : (
+          <form className="survey-form" onSubmit={handleSurveySubmit}>
+            {preCourseSurveyItems.map((item) => (
+              <fieldset key={item.id} className="survey-fieldset" disabled={!accountComplete}>
+                <legend>{item.label}</legend>
+                <div className="button-row button-row--wrap">
+                  {item.options.map((option) => (
+                    <label key={option} className="control-pill">
+                      <input
+                        checked={surveyResponses[item.id] === option}
+                        name={item.id}
+                        onChange={() => setSurveyResponses((current) => ({ ...current, [item.id]: option }))}
+                        type="radio"
+                      />
+                      <span>{option}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            ))}
+            <button className="button" disabled={!accountComplete || !canSubmitSurvey} type="submit">
+              Submit pre-course survey
+            </button>
+          </form>
+        )}
+      </section>
+
       {!submitted ? (
         <section className="section-card section-card--notice">
           <div className="section-card__heading">
@@ -174,7 +268,7 @@ export function PretestPage() {
           {unlockedByPasscode ? (
             <div className="feedback-banner feedback-banner--success">
               <strong>Access unlocked</strong>
-              <p>Course modules are available while the pretest remains open for optional review or completion.</p>
+              <p>Course modules are available while the pre-test remains open for optional review or completion.</p>
             </div>
           ) : (
             <form className="pretest-unlock-form" onSubmit={handleAdminPasscodeSubmit}>
@@ -211,44 +305,50 @@ export function PretestPage() {
         </section>
       ) : null}
 
-      <section className="section-card">
+      <section className={`section-card${pretestAccessUnlocked ? '' : ' section-card--locked'}`}>
         <div className="section-card__heading">
           <div>
-            <div className="eyebrow">Question navigator</div>
+            <div className="eyebrow">Step 3</div>
             <h2>
-              Question {currentIndex + 1} of {questions.length}
+              {pretestAccessUnlocked ? `Question ${currentIndex + 1} of ${questions.length}` : 'Pre-test locked'}
             </h2>
+            {!pretestAccessUnlocked ? <p>Complete account setup and the pre-course survey to unlock the test.</p> : null}
           </div>
         </div>
-        <div className="pretest-chip-grid" role="list" aria-label="Pretest question navigator">
-          {questions.map((question, index) => {
-            const answered = Boolean(pretest.answers[question.id]);
+        {pretestAccessUnlocked ? (
+          <>
+            <div className="pretest-chip-grid" role="list" aria-label="Pretest question navigator">
+              {questions.map((question, index) => {
+                const answered = Boolean(pretest.answers[question.id]);
 
-            return (
-              <button
-                key={question.id}
-                className={`control-pill pretest-chip${currentIndex === index ? ' pretest-chip--active' : ''}${answered ? ' pretest-chip--answered' : ''}`}
-                onClick={() => openQuestion(index)}
-                type="button"
-              >
-                {index + 1}
-              </button>
-            );
-          })}
-        </div>
-        {!submitted && firstUnansweredQuestionIndex >= 0 ? (
-          <div className="button-row button-row--wrap">
-            <button
-              className="button button--ghost"
-              onClick={() => openQuestion(nextUnansweredQuestionIndex >= 0 ? nextUnansweredQuestionIndex : firstUnansweredQuestionIndex)}
-              type="button"
-            >
-              Jump to unanswered #{(nextUnansweredQuestionIndex >= 0 ? nextUnansweredQuestionIndex : firstUnansweredQuestionIndex) + 1}
-            </button>
-          </div>
+                return (
+                  <button
+                    key={question.id}
+                    className={`control-pill pretest-chip${currentIndex === index ? ' pretest-chip--active' : ''}${answered ? ' pretest-chip--answered' : ''}`}
+                    onClick={() => openQuestion(index)}
+                    type="button"
+                  >
+                    {index + 1}
+                  </button>
+                );
+              })}
+            </div>
+            {!submitted && firstUnansweredQuestionIndex >= 0 ? (
+              <div className="button-row button-row--wrap">
+                <button
+                  className="button button--ghost"
+                  onClick={() => openQuestion(nextUnansweredQuestionIndex >= 0 ? nextUnansweredQuestionIndex : firstUnansweredQuestionIndex)}
+                  type="button"
+                >
+                  Jump to unanswered #{(nextUnansweredQuestionIndex >= 0 ? nextUnansweredQuestionIndex : firstUnansweredQuestionIndex) + 1}
+                </button>
+              </div>
+            ) : null}
+          </>
         ) : null}
       </section>
 
+      {pretestAccessUnlocked ? (
       <section className="quiz-card">
         <div className="quiz-card__header">
           <div>
@@ -308,10 +408,11 @@ export function PretestPage() {
             onClick={handleSubmit}
             type="button"
           >
-            {submitted ? 'Pretest saved' : 'Submit pre-test'}
+            {submitted ? 'Pre-test saved' : 'Submit pre-test'}
           </button>
         </div>
       </section>
+      ) : null}
     </div>
   );
 }

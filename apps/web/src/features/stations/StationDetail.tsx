@@ -251,7 +251,29 @@ export function StationDetail({
         <div className="media-grid media-grid--hero">
           <MediaSlot station={station} viewId="ct" />
           <MediaSlot station={station} viewId="bronchoscopy" />
+        </div>
+        <div className="detail-card__ebus-facts-row">
           <MediaSlot station={station} viewId="ultrasound" />
+          <article className="stack-card reference-card detail-card__quick-facts">
+            <div className="eyebrow">Quick facts</div>
+            <h3>{station.id} at a glance</h3>
+            <div className="tag-row">
+              <span className="tag">{theme.label}</span>
+              <span className="tag">{station.laterality}</span>
+              <span className="tag">{station.iaslcName}</span>
+              {station.aliases.map((alias) => (
+                <span key={alias} className="tag">
+                  {alias}
+                </span>
+              ))}
+            </div>
+            <p>
+              <strong>Access:</strong> {station.accessProfile}
+            </p>
+            <p>
+              <strong>Best EBUS window:</strong> {station.bestEbusWindow}
+            </p>
+          </article>
         </div>
         <RelatedImagesStrip items={relatedImages} />
       </div>
@@ -268,19 +290,6 @@ export function StationDetail({
                 <strong>Best EBUS window:</strong> {station.bestEbusWindow}
               </p>
               <p>{station.accessNotes}</p>
-            </div>
-            <div className="stack-card reference-card">
-              <div className="eyebrow">Quick facts</div>
-              <div className="tag-row">
-                <span className="tag">{theme.label}</span>
-                <span className="tag">{station.laterality}</span>
-                <span className="tag">{station.iaslcName}</span>
-                {station.aliases.map((alias) => (
-                  <span key={alias} className="tag">
-                    {alias}
-                  </span>
-                ))}
-              </div>
             </div>
           </div>
         </AccordionPanel>
