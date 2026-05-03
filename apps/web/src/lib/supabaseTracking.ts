@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { getLectureViewedPercent } from '@/features/lectures/watchProgress';
 import type { LearnerProgressState, LectureWatchState } from '@/lib/progress';
 
 export interface ModuleSessionRecordInput {
@@ -55,10 +56,17 @@ function toLectureProgressRows(userId: string, lectureWatchStatus: Record<string
   return Object.entries(lectureWatchStatus).map(([lectureId, value]) => ({
     learner_id: userId,
     lecture_id: lectureId,
+    duration_seconds: Math.max(0, Math.floor(value.durationSeconds)),
+    last_position_seconds: Math.max(0, Math.floor(value.lastPositionSeconds)),
     watched_seconds: Math.max(0, Math.floor(value.watchedSeconds)),
+    viewed_percent: getLectureViewedPercent({
+      durationSeconds: value.durationSeconds,
+      watchedSeconds: value.watchedSeconds,
+    }),
     completed: value.completed,
     completed_at: value.completedAt,
     last_opened_at: value.lastOpenedAt,
+    quiz_unlocked_at: value.quizUnlockedAt,
     updated_at: new Date().toISOString(),
   }));
 }

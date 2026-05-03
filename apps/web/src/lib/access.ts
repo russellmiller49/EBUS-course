@@ -107,7 +107,7 @@ export function clearCourseVendorPasscode(storage: CourseAccessStorage | null = 
 }
 
 export function routeRequiresPretest(routeId: AppRouteId | null) {
-  return Boolean(routeId && !['home', 'admin', 'sponsors', 'lectures', 'pretest', 'post-course'].includes(routeId));
+  return Boolean(routeId && !['home', 'welcome', 'admin', 'sponsors', 'lectures', 'pretest', 'post-course'].includes(routeId));
 }
 
 function getRoutePrerequisiteStepId(routeId: AppRouteId): string | null {
@@ -151,7 +151,13 @@ export function canAccessRoute(
     return true;
   }
 
-  if (routeId === 'home' || routeId === 'admin' || routeId === 'sponsors' || routeId === 'lectures') {
+  if (
+    routeId === 'home' ||
+    routeId === 'welcome' ||
+    routeId === 'admin' ||
+    routeId === 'sponsors' ||
+    routeId === 'lectures'
+  ) {
     return true;
   }
 

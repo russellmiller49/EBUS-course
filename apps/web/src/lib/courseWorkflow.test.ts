@@ -54,16 +54,22 @@ describe('courseWorkflow', () => {
     state.lectureWatchStatus['lecture-01'] = {
       completed: true,
       completedAt: '2026-04-10T09:00:00.000Z',
-      watchedSeconds: 120,
+      durationSeconds: 120,
       lastOpenedAt: '2026-04-10T08:30:00.000Z',
+      lastPositionSeconds: 120,
+      quizUnlockedAt: '2026-04-10T08:30:00.000Z',
+      watchedSeconds: 120,
     };
     state.preCourseSurvey.submittedAt = '2026-04-10T09:30:00.000Z';
     state.pretest.submittedAt = '2026-04-10T10:00:00.000Z';
     state.lectureWatchStatus['lecture-02'] = {
-      completed: true,
-      completedAt: '2026-04-10T11:00:00.000Z',
-      watchedSeconds: 600,
+      completed: false,
+      completedAt: null,
+      durationSeconds: 1200,
       lastOpenedAt: '2026-04-10T10:30:00.000Z',
+      lastPositionSeconds: 45,
+      quizUnlockedAt: '2026-04-10T10:30:00.000Z',
+      watchedSeconds: 45,
     };
 
     expect(getCourseStepModels(state).find((step) => step.id === 'post-lecture-02')?.unlocked).toBe(true);
@@ -89,8 +95,11 @@ describe('courseWorkflow', () => {
     state.lectureWatchStatus['lecture-01'] = {
       completed: true,
       completedAt: '2026-04-10T09:00:00.000Z',
-      watchedSeconds: 120,
+      durationSeconds: 120,
       lastOpenedAt: '2026-04-10T08:30:00.000Z',
+      lastPositionSeconds: 120,
+      quizUnlockedAt: '2026-04-10T08:30:00.000Z',
+      watchedSeconds: 120,
     };
     state.preCourseSurvey.submittedAt = '2026-04-10T09:30:00.000Z';
     state.pretest.submittedAt = '2026-04-10T10:00:00.000Z';
@@ -99,8 +108,11 @@ describe('courseWorkflow', () => {
       state.lectureWatchStatus[lecture.id] = {
         completed: true,
         completedAt: '2026-04-12T11:00:00.000Z',
-        watchedSeconds: 600,
+        durationSeconds: 600,
         lastOpenedAt: '2026-04-12T10:30:00.000Z',
+        lastPositionSeconds: 600,
+        quizUnlockedAt: '2026-04-12T10:30:00.000Z',
+        watchedSeconds: 600,
       };
     }
 

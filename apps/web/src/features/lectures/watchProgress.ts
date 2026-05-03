@@ -46,3 +46,17 @@ export function isLecturePlaybackComplete({
 
   return watchedEnough && reachedEnd;
 }
+
+export function getLectureViewedPercent({
+  durationSeconds,
+  watchedSeconds,
+}: {
+  durationSeconds: number;
+  watchedSeconds: number;
+}) {
+  if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, Math.round((Math.max(0, watchedSeconds) / durationSeconds) * 100)));
+}

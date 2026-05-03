@@ -50,8 +50,11 @@ describe('course access helpers', () => {
     state.lectureWatchStatus['lecture-01'] = {
       completed: true,
       completedAt: '2026-04-06T09:00:00.000Z',
-      watchedSeconds: 60,
+      durationSeconds: 60,
       lastOpenedAt: '2026-04-06T09:00:00.000Z',
+      lastPositionSeconds: 60,
+      quizUnlockedAt: '2026-04-06T09:00:00.000Z',
+      watchedSeconds: 60,
     };
 
     expect(canAccessRoute('pretest', state)).toBe(true);

@@ -12,7 +12,9 @@ export interface AdminModuleProgress {
 }
 
 export interface AdminLectureSummary {
+  averageViewedPercent: number;
   completedCount: number;
+  quizReadyCount: number;
   totalWatchedSeconds: number;
   lastOpenedAt: string | null;
 }
@@ -64,7 +66,9 @@ export interface AdminProgressSummary {
 }
 
 const DEFAULT_LECTURE_SUMMARY: AdminLectureSummary = {
+  averageViewedPercent: 0,
   completedCount: 0,
+  quizReadyCount: 0,
   totalWatchedSeconds: 0,
   lastOpenedAt: null,
 };
@@ -122,7 +126,9 @@ function normalizeLectureSummary(candidate: unknown): AdminLectureSummary {
   const raw = candidate as Record<string, unknown>;
 
   return {
+    averageViewedPercent: Math.max(0, Math.min(100, Math.floor(readNumber(raw.averageViewedPercent) ?? 0))),
     completedCount: Math.max(0, Math.floor(readNumber(raw.completedCount) ?? 0)),
+    quizReadyCount: Math.max(0, Math.floor(readNumber(raw.quizReadyCount) ?? 0)),
     totalWatchedSeconds: Math.max(0, Math.floor(readNumber(raw.totalWatchedSeconds) ?? 0)),
     lastOpenedAt: readString(raw.lastOpenedAt),
   };

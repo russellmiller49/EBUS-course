@@ -44,12 +44,10 @@ export function PretestPage() {
   const preCourseSurveyComplete = Boolean(state.preCourseSurvey.submittedAt);
   const pretestAccessUnlocked = submitted || unlockedByPasscode || (accountComplete && preCourseSurveyComplete);
   const result = useMemo(() => scorePretest(questions, pretest.answers), [questions, pretest.answers]);
-  const unansweredCount = result.totalCount - result.answeredCount;
   const firstUnansweredQuestionIndex = getFirstUnansweredQuestionIndex(questions, pretest.answers);
   const nextUnansweredQuestionIndex = getNextUnansweredQuestionIndex(questions, pretest.answers, currentIndex);
   const savedScore = pretest.score ?? result.correctCount;
   const savedTotal = pretest.totalQuestions || questions.length;
-  const savedPercent = savedTotal > 0 ? Math.round((savedScore / savedTotal) * 100) : 0;
   const progressPercent =
     submitted || unlockedByPasscode || result.totalCount === 0
       ? 100
@@ -142,53 +140,6 @@ export function PretestPage() {
               <p>{instruction}</p>
             </div>
           ))}
-        </div>
-      </section>
-
-      <section className="section-card">
-        <div className="section-card__heading">
-          <div>
-            <div className="eyebrow">Pre-course flow</div>
-            <h2>
-              {submitted
-                ? 'Pre-test submitted'
-                : unlockedByPasscode
-                  ? 'Admin/developer access unlocked'
-                  : !accountComplete
-                    ? 'Create an account or sign in'
-                    : !preCourseSurveyComplete
-                      ? 'Pre-course survey is next'
-                  : 'Assessment in progress'}
-            </h2>
-          </div>
-        </div>
-        <div className="stats-grid">
-          <article className="mini-card">
-            <strong>
-              {submitted
-                ? `${savedScore}/${savedTotal}`
-                : unlockedByPasscode
-                  ? 'Unlocked'
-                  : `${result.answeredCount}/${questions.length}`}
-            </strong>
-            <span>{submitted ? 'Saved score' : unlockedByPasscode ? 'Course access' : 'Questions answered'}</span>
-          </article>
-          <article className="mini-card">
-            <strong>{submitted ? `${savedPercent}%` : unlockedByPasscode ? 'Staff' : `${unansweredCount}`}</strong>
-            <span>{submitted ? 'Saved percent' : unlockedByPasscode ? 'Access mode' : 'Questions remaining'}</span>
-          </article>
-          <article className="mini-card">
-            <strong>{submitted ? pretest.attemptCount : unlockedByPasscode ? 'Passcode' : 'Local only'}</strong>
-            <span>{submitted ? 'Saved attempts' : unlockedByPasscode ? 'Unlock method' : 'Logging mode'}</span>
-          </article>
-        </div>
-        <p>{pretestContent.demoPolicy}</p>
-        <div className="tag-row">
-          <span className="tag">Latest submission: {formatTimestamp(pretest.submittedAt)}</span>
-          {unlockedByPasscode ? (
-            <span className="tag">Passcode unlock: {formatTimestamp(pretest.unlockedByPasscodeAt)}</span>
-          ) : null}
-          {submitted ? <span className="tag">Read-only review</span> : <span className="tag">Editable until submitted</span>}
         </div>
       </section>
 
@@ -349,7 +300,7 @@ export function PretestPage() {
       </section>
 
       {pretestAccessUnlocked ? (
-      <section className="quiz-card">
+      <section className="quiz-card quiz-card--large-stem">
         <div className="quiz-card__header">
           <div>
             <div className="eyebrow">{currentQuestion.type.replace(/-/g, ' ')}</div>

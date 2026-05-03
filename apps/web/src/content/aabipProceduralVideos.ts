@@ -4,7 +4,7 @@ import type { ProceduralVideoContentItem, ProceduralVideoLibraryContent } from '
 export const AABIP_EBUS_PLAYLIST_ID = 'PLz2NeO-gj6IW70aQwTFdU1IwU_b17639q';
 
 export interface ProceduralVideoItem extends ProceduralVideoContentItem {
-  embedUrl: string;
+  thumbnailUrl: string;
   watchUrl: string;
 }
 
@@ -16,15 +16,8 @@ export function getProceduralVideoWatchUrl(videoId: string) {
   return `https://www.youtube.com/watch?v=${videoId}&list=${AABIP_EBUS_PLAYLIST_ID}`;
 }
 
-export function getProceduralVideoEmbedUrl(video: ProceduralVideoContentItem) {
-  const params = new URLSearchParams({
-    index: String(video.playlistIndex),
-    list: AABIP_EBUS_PLAYLIST_ID,
-    modestbranding: '1',
-    rel: '0',
-  });
-
-  return `https://www.youtube-nocookie.com/embed/${video.youtubeId}?${params.toString()}`;
+export function getProceduralVideoThumbnailUrl(videoId: string) {
+  return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
 }
 
 const proceduralVideoLibraryData = videosData as ProceduralVideoLibraryContent;
@@ -33,7 +26,7 @@ export const aabipProceduralVideoLibrary: ProceduralVideoLibrary = {
   ...proceduralVideoLibraryData,
   videos: proceduralVideoLibraryData.videos.map((video) => ({
     ...video,
-    embedUrl: getProceduralVideoEmbedUrl(video),
+    thumbnailUrl: getProceduralVideoThumbnailUrl(video.youtubeId),
     watchUrl: getProceduralVideoWatchUrl(video.youtubeId),
   })),
 };

@@ -2860,7 +2860,7 @@
     {
       "id": "post-test",
       "kind": "post-test",
-      "title": "Final post-test",
+      "title": "EBUS 2026 Post-Test",
       "sourceFile": "Pre and Post-test_EBUS 2026-FINAL.docx",
       "requiredLectureIds": [
         "lecture-20"
@@ -2899,7 +2899,7 @@
           "explanation": "Aspirin can be safely continued for EBUS-TBNA, and clopidogrel may be continued when the patient's thrombotic risk is judged to exceed the bleeding risk, especially in patients with recent coronary stenting (option B correct). The overall bleeding risk of EBUS-TBNA is low, but the consequence of prematurely stopping dual antiplatelet therapy (DAPT) in the first weeks after drug-eluting stent placement can be catastrophic. Therefore, the plan should be individualized rather than applying a uniform DAPT interruption strategy. The other options are less appropriate because stopping aspirin and continuing clopidogrel alone (option A) is not the usual evidence-based default. Stopping both agents for 7 days (option C) may expose the patient to unnecessary stent thrombosis risk. Low-molecular-weight heparin does not substitute for P2Y12 inhibition (option D).",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -2935,7 +2935,7 @@
           "explanation": "This is station 4R (option B). The right lower paratracheal station extends from the intersection of the caudal margin of the left brachiocephalic (innominate) vein with the trachea down to the inferior border of the azygos vein. The SVC runs longitudinally in this area and the azygous can be visualized emptying into it. For cpEBUS operators, recognizing this vertical window is essential because 4R is one of the highest-yield and most commonly sampled mediastinal stations during lung cancer staging. It also carries direct staging implications: if malignant in a patient with a right lung primary, 4R represents ipsilateral mediastinal disease (N2), not hilar disease (N1). Therefore, distinguishing it from a node in the 10R station (option C), which extends from the inferior border of the azygous along the lateral wall of the right mainstem bronchus until its bifurcation, is critical. Station 2R (option A) lies above the caudal margin of the brachiocephalic vein as it crosses the trachea. Station 7 (option D) is subcarinal and lies below the carina between the main bronchi.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ],
           "imageAsset": {
             "src": "/media/assessments/ebus-2026-final/question-figure-1.png",
@@ -2976,7 +2976,7 @@
           "explanation": "This node is station 2L (option D), the left upper paratracheal station. On the left side, the major landmark that separates upper from lower paratracheal region is the superior border of the aortic arch: nodes above that boundary are 2L, and nodes below it down to the upper rim of the left main pulmonary artery are 4L. Station 1L (option A) is a low cervical/supraclavicular station above the clavicles/manubrium and would imply N3 disease if positive. Station 4L (option B) lies below the superior border of the aortic arch. Station 5 (option C) is subaortic in the aortopulmonary window and lies lateral to the ligamentum arteriosum, not along the left lateral tracheal wall.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3012,7 +3012,7 @@
           "explanation": "Broad panel-based testing is preferred on limited cpEBUS material because it maximizes actionable information while minimizing repeated consumption of tumor cells by multiple serial assays. In advanced nonsquamous NSCLC, the clinical question is not simply whether one alteration is present, but whether the specimen can efficiently evaluate common mutations and actionable fusions within a single validated workflow. If the current specimen is already adequate, coordinating NGS and PD-L1 from the same acquisition is usually more tissue-sparing than repeating the bronchoscopy. Option A is incorrect because sequential testing can exhaust a small sample and delay comprehensive results. Option C is incorrect because PD-L1 testing answers an immunotherapy question but does not exclude EGFR, ALK, ROS1, RET, or other actionable drivers. Option D is incorrect because repeat sampling is generally reserved for truly inadequate material, not as the first response to a limited but usable specimen.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3048,7 +3048,7 @@
           "explanation": "Current thoracic pathology guidance emphasizes both adequate acquisition and careful specimen allocation. Once malignancy has been identified on site, the EBUS bronchoscopist should pivot to securing samples for not only definitive histologic diagnosis but also molecular marker testing. Modern lung-cancer care often depends on molecular profiling and other predictive biomarkers, especially for advanced disease as in this case, so specimen triage during the procedure is crucial. The best strategy is to continue sampling purposefully enough to support histologic classification and biomarker testing, while also avoiding a reflexively broad immunohistochemistry workup that needlessly consumes tissue. Current guidelines recommend at least 4 samples from a reliable target to ensure adequate tissue is obtained for both diagnosis and ancillary testing. Since the sampling of the lymph node in question provided ample tumor material on ROSE, at least two more passes secured in cell block for additional testing should suffice (option B correct). As ROSE already provided a diagnosis, no further samples for ROSE are required (option A incorrect). As comprehensive tumor characterization (diagnosis + highest mediastinal stage + tissue for molecular markers) can be completed by further EBUS-TBNA of the ROSE-positive N3 node, sampling of the primary lesion is not required. This would prolong the procedure and expose the patient to unnecessary risk (Option C incorrect). Since the diagnostic material was obtained from the highest stage node accessible by EBUS (N3), sampling of lower stage nodes is not necessary (option D incorrect).",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3084,7 +3084,7 @@
           "explanation": "CP-EBUS does not behave like a standard straight-view flexible bronchoscope. The optical view is forward-oblique rather than purely straight ahead, and the tip is not completely visible during advancement. Because of this geometry, a novice operator must modify both insertion and scope maneuvering technique from previously acquired skill of routine white-light bronchoscopy. During intubation, the EBUS bronchoscopist should remain particularly careful while traversing the larynx with a gentle antero-(forward) flexion of the scope until just past the vocal cords, at which time a neutral position can be assumed. Similarly, during lower airway maneuvering, a neutral or slight forward flexion position of the scope helps avoid posterior wall trauma. Finally, because the scope tip is not clearly visible on endoscopic white-light view, the bronchoscopist should anticipate its position at airway bifurcations so to not overshoot the turn and get ‘stuck’ at the relevant carina. Understanding and becoming adept with forward-oblique optics is essential for safe and effective basic EBUS technique. Option A is incorrect because modern EBUS scopes are only slightly larger in outer diameter than a conventional therapeutic bronchoscope and would not account for the operating difficulties described in the stem. Option C is incorrect because CP-EBUS scopes have working channels adequate in size to permit suction of simple secretions. Option D is incorrect because 360-degree scanning describes radial-probe EBUS, not convex-probe EBUS.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3120,7 +3120,7 @@
           "explanation": "This is a high-complexity, longer-duration, combined mediastinal-plus-peripheral procedure in a trainee setting. Furthermore, ROSE is not available which excludes the possibility of avoiding nodule sampling with an on-site confirmatory nodal diagnosis. Therefore, to ensure patient safety and tolerance as well as proper completion of all portions of the procedure, a deep sedation/general anesthesia approach for the entire case is the best plan (option B correct). Moderate sedation for the entire case may be reasonable for isolated EBUS when nodal sampling is the only goal, or in combined cpEBUS-peripheral cases when the primary lung lesion is large and easily accessible without the need of advanced peripheral techniques. ROSE is helpful when a nodal diagnosis is achieved, which obviates the need to sample the primary lesion. However, even with ROSE, the proceduralist must anticipate a possible on-site nondiagnostic result which would then mandate also targeting the lung nodule. Therefore, if sampling the peripheral lesion is a possibility, its ease of accessibility should guide the anesthesia and procedure plan. In this case the primary lesion will need to be sampled (no ROSE). Because it is small and in a challenging location, to maximize outcome it is best targeted using advanced guidance techniques under GA (option A incorrect). If ROSE were available, a phased approach to the procedure (e.g., either starting with moderate sedation and escalating to GA or vice versa) could be a reasonable strategy, but in this case ROSE is unavailable (choice C and D incorrect).",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3156,7 +3156,7 @@
           "explanation": "A representative benign lymph node aspirate obtained by EBUS-TBNA is usually dominated by small mature lymphocytes. These cells have a high nuclear-to-cytoplasmic ratio, uniform chromatin, and nuclei that are often described as similar in size to adjacent red blood cells. Occasionally, during puncture the needle will pull in a few bronchial epithelial cells, ‘contaminating’ the lymph node aspirate. It is important to distinguish these bronchial cells from atypical squamous cells which could represent metastatic disease in the proper clinical setting. The bronchial epithelial cells described in the stem have normal (preserved polarity, presence of cilia) rather than atypical (polymorphism, no cilia) features. The combination of background normal lymph material and lack of atypical epithelial cells is most consistent with an aspirate representative of a lymph node without evidence of metastatic carcinoma (option D). Diagnosing granulomatous lymphadenitis (option A) would require presence of epithelioid histiocytes and granulomatous aggregates rather than a purely mature lymphoid population. Metastatic squamous cell carcinoma (option B) would show atypical epithelial cells, often polygonal with more abundant cytoplasm and marked nuclear atypia compared to the lymphoid background. A nonrepresentative aspirate (option C) is suggested when the sample is mostly blood, bronchial contamination, or scant acellular material rather than true lymphoid tissue.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3192,7 +3192,7 @@
           "explanation": "Small cell lung carcinoma (SCLC), also known as high-grade neuroendocrine carcinoma (HGNEC), is an aggressive lung tumor classically presenting as a central lung mass often with bulky mediastinal adenopathy. As a consequence, it is frequently associated with mass effect of central thoracic structures, such as SVC syndrome and airway obstruction. SCLCs are also the lung tumor most commonly presenting with syndrome of inappropriate anti-diuretic hormone (SIADH)-related hyponatremia. Because of its central presentation, it is frequently diagnosed by bronchoscopy and cpEBUS. Cytohistologically, SCLC is characterized by cells with scant cytoplasm, nuclear molding, finely granular chromatin, a high mitotic rate, and frequent crush artifact (more common with forceps biopsy than TBNA). A very high Ki-67 index is a defining feature of SCLC (HGNEC), and TTF-1 positivity is common. While adenocarcinomas also express TTF-1, they are more commonly a peripheral tumor, arising from clara cells or type 2 pneumocytes. Furthermore, they are not synaptophysin-positive (a neuroendocrine marker) and associated SIADH is extremely rare (option A incorrect). Squamous cell carcinoma (SCC) is also frequently a central airway tumor, arising from bronchial progenitor basal cells. However, they are easily distinguished morphologically from NECs by their characteristic cytohistology of large, polygonal cells with abundant cytoplasm and occasional keratinization and intercellular bridging (option C incorrect). Also, SCC is both synaptophysin and TTF-1 negative (but rather CK5/6 and p40/63 positive). Typical carcinoid tumor (option D) shows uniform cells in organized nests with few or no mitoses and a low/absent Ki67 level, an important distinguishing feature from SCLC.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3228,7 +3228,7 @@
           "explanation": "The clinical presentation suggests either a primary lung cancer or cavitary pneumonia with adenopathy. Focal granulomatous thoracic disease is a classic lung-cancer impersonator, with mycobacterial and endemic fungal infections being primary considerations. Because ROSE demonstrated granuloma, an underlying malignancy is less likely and infection more likely. Regardless, diagnosis of infection requires a synergistic approach, maximized by a combination of cytohistologic and microbiological analysis. Therefore, in this scenario the bronchoscopist should triage the sampled material accordingly. Proper processing material for these tests include formalin and saline (option D correct). Placing material in formalin only (option A) preserves morphology but sacrifices culture testing as organisms do not grow in formalin. RPMI is a lymphocyte preservative for flow cytometry testing used to assess for lymphoma, which is not a major diagnostic consideration in this case (option B incorrect). ROSE has provided a suspected diagnosis, and sampling focus should shift toward obtaining material for definitive testing (option C incorrect).",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3264,7 +3264,7 @@
           "explanation": "A 2.6-cm primary is T1c. Involvement of a single ipsilateral mediastinal station is N2a. Absence of distant disease is M0. The correct grouping is therefore cT1cN2aM0, which is stage IIB in the TNM ninth edition (option B correct). Option A is incorrect because the nodule is larger than 10mm (not T1a) and a mediastinal, not hilar node is involved (not N1). Option C represents the N stage (2) and overall stage (IIIA) according to the 8th, not 9th TNM edition. Option D is incorrect because an ipsilateral, not contralateral (N3) node is involved.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3300,7 +3300,7 @@
           "explanation": "For EBUS-TBNA under general anesthesia, current guidance suggests a supraglottic airway (option A correct). This approach is especially important for upper tracheal evaluation and station 2 sampling, as in this case. A 7.5mm ETT would crowd the EBUS scope, which typically have an outer diameter larger than 6mm. This would promote hypoventilation and air trapping during the case. Furthermore, an ETT is not ideal for upper paratracheal sampling (option B incorrect). Rigid bronchoscopy is unnecessary for routine nodal sampling (option C incorrect). High-flow nasal cannula (HFNC) oxygen would be the good approach if this patient was to have the procedure under moderate sedation. However, HFNC does not provide ventilatory support during general anesthesia (option D incorrect).",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3336,7 +3336,7 @@
           "explanation": "Stations 4L, 7 and 8L are all considered mediastinal nodes ipsilateral to the primary tumor. According to the 9th edition of the TNM staging scheme for lung cancer, N2 nodal stage is further subclassified as single- (N2a) and multi-node involvement (N2b), given the worse prognosis of the latter. As this is multistation N2 disease, N2b is the correct stage (option C). Option A is incorrect because N1 is limited to ipsilateral pulmonary (12-14), interlobar (11) or hilar (10) nodes. Option B is incorrect because N2a requires only one ipsilateral mediastinal or the subcarinal station. Option C is incorrect because N3 implies metastases to contralateral mediastinal or hilar nodes, or supraclavicular or scalene involvement, not seen in this case. With a 3.8-cm tumor, the full designation would be cT2aN2bM0, which is classified as an overall stage IIIB in the TNM ninth edition.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3372,7 +3372,7 @@
           "explanation": "A large lung cancer (>30mm in size), as is highly suspected in this case, carries a higher risk of occult mediastinal metastasis, regardless of the mass’ location (peripheral vs. central) or apparent benignity of the nodes on thoracic imaging (<10mm in size and negative PET). Therefore, invasive mediastinal staging is recommended, with endosonography favored as the initial approach when the relevant stations are accessible (option D correct). Systematic cpEBUS allows minimally invasive sampling of the key paratracheal, subcarinal, and hilar/interlobar nodal stations that could alter management. Proceeding directly to lobectomy (option A incorrect) would underestimate the false-negative rate of imaging for occult mediastinal disease in large tumors. “PET-negative” should not be considered “adequately staged” when pretest nodal metastatic risk is elevated because of central tumor location, large size (>30mm), or N1 node-positivity. While a negative PET/CT may add some reassurance clinically, its limited sensitivity to detect occult micrometastases would not reliably obviate the need for nodal sampling before surgical resection. Option C is incorrect because mediastinoscopy is reserved for selected cases when suspicion for nodal metastases persists after an initial negative EBUS-TBNA (e.g., enlarged or fluorodeoxyglucose-avid node). Transthoracic biopsy of the mass is unnecessary as the lesion is already highly suspicious for a primary lung cancer and the procedure would not stage the mediastinum, thus delaying the pre-operative work up (option B incorrect).",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3408,7 +3408,7 @@
           "explanation": "In patients with suspected lung cancer with mediastinal node involvement (adenopathy or PET-avidity, as in this case), planning for combined advanced diagnostic bronchoscopy (cpEBUS+PNB) is most appropriate. The presence of ROSE allows for on-site assessment. Targeting the lymph nodes first may solidify a preliminary diagnosis and simultaneously stage the mediastinum, obviating the need for lung sampling and thus shortening the procedure and limiting further risk. Therefore, the most efficient sequence within this context of suspected mediastinal disease and ROSE availability is to start with cpEBUS (option C correct). While a positive PET scan in the setting of suspected lung cancer is suggestive of mediastinal metastases, it is insufficient due to its high false-positive rate (up to 25-40%), so tissue confirmation is required (choice A incorrect). CT-guided transthoracic biopsy does not stage the mediastinum and also carries a higher risk of pneumothorax compared to modern advanced bronchoscopy, with minimal, if any advantage in diagnostic yield (option B incorrect). The primary benefit of ROSE in this setting is to limit unnecessary sampling and procedure duration if a nodal diagnosis and stage are established by cpEBUS intraoperatively. Therefore, the sequence matters if the chance of nodal disease is high (option D incorrect).",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ],
           "imageAsset": {
             "src": "/media/assessments/ebus-2026-final/question-figure-2.png",
@@ -3449,7 +3449,7 @@
           "explanation": "The best next step is to continue systematic sampling of the remaining relevant mediastinal stations. Recent AABIP guidance highlights the practical impact of the ninth edition TNM classification, which subdivides N2 disease into single-station (N2a) and multistation (N2b) involvement. Because that distinction influences prognosis and treatment discussions, a positive ROSE result from one N2 mediastinal station should not automatically end a systematic staging examination if additional relevant N2 stations remain accessible (option C correct). Stopping after the first positive N2 node (option A incorrect) reflects a reasonable approach consistent with the previous, TNM 8th edition. Mediastinoscopy (option B incorrect) is not required as CP-EBUS will adequately sample the 4R node. Sampling the primary lesion (option D) may help downstream molecular analysis, but it does not complete mediastinal staging.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3485,7 +3485,7 @@
           "explanation": "Concomitant peripheral bronchoscopy and aspiration risk favor a general anesthesia (GA) approach using a large endotracheal tube (option C correct). The largest feasible endotracheal tube, usually 8.5–9.0 mm, should be used because it allows ventilation around the bronchoscope and better tolerates higher positive end-expiratory pressure and tidal volumes. A supraglottic airway is appropriate for most EBUS cases, especially with upper paratracheal sampling needs, but is less desirable when there is a reflux risk as in this case (option A incorrect). Option B may enhance reflux and be inadequate under GA. Option D does not provide the controlled airway and ventilatory needs for this case.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3521,7 +3521,7 @@
           "explanation": "Successful NGS depends more on the quality of tumor recovery than on a single anatomic feature such as size. Studies of EBUS-based profiling show that higher tumor cellularity, more representative core tissue, and more advanced nodal disease can all favor successful comprehensive testing. In practice, the best target is the safest accessible node that appears most likely to yield abundant viable tumor, not merely the largest node encountered. In this scenario, the FDG-avid mildly enlarged 4R node, representing a N3 lesion, is most likely to yield the most quality material for NGS success (option C correct). Option A is incorrect because smaller size does not confer molecular superiority. Option B is incorrect because size alone is an unreliable proxy for nucleic acid quality, especially if necrosis is present, which predicts a poorly viable sample. Option D is incorrect because malignant confirmation alone does not mean all nodes are equally suitable for comprehensive profiling.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3557,7 +3557,7 @@
           "explanation": "In patients with multiple synchronous pulmonary nodules, same-session bronchoscopic sampling can be highly efficient in providing useful information for treatment planning. Histologically distinguishing among the potential combinations of diagnostic possibilities will have important implications on management. This patient has two, bilateral lung lesions. Also, while the lymph nodes do not overtly suggest pathology, because the right lung mass is large and highly suspicious for lung cancer, occult mediastinal involvement is possible and warrants tissue sampling rather than relying on imaging alone. The smaller left lung lesion can represent a metastatic focus, which would upstage the patient to M1a (Stage IVA). It may also represent a second, early-stage lung cancer or a non-malignant diagnosis. Therefore, because modern advanced PNB allows for comprehensive, efficient, and safe same-session multilesion sampling, it is the preferred choice in such a scenario (option A correct). Option B is incorrect because it unnecessarily prolongs the diagnostic pathway and adds procedural risk when a more efficient option is available. Option C may leave the most clinically important distinction unresolved (two separate diagnoses vs. a stage IVA tumor) and does not leverage the efficiency advantage of the same-session combined bronchoscopic strategy. Option D risks overtreatment or incorrect stage assignment without adequate tissue characterization.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3593,7 +3593,7 @@
           "explanation": "For a patient undergoing evaluation for likely advanced lung cancer, if a safely accessible and highly suspicious distant metastatic site is present, first sampling that site is an efficient strategy since it can establish both diagnosis and stage IV disease in a single procedure (option A correct). If the pathology is consistent with metastatic lung cancer, invasive mediastinal staging may not be needed to decide the initial treatment pathway. Sampling the primary lung mass first (option B incorrect) may establish malignancy but does not stage the patient. Mediastinoscopy could establish a diagnosis but provides only partial staging and also is not the recommended first strategy for mediastinal assessment (option C incorrect). cpEBUS is the recommended first method for establishing suspected mediastinal disease in this setting. However, the question of distant disease would remain unresolved (option D incorrect). An important caveat to this scenario is that the suspected extrathoracic metastatic site must be technically accessible, clinically appropriate to sample, and also likely to yield abundant enough material for comprehensive tumor characterization (diagnosis + molecular analysis). A multidisciplinary discussion may be beneficial in these selected cases.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3629,7 +3629,7 @@
           "explanation": "Systematic nodal sampling should proceed from the highest to lowest potential stage to reduce the risk that malignant cells carried on the needle contaminate a lower-stage station and create a false impression of more advanced disease. For a right upper lobe primary cancer, station 4L is an N3 node, station 7 is N2, and station 11R is N1; therefore 4L -> 7 -> 11R is the correct sequence (option C correct). This N3-to-N2-to-N1 logic is a core staging principle when planning the approach to cpEBUS mediastinal staging. The other sequences all start with lower-stage ipsilateral nodes and move upward (options A, B, D incorrect).",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3665,7 +3665,7 @@
           "explanation": "cpEBUS is the recommended invasive strategy to evaluate thoracic adenopathy due to suspected sarcoidosis. Current guidance supports the use of either 21-gauge or 22-gauge needles for most routine cases of EBUS-TBNA (option A correct). A recent meta-analysis suggested that 19-gauge needles may have higher sensitivity in sarcoidosis, but the evidence base was limited and largely observational. Furthermore, operators have reported more technical difficulty with 19G puncture. This matters in angulated stations such as 4L, where maneuverability can influence real-world performance as much as theoretical tissue volume. Consequently, 19G use has not translated into a firm recommendation to routinely replace standard 21/22-gauge practice. Option B is incorrect because a prospective multicenter study in stage I/II sarcoidosis found that when ROSE is unavailable at least 4 passes per patient provide a pragmatic target, whether obtained from a single lesion or distributed across two lesions. Option C is incorrect because randomized data found no meaningful improvement in diagnostic yield or specimen adequacy when the number of intranodal revolutions was increased from 10 to 20. Therefore, at least 10 agitations per pass is recommended as a reasonable default technical target for most situations. Finally, current EBUS guidance allows EBUS bronchoscopists to consider intranodal forceps biopsy or mediastinal cryobiopsy after negative ROSE or prior nondiagnostic EBUS-TBNA. Randomized and meta-analytic data suggest that these techniques can improve yield in benign mediastinal disease, including sarcoidosis. However, these approaches require expertise and may increase cost, and thus do not replace routine 21/22G needle technique as the default standard for sampling suspected granulomatous adenopathy (option D incorrect).",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3701,7 +3701,7 @@
           "explanation": "The image shown is of a classic reverberation artifact seen when contact between the airway wall and the cpEBUS probe/balloon is lost. The corrective maneuver is to restore acoustic coupling at which time the reverberation typically resolves and the node reappears on gray-scale imaging. Appearance of a reverberation artifact is a fairly common occurrence during needle puncture. This happens when the needle encounters some resistance to target penetration and pushes the scope back/away from the airway wall, resulting in loss of contact. The resistance encountered can be at the level of the wall (e.g., cartilaginous ring) or the target itself (e.g., fibrotic/calcified node). The former scenario may prevent needle entry completely, while in the latter the needle has partially entered the target. The EBUS bronchoscopist should first troubleshoot which has occurred by stabilizing the needle and attempting to better anchor the scope against the airway wall (option C). A slight partial retraction of the needle to relieve resistance may also assist in re-apposition of wall and scope. Occasionally, if the scope-wall decoupling was significant, the bronchoscopist will visualize the incompletely penetrated needle on endoscopic view. Option A is not the first step as the needle may already be in the target. Complete retraction should only be attempted if troubleshooting fails to reacquire a target image to reliably guarantee sampling. Option B is incorrect because readjustment of the sheath would only be required if there was concern of sheath migration during needle puncture. Option D would not solve the issue of loss of airway-scope contact.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ],
           "imageAsset": {
             "src": "/media/assessments/ebus-2026-final/question-figure-3.png",
@@ -3742,7 +3742,7 @@
           "explanation": "When non-carcinoma diagnoses such as granulomatous disease or lymphoma are being considered, CP-EBUS sampling generally needs to be broader than a routine carcinoma-only workflow. Current guidance supports obtaining 4 or more passes per relevant node and triaging material for the likely downstream tests: cell block for histopathology, nonbacteriostatic saline for microbiology or molecular microbiologic testing, and RPMI medium for flow cytometry when lymphoma is in the differential. A minimalist smear-only approach (option A) or a two-pass strategy (option B) risks inadequate diagnostic material. A formalin-fixed cell block alone (option C) would also be incomplete in a case where infection and lymphoma are both realistic possibilities. Advanced tools such as intranodal forceps or cryobiopsy may be considered in selected difficult cases, but they do not replace correct specimen triage.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         },
         {
@@ -3778,7 +3778,7 @@
           "explanation": "Standard linear EBUS-TBNA can routinely access stations including 2R, 2L, 4R, 4L, 7, 10R, 10L, 11R, and 11L. Therefore stations listed in option C are all accessible. Stations 5 and 6 are not routinely sampled by standard airway EBUS, though in selected situations, station 5 can be approached via transvascular (left pulmonary artery) approach. Stations 8 and 9 are typically accessed from the esophagus with EUS/EUS-B. Stations 3A (retrosternal) and 1R (lower cervical) are not typically accessible endoscopically.",
           "difficulty": "intermediate",
           "tags": [
-            "Final post-test"
+            "Post-test"
           ]
         }
       ]

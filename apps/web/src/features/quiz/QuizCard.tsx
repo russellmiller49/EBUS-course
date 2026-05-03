@@ -27,6 +27,8 @@ export function QuizCard({
   revealAnswers = true,
   deferFeedbackUntilComplete = false,
   showRunningScore = true,
+  showDifficultyLabel = true,
+  largeQuestionStem = false,
 }: {
   questions: QuizQuestionContent[];
   label: string;
@@ -34,6 +36,8 @@ export function QuizCard({
   revealAnswers?: boolean;
   deferFeedbackUntilComplete?: boolean;
   showRunningScore?: boolean;
+  showDifficultyLabel?: boolean;
+  largeQuestionStem?: boolean;
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string[] | undefined>>({});
@@ -101,7 +105,7 @@ export function QuizCard({
   }
 
   return (
-    <section className="quiz-card">
+    <section className={`quiz-card${largeQuestionStem ? ' quiz-card--large-stem' : ''}`}>
       <div className="quiz-card__header">
         <div>
           <div className="eyebrow">{label}</div>
@@ -214,7 +218,11 @@ export function QuizCard({
       </div>
 
       {answeredCurrent && shouldRevealAnswers ? (
-        <QuizExplanationPanel question={currentQuestion} selectedOptionIds={finalizedSelection} />
+        <QuizExplanationPanel
+          question={currentQuestion}
+          selectedOptionIds={finalizedSelection}
+          showDifficulty={showDifficultyLabel}
+        />
       ) : null}
 
       <div className="button-row button-row--wrap">

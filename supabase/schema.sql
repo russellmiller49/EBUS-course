@@ -100,13 +100,23 @@ on public.learner_module_sessions (learner_id);
 create table if not exists public.learner_lecture_progress (
   learner_id uuid not null references public.learner_profiles (id) on delete cascade,
   lecture_id text not null,
+  duration_seconds integer not null default 0,
+  last_position_seconds integer not null default 0,
   watched_seconds integer not null default 0,
+  viewed_percent integer not null default 0,
   completed boolean not null default false,
   completed_at timestamptz,
   last_opened_at timestamptz,
+  quiz_unlocked_at timestamptz,
   updated_at timestamptz not null default timezone('utc', now()),
   primary key (learner_id, lecture_id)
 );
+
+alter table public.learner_lecture_progress
+  add column if not exists duration_seconds integer not null default 0,
+  add column if not exists last_position_seconds integer not null default 0,
+  add column if not exists viewed_percent integer not null default 0,
+  add column if not exists quiz_unlocked_at timestamptz;
 
 create table if not exists public.learner_pretest_attempts (
   learner_id uuid not null references public.learner_profiles (id) on delete cascade,
@@ -447,7 +457,10 @@ begin
     coalesce(snapshot.payload->'courseAssessmentResults', '{}'::jsonb) as assessment_results,
     coalesce(module_rows.total_time_spent_seconds, 0)::integer as total_time_spent_seconds,
     coalesce(module_rows.module_progress, '[]'::jsonb) as module_progress,
-    coalesce(lecture_rows.lecture_summary, '{"completedCount": 0, "totalWatchedSeconds": 0, "lastOpenedAt": null}'::jsonb) as lecture_summary
+    coalesce(
+      lecture_rows.lecture_summary,
+      '{"completedCount": 0, "quizReadyCount": 0, "totalWatchedSeconds": 0, "averageViewedPercent": 0, "lastOpenedAt": null}'::jsonb
+    ) as lecture_summary
   from public.learner_profiles as profile
   left join public.learner_progress_snapshots as snapshot
     on snapshot.learner_id = profile.id
@@ -471,7 +484,9 @@ begin
     select
       jsonb_build_object(
         'completedCount', count(*) filter (where lecture_progress.completed),
+        'quizReadyCount', count(*) filter (where lecture_progress.quiz_unlocked_at is not null),
         'totalWatchedSeconds', coalesce(sum(lecture_progress.watched_seconds), 0),
+        'averageViewedPercent', coalesce(round(avg(lecture_progress.viewed_percent))::integer, 0),
         'lastOpenedAt', max(lecture_progress.last_opened_at)
       ) as lecture_summary
     from public.learner_lecture_progress as lecture_progress

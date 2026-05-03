@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { assessmentImageUrls } from '@/content/assessmentImages';
 import { finalPostTestAssessment } from '@/content/courseAssessments';
-import { pretestContent } from '@/content/pretest';
+import { getPretestImage, pretestContent } from '@/content/pretest';
 
 function getOptionLabels(options: Array<{ label: string }>) {
   return options.map((option) => option.label);
@@ -27,11 +28,23 @@ describe('course assessment content', () => {
       'ebus-2026-final-reverberation',
       'ebus-2026-final-mediastinal-pet',
     ]);
-    expect(postTestQuestions.filter((question) => question.imageAsset).map((question) => question.imageAsset?.src)).toEqual([
-      '/media/assessments/ebus-2026-final/question-figure-1.png',
-      '/media/assessments/ebus-2026-final/question-figure-2.png',
-      '/media/assessments/ebus-2026-final/question-figure-3.png',
+    expect(
+      pretestContent.questions
+        .filter((question) => question.imageAssetKey)
+        .map((question) => getPretestImage(question.imageAssetKey!)?.src),
+    ).toEqual([
+      assessmentImageUrls.station4r,
+      assessmentImageUrls.reverberation,
+      assessmentImageUrls.mediastinalPet,
     ]);
+    expect(postTestQuestions.filter((question) => question.imageAsset).map((question) => question.imageAsset?.src)).toEqual([
+      assessmentImageUrls.station4r,
+      assessmentImageUrls.mediastinalPet,
+      assessmentImageUrls.reverberation,
+    ]);
+    expect(postTestQuestions.filter((question) => question.imageAsset).map((question) => question.imageAsset?.src)).not.toContain(
+      '/media/assessments/ebus-2026-final/question-figure-1.png',
+    );
 
     for (const postTestQuestion of postTestQuestions) {
       expect(postTestQuestion.options).toHaveLength(4);

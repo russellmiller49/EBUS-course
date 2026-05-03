@@ -40,8 +40,20 @@ export interface ModuleProgress {
 export interface LectureWatchState {
   completed: boolean;
   completedAt: string | null;
-  watchedSeconds: number;
+  durationSeconds: number;
   lastOpenedAt: string | null;
+  lastPositionSeconds: number;
+  quizUnlockedAt: string | null;
+  watchedSeconds: number;
+}
+
+export interface LectureStateUpdate {
+  completed?: boolean;
+  durationSeconds?: number;
+  lastPositionSeconds?: number;
+  opened?: boolean;
+  quizReady?: boolean;
+  watchedSeconds?: number;
 }
 
 export interface ModuleEngagementSummary {
@@ -98,7 +110,7 @@ export interface TnmCaseAttemptStat {
 }
 
 export interface LearnerProgressState {
-  version: 8;
+  version: 9;
   moduleProgress: Record<ModuleProgressId, ModuleProgress>;
   bookmarkedStations: string[];
   stationRecognitionStats: Record<string, { attempts: number; correct: number }>;
@@ -129,7 +141,7 @@ type Action =
   | { type: 'visitModule'; moduleId: ModuleProgressId; percentFloor?: number }
   | { type: 'setModuleProgress'; moduleId: ModuleProgressId; percent: number; completed?: boolean }
   | { type: 'toggleStationBookmark'; stationId: string }
-  | { type: 'setLectureState'; lectureId: string; watchedSeconds?: number; completed?: boolean; opened?: boolean }
+  | ({ type: 'setLectureState'; lectureId: string } & LectureStateUpdate)
   | { type: 'recordQuizResult'; entry: QuizHistoryEntry }
   | {
       type: 'recordCourseAssessmentResult';
@@ -159,7 +171,7 @@ interface LearnerProgressContextValue {
   visitRoute: (routeId: AppRouteId) => void;
   setModuleProgress: (moduleId: ModuleProgressId, percent: number, completed?: boolean) => void;
   toggleStationBookmark: (stationId: string) => void;
-  setLectureState: (lectureId: string, update: { watchedSeconds?: number; completed?: boolean; opened?: boolean }) => void;
+  setLectureState: (lectureId: string, update: LectureStateUpdate) => void;
   recordModuleEngagement: (moduleId: TrackedLearningRouteId, seconds: number) => void;
   recordQuizResult: (entry: Omit<QuizHistoryEntry, 'completedAt'>) => void;
   recordCourseAssessmentResult: (entry: {
@@ -208,7 +220,7 @@ function createPretestProgress(): PretestProgress {
 
 export function createInitialLearnerProgress(): LearnerProgressState {
   return {
-    version: 8,
+    version: 9,
     moduleProgress: {
       pretest: createModuleProgress(),
       knobology: createModuleProgress(),
@@ -280,7 +292,7 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
   }
 
   return {
-    version: 8,
+    version: 9,
     moduleProgress: nextModuleProgress,
     bookmarkedStations: Array.isArray(raw.bookmarkedStations)
       ? raw.bookmarkedStations.filter((stationId): stationId is string => typeof stationId === 'string')
@@ -310,14 +322,30 @@ export function normalizeLearnerProgress(candidate: unknown): LearnerProgressSta
                 return [];
               }
 
+              const watchedSeconds = typeof value.watchedSeconds === 'number' ? Math.max(0, Math.floor(value.watchedSeconds)) : 0;
+              const durationSeconds = typeof value.durationSeconds === 'number' ? Math.max(0, Math.floor(value.durationSeconds)) : 0;
+              const completedAt = typeof value.completedAt === 'string' ? value.completedAt : null;
+              const lastOpenedAt = typeof value.lastOpenedAt === 'string' ? value.lastOpenedAt : null;
+              const completed = typeof value.completed === 'boolean' ? value.completed : false;
+              const quizUnlockedAt =
+                typeof value.quizUnlockedAt === 'string'
+                  ? value.quizUnlockedAt
+                  : lastOpenedAt || watchedSeconds > 0 || completed
+                    ? lastOpenedAt ?? completedAt
+                    : null;
+
               return [
                 [
                   lectureId,
                   {
-                    completed: typeof value.completed === 'boolean' ? value.completed : false,
-                    completedAt: typeof value.completedAt === 'string' ? value.completedAt : null,
-                    watchedSeconds: typeof value.watchedSeconds === 'number' ? Math.max(0, value.watchedSeconds) : 0,
-                    lastOpenedAt: typeof value.lastOpenedAt === 'string' ? value.lastOpenedAt : null,
+                    completed,
+                    completedAt,
+                    durationSeconds,
+                    lastOpenedAt,
+                    lastPositionSeconds:
+                      typeof value.lastPositionSeconds === 'number' ? Math.max(0, Math.floor(value.lastPositionSeconds)) : 0,
+                    quizUnlockedAt,
+                    watchedSeconds,
                   } satisfies LectureWatchState,
                 ],
               ];
@@ -613,7 +641,7 @@ function normalizeCourseAssessmentResults(candidate: unknown): Record<string, Co
 }
 
 function getModuleForRoute(routeId: AppRouteId): ModuleProgressId | null {
-  if (routeId === 'home' || routeId === 'admin' || routeId === 'sponsors') {
+  if (routeId === 'home' || routeId === 'welcome' || routeId === 'admin' || routeId === 'sponsors') {
     return null;
   }
 
@@ -693,19 +721,38 @@ export function learnerProgressReducer(state: LearnerProgressState, action: Acti
       const current = state.lectureWatchStatus[action.lectureId] ?? {
         completed: false,
         completedAt: null,
-        watchedSeconds: 0,
+        durationSeconds: 0,
         lastOpenedAt: null,
+        lastPositionSeconds: 0,
+        quizUnlockedAt: null,
+        watchedSeconds: 0,
       };
+      const now = new Date().toISOString();
       const nextCompleted = action.completed ?? current.completed;
       const nextWatchedSeconds = Math.max(current.watchedSeconds, action.watchedSeconds ?? current.watchedSeconds);
-      const nextCompletedAt = nextCompleted ? current.completedAt ?? new Date().toISOString() : current.completedAt;
-      const nextLastOpenedAt = action.opened || nextWatchedSeconds !== current.watchedSeconds ? new Date().toISOString() : current.lastOpenedAt;
+      const nextDurationSeconds = Math.max(
+        current.durationSeconds,
+        Math.max(0, Math.floor(action.durationSeconds ?? current.durationSeconds)),
+      );
+      const nextLastPositionSeconds =
+        typeof action.lastPositionSeconds === 'number'
+          ? Math.max(0, Math.floor(action.lastPositionSeconds))
+          : current.lastPositionSeconds;
+      const nextCompletedAt = nextCompleted ? current.completedAt ?? now : current.completedAt;
+      const nextLastOpenedAt = action.opened || nextWatchedSeconds !== current.watchedSeconds ? now : current.lastOpenedAt;
+      const shouldUnlockQuiz = Boolean(
+        action.quizReady || action.opened || nextCompleted || nextWatchedSeconds > 0 || current.quizUnlockedAt,
+      );
+      const nextQuizUnlockedAt = shouldUnlockQuiz ? current.quizUnlockedAt ?? now : current.quizUnlockedAt;
 
       if (
         current.completed === nextCompleted &&
+        current.durationSeconds === nextDurationSeconds &&
         current.watchedSeconds === nextWatchedSeconds &&
         current.completedAt === nextCompletedAt &&
-        current.lastOpenedAt === nextLastOpenedAt
+        current.lastOpenedAt === nextLastOpenedAt &&
+        current.lastPositionSeconds === nextLastPositionSeconds &&
+        current.quizUnlockedAt === nextQuizUnlockedAt
       ) {
         return state;
       }
@@ -717,8 +764,11 @@ export function learnerProgressReducer(state: LearnerProgressState, action: Acti
           [action.lectureId]: {
             completed: nextCompleted,
             completedAt: nextCompletedAt,
-            watchedSeconds: nextWatchedSeconds,
+            durationSeconds: nextDurationSeconds,
             lastOpenedAt: nextLastOpenedAt,
+            lastPositionSeconds: nextLastPositionSeconds,
+            quizUnlockedAt: nextQuizUnlockedAt,
+            watchedSeconds: nextWatchedSeconds,
           },
         },
       };
@@ -1107,13 +1157,16 @@ export function LearnerProgressProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setLectureState = useCallback(
-    (lectureId: string, update: { watchedSeconds?: number; completed?: boolean; opened?: boolean }) => {
+    (lectureId: string, update: LectureStateUpdate) => {
       dispatch({
         type: 'setLectureState',
         lectureId,
         watchedSeconds: update.watchedSeconds,
         completed: update.completed,
+        durationSeconds: update.durationSeconds,
+        lastPositionSeconds: update.lastPositionSeconds,
         opened: update.opened,
+        quizReady: update.quizReady,
       });
     },
     [],

@@ -34,6 +34,7 @@ export function WelcomePage() {
         defaultExpanded
         lecture={welcomeLecture}
         onUpdateWatchState={(lectureId, update) => setLectureState(lectureId, update)}
+        readyLabel="Opened"
         watchState={state.lectureWatchStatus[welcomeLecture.id]}
       />
     </div>

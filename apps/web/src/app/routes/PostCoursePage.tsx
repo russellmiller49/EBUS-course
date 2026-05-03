@@ -131,7 +131,7 @@ export function PostCoursePage() {
     <div className="page-stack">
       <section className="hero-card">
         <div className="eyebrow">Post-course survey and test</div>
-        <h2>Final assessment unlocks after the live course.</h2>
+        <h2>Post-course assessment unlocks after the live course.</h2>
         <p>
           The post-test and post-course survey stay locked until the course end timestamp. Answers remain hidden during
           the test experience for cohort review.
@@ -146,7 +146,7 @@ export function PostCoursePage() {
         <div className="section-card__heading">
           <div>
             <div className="eyebrow">Post-test</div>
-            <h2>{postTestProgress?.completedAt ? 'Post-test submitted' : 'Final post-test'}</h2>
+            <h2>{postTestProgress?.completedAt ? 'Post-test submitted' : 'Post-test'}</h2>
             <p>
               {postTestWorkflow?.unlocked
                 ? 'Submit the post-test before the post-course survey.'
@@ -159,6 +159,7 @@ export function PostCoursePage() {
           <QuizCard
             key={`${finalPostTestAssessment.id}-${postTestProgress?.attemptCount ?? 0}`}
             label={finalPostTestAssessment.title}
+            largeQuestionStem
             onComplete={handleCourseAssessmentComplete}
             questions={finalPostTestAssessment.questions}
             revealAnswers={completionArtifactsUnlocked}

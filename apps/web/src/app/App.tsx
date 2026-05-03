@@ -32,7 +32,8 @@ import { useLearnerProgress } from '@/lib/progress';
 import { recordModuleSession } from '@/lib/supabaseTracking';
 
 const navItems: NavigationItem[] = [
-  { id: 'home', label: 'Welcome', icon: '⌂', path: '/' },
+  { id: 'home', label: 'Course home', icon: '⌂', path: '/' },
+  { id: 'welcome', label: 'Welcome', icon: 'ⓘ', path: '/welcome' },
   { id: 'sponsors', label: 'Sponsors', icon: '☆', path: '/sponsors' },
   { id: 'pretest', label: 'Pre-course survey and test', icon: '◇', path: '/pretest' },
   { id: 'lectures', label: 'Lectures', icon: '▶', path: '/lectures' },
@@ -48,6 +49,14 @@ const adminNavItem: NavigationItem = { id: 'admin', label: 'Dashboard', icon: '�
 
 function resolveRouteId(pathname: string): AppRouteId | null {
   if (pathname === '/') {
+    return 'home';
+  }
+
+  if (pathname.startsWith('/welcome')) {
+    return 'welcome';
+  }
+
+  if (pathname.startsWith('/course-info') || pathname.startsWith('/home')) {
     return 'home';
   }
 
@@ -152,7 +161,12 @@ export function App() {
   const isAuthPath = location.pathname.startsWith('/auth');
   const isAdminPath = location.pathname.startsWith('/admin');
   const isPublicOnboardingPath =
-    location.pathname === '/' || location.pathname.startsWith('/pretest') || location.pathname.startsWith('/sponsors');
+    location.pathname === '/' ||
+    location.pathname.startsWith('/welcome') ||
+    location.pathname.startsWith('/course-info') ||
+    location.pathname.startsWith('/home') ||
+    location.pathname.startsWith('/pretest') ||
+    location.pathname.startsWith('/sponsors');
 
   const activeNavItems = useMemo(() => (adminSessionActive ? [...navItems, adminNavItem] : navItems), [adminSessionActive]);
 
@@ -297,8 +311,10 @@ export function App() {
   return (
     <AppShell navItems={gatedNavItems}>
       <Routes>
-        <Route element={<WelcomePage />} path="/" />
-        <Route element={<HomePage />} path="/home" />
+        <Route element={<HomePage />} path="/" />
+        <Route element={<WelcomePage />} path="/welcome" />
+        <Route element={<Navigate replace to="/" />} path="/course-info" />
+        <Route element={<Navigate replace to="/" />} path="/home" />
         <Route element={<SponsorsPage />} path="/sponsors" />
         <Route element={<AuthPage />} path="/auth" />
         <Route element={<AdminPage />} path="/admin" />

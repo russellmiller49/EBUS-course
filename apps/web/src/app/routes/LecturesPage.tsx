@@ -19,7 +19,7 @@ import {
   type CourseWorkflowStepModel,
 } from '@/lib/courseWorkflow';
 import type { QuizResult } from '@/lib/quiz';
-import { type CourseAssessmentProgress, useLearnerProgress } from '@/lib/progress';
+import { type CourseAssessmentProgress, type LectureStateUpdate, useLearnerProgress } from '@/lib/progress';
 
 const VIDEO_TABS = [
   { id: 'course-videos', label: 'Course Videos' },
@@ -90,7 +90,7 @@ function CourseAssessmentSummary({
         </div>
         <span className="tag">{getAssessmentScoreLabel(assessment, progress)}</span>
       </div>
-      {locked ? <small>{workflow?.lockedReason ?? 'Complete the required lecture to unlock this quiz.'}</small> : null}
+      {locked ? <small>{workflow?.lockedReason ?? 'Open the required lecture to unlock this quiz.'}</small> : null}
       {completed ? <small>Completed {formatTimestamp(progress?.completedAt)}</small> : null}
       <div className="button-row button-row--wrap">
         <button className="button button--ghost" disabled={locked} onClick={onSelect} type="button">
@@ -117,7 +117,12 @@ export function LecturesPage() {
     () => ({ admin: adminSessionActive, nowMs, preview: vendorSessionActive }),
     [adminSessionActive, nowMs, vendorSessionActive],
   );
-  const reviewedCount = Object.values(state.lectureWatchStatus).filter((lecture) => lecture.completed).length;
+  const reviewedCount = lectureManifest.filter((lecture) => state.lectureWatchStatus[lecture.id]?.completed).length;
+  const quizReadyCount = lectureManifest.filter((lecture) => {
+    const watchState = state.lectureWatchStatus[lecture.id];
+
+    return watchState?.quizUnlockedAt || watchState?.completed;
+  }).length;
   const activeTab = searchParams.get('tab') === 'aabip-videos' ? 'aabip-videos' : 'course-videos';
   const selectedAssessmentParam = searchParams.get('assessment');
   const selectedCourseAssessmentId =
@@ -147,13 +152,17 @@ export function LecturesPage() {
   }, []);
 
   const handleLectureUpdate = useCallback(
-    (lectureId: string, update: { watchedSeconds?: number; completed?: boolean; opened?: boolean }) => {
-      const wasCompleted = getLectureWorkflowStatus(state, lectureId, accessOptions)?.completed ?? false;
-      const nextCompletedCount = lectureModuleProgress.completedCount + (!wasCompleted && update.completed ? 1 : 0);
+    (lectureId: string, update: LectureStateUpdate) => {
+      const wasWorkflowComplete = getLectureWorkflowStatus(state, lectureId, accessOptions)?.completed ?? false;
+      const completesWorkflowStep = Boolean(
+        update.completed || update.quizReady || update.opened || (update.watchedSeconds ?? 0) > 0,
+      );
+      const nextCompletedCount =
+        lectureModuleProgress.completedCount + (!wasWorkflowComplete && completesWorkflowStep ? 1 : 0);
 
       setLectureState(lectureId, update);
 
-      if (update.completed) {
+      if (completesWorkflowStep) {
         setModuleProgress(
           'lectures',
           getProgressPercent(nextCompletedCount, lectureModuleProgress.totalCount),
@@ -227,8 +236,8 @@ export function LecturesPage() {
             <div className="eyebrow">Lecture module</div>
             <h2>Course videos and post-lecture quizzes</h2>
             <p>
-              Complete each lecture to unlock its quiz in place. The next lecture opens after the required quiz is
-              submitted.
+              Open each lecture to unlock its quiz in place. The next lecture still opens only after the required quiz
+              is submitted.
             </p>
           </div>
           <div className="tag-row">
@@ -287,7 +296,7 @@ export function LecturesPage() {
                 <div className="eyebrow">Progress</div>
                 <h2>{lectureModuleProgress.completedCount} of {lectureModuleProgress.totalCount} lecture-module steps complete</h2>
                 <p>
-                  {reviewedCount} of {lectureManifest.length} lectures marked reviewed.{' '}
+                  {quizReadyCount} of {lectureManifest.length} lectures opened for quiz; {reviewedCount} fully viewed.{' '}
                   {nextCourseStep ? `Current step: ${nextCourseStep.title}` : 'All course steps are complete.'}
                 </p>
               </div>
@@ -331,6 +340,7 @@ export function LecturesPage() {
                               onComplete={(result) => handleCourseAssessmentComplete(assessment, result)}
                               questions={assessment.questions}
                               revealAnswers
+                              showDifficultyLabel={false}
                               showRunningScore={false}
                             />
                           ) : null}

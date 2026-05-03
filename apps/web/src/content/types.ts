@@ -7,6 +7,7 @@ export type RootModuleId =
   | 'tnm-staging';
 export type AppRouteId =
   | 'home'
+  | 'welcome'
   | 'admin'
   | 'sponsors'
   | 'pretest'
@@ -18,7 +19,7 @@ export type AppRouteId =
   | 'case-001'
   | 'simulator'
   | 'tnm-staging';
-export type TrackedLearningRouteId = Exclude<AppRouteId, 'home' | 'admin' | 'sponsors' | 'post-course'>;
+export type TrackedLearningRouteId = Exclude<AppRouteId, 'home' | 'welcome' | 'admin' | 'sponsors' | 'post-course'>;
 export type StationZoneKey = 'upper' | 'subcarinal' | 'hilar';
 export type ExplorerViewId = 'ct' | 'bronchoscopy' | 'ultrasound';
 export type LessonSectionKind =

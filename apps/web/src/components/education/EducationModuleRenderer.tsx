@@ -208,22 +208,27 @@ export function ArtifactCard({
 export function QuizExplanationPanel({
   question,
   selectedOptionIds,
+  showDifficulty = true,
 }: {
   question: QuizQuestionContent;
   selectedOptionIds: string[];
+  showDifficulty?: boolean;
 }) {
   const correct = isQuizAnswerCorrect(question, selectedOptionIds);
+  const showMeta = showDifficulty || question.tags.length > 0;
 
   return (
     <div className={`quiz-explanation-panel${correct ? ' quiz-explanation-panel--success' : ''}`}>
-      <div className="quiz-explanation-panel__meta">
-        <span className="tag">Difficulty: {question.difficulty}</span>
-        {question.tags.map((tag) => (
-          <span key={tag} className="tag">
-            {tag}
-          </span>
-        ))}
-      </div>
+      {showMeta ? (
+        <div className="quiz-explanation-panel__meta">
+          {showDifficulty ? <span className="tag">Difficulty: {question.difficulty}</span> : null}
+          {question.tags.map((tag) => (
+            <span key={tag} className="tag">
+              {tag}
+            </span>
+          ))}
+        </div>
+      ) : null}
       <div className="quiz-explanation-panel__answer">
         <strong>Correct answer</strong>
         <p>{formatCorrectAnswer(question)}</p>

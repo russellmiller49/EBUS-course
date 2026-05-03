@@ -146,8 +146,8 @@ export function HomePage() {
             modules, in-lecture quizzes, final post-test, survey, answers, and certificate.
           </p>
           <div className="button-row button-row--wrap">
-            <Link className="button" to={pretestUnlocked ? '/pretest' : '/lectures'}>
-              {pretestUnlocked ? 'Complete the pre-test' : 'Open lecture 1'}
+            <Link className="button" to={pretestUnlocked ? '/pretest' : '/welcome'}>
+              {pretestUnlocked ? 'Complete the pre-test' : 'Open welcome video'}
             </Link>
           </div>
         </section>

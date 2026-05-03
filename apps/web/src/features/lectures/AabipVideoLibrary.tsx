@@ -42,18 +42,23 @@ export function AabipVideoLibrary({ panelId, labelledBy }: AabipVideoLibraryProp
               Video {selectedVideo.playlistIndex} of {aabipProceduralVideoLibrary.videos.length}
             </div>
             <h3>{selectedVideo.title}</h3>
-            <p>Play inside the app here, or open the source link on YouTube in a separate tab.</p>
+            <p>AABIP hosts this supplemental playlist on YouTube.</p>
           </div>
 
           <div className="aabip-video-library__frame">
-            <iframe
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="strict-origin-when-cross-origin"
-              src={selectedVideo.embedUrl}
-              title={selectedVideo.title}
-            />
+            <a className="aabip-video-library__preview" href={selectedVideo.watchUrl} rel="noreferrer" target="_blank">
+              <img
+                alt=""
+                aria-hidden="true"
+                className="aabip-video-library__thumbnail"
+                loading="lazy"
+                src={selectedVideo.thumbnailUrl}
+              />
+              <span className="aabip-video-library__preview-overlay">
+                <strong>Open selected video</strong>
+                <span>{selectedVideo.title}</span>
+              </span>
+            </a>
           </div>
 
           <div className="button-row button-row--wrap">
@@ -89,7 +94,7 @@ export function AabipVideoLibrary({ panelId, labelledBy }: AabipVideoLibraryProp
                     <span className="aabip-video-library__video-index">{String(video.playlistIndex).padStart(2, '0')}</span>
                     <span className="aabip-video-library__video-copy">
                       <strong>{video.title}</strong>
-                      <span>Play in app</span>
+                      <span>Select video</span>
                     </span>
                   </button>
                   <a

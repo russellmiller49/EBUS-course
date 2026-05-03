@@ -1,8 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type { LectureManifestItem } from '@/content/types';
-import { getContinuousWatchDelta, isLecturePlaybackComplete } from '@/features/lectures/watchProgress';
-import type { LectureWatchState } from '@/lib/progress';
+import {
+  getContinuousWatchDelta,
+  getLectureViewedPercent,
+  isLecturePlaybackComplete,
+} from '@/features/lectures/watchProgress';
+import type { LectureStateUpdate, LectureWatchState } from '@/lib/progress';
+
+function getLectureThumbnailLabel(lecture: LectureManifestItem): string {
+  if (lecture.week.toLowerCase() === 'welcome') {
+    return '01';
+  }
+
+  return lecture.week.replace('Lecture ', '');
+}
 
 export function LectureCard({
   lecture,
@@ -11,28 +23,36 @@ export function LectureCard({
   lockedReason,
   defaultExpanded = false,
   onUpdateWatchState,
+  readyLabel = 'Quiz ready',
 }: {
   lecture: LectureManifestItem;
   watchState?: LectureWatchState;
   locked?: boolean;
   lockedReason?: string | null;
   defaultExpanded?: boolean;
-  onUpdateWatchState: (
-    lectureId: string,
-    update: { watchedSeconds?: number; completed?: boolean; opened?: boolean },
-  ) => void;
+  onUpdateWatchState: (lectureId: string, update: LectureStateUpdate) => void;
+  readyLabel?: string;
 }) {
   const [posterBroken, setPosterBroken] = useState(false);
   const [detailsExpanded, setDetailsExpanded] = useState(
     () => defaultExpanded && !watchState?.lastOpenedAt && !watchState?.completed,
   );
   const [videoExpanded, setVideoExpanded] = useState(false);
-  const [lastReportedSecond, setLastReportedSecond] = useState(0);
+  const [lastReportedSecond, setLastReportedSecond] = useState(() => Math.floor(watchState?.watchedSeconds ?? 0));
   const lastMediaTimeRef = useRef<number | null>(null);
   const watchedSecondsRef = useRef(watchState?.watchedSeconds ?? 0);
   const isLocked = locked ?? lecture.status === 'locked';
   const hasPlayableVideo = Boolean(lecture.video || lecture.embedUrl);
   const thumbnailSrc = lecture.thumbnail ?? lecture.poster;
+  const watchedSeconds = Math.max(0, Math.floor(watchState?.watchedSeconds ?? 0));
+  const viewedPercent = getLectureViewedPercent({
+    durationSeconds: watchState?.durationSeconds ?? 0,
+    watchedSeconds,
+  });
+  const quizReady = Boolean(
+    watchState?.completed || watchState?.quizUnlockedAt || watchState?.lastOpenedAt || watchedSeconds > 0,
+  );
+  const statusLabel = watchState?.completed ? 'Fully viewed' : isLocked ? 'Locked' : quizReady ? readyLabel : 'Ready';
 
   useEffect(() => {
     if (defaultExpanded && !watchState?.lastOpenedAt && !watchState?.completed && !isLocked) {
@@ -40,69 +60,81 @@ export function LectureCard({
     }
   }, [defaultExpanded, isLocked, lecture.id, watchState?.completed, watchState?.lastOpenedAt]);
 
+  useEffect(() => {
+    watchedSecondsRef.current = Math.max(watchedSecondsRef.current, watchState?.watchedSeconds ?? 0);
+  }, [watchState?.watchedSeconds]);
+
   function handleTogglePlayer() {
     const nextExpanded = !videoExpanded;
     setDetailsExpanded(true);
     setVideoExpanded(nextExpanded);
 
     if (nextExpanded) {
-      onUpdateWatchState(lecture.id, { opened: true });
+      onUpdateWatchState(lecture.id, { opened: true, quizReady: true });
     } else if (watchState?.lastOpenedAt || watchState?.completed) {
       setDetailsExpanded(false);
     }
   }
 
-  function handleVideoTimeUpdate(event: React.SyntheticEvent<HTMLVideoElement>) {
-    const element = event.currentTarget;
+  function getVideoProgressUpdate(element: HTMLVideoElement, paused = element.paused) {
     const durationSeconds = Number.isFinite(element.duration) ? Math.floor(element.duration) : 0;
     const delta = getContinuousWatchDelta({
       currentTime: element.currentTime,
       lastTime: lastMediaTimeRef.current,
-      paused: element.paused,
+      paused,
       playbackRate: element.playbackRate,
     });
 
     lastMediaTimeRef.current = element.currentTime;
     watchedSecondsRef.current = Math.max(watchedSecondsRef.current, watchState?.watchedSeconds ?? 0) + delta;
 
-    const watchedSeconds = Math.floor(watchedSecondsRef.current);
-    const completed = isLecturePlaybackComplete({
-      currentTime: element.currentTime,
-      durationSeconds,
-      watchedSeconds,
-    });
+    const nextWatchedSeconds = Math.floor(watchedSecondsRef.current);
 
-    if (watchedSeconds - lastReportedSecond < 15 && !completed) {
+    return {
+      completed: isLecturePlaybackComplete({
+        currentTime: element.currentTime,
+        durationSeconds,
+        watchedSeconds: nextWatchedSeconds,
+      }),
+      durationSeconds,
+      lastPositionSeconds: Math.max(0, Math.floor(element.currentTime)),
+      quizReady: true,
+      watchedSeconds: nextWatchedSeconds,
+    } satisfies LectureStateUpdate;
+  }
+
+  function handleVideoLoadedMetadata(event: React.SyntheticEvent<HTMLVideoElement>) {
+    const element = event.currentTarget;
+    const durationSeconds = Number.isFinite(element.duration) ? Math.floor(element.duration) : 0;
+
+    onUpdateWatchState(lecture.id, {
+      durationSeconds,
+      lastPositionSeconds: Math.max(0, Math.floor(element.currentTime)),
+      quizReady: true,
+    });
+  }
+
+  function handleVideoTimeUpdate(event: React.SyntheticEvent<HTMLVideoElement>) {
+    const element = event.currentTarget;
+    const update = getVideoProgressUpdate(element);
+    const nextWatchedSeconds = update.watchedSeconds ?? 0;
+    const completed = update.completed ?? false;
+
+    const hasInitialProgress = lastReportedSecond === 0 && nextWatchedSeconds > 0;
+
+    if (!hasInitialProgress && nextWatchedSeconds - lastReportedSecond < 15 && !completed) {
       return;
     }
 
-    setLastReportedSecond(watchedSeconds);
-    onUpdateWatchState(lecture.id, {
-      watchedSeconds,
-      completed,
-    });
+    setLastReportedSecond(nextWatchedSeconds);
+    onUpdateWatchState(lecture.id, update);
   }
 
   function handleVideoEnded(event: React.SyntheticEvent<HTMLVideoElement>) {
     const element = event.currentTarget;
-    const durationSeconds = Number.isFinite(element.duration) ? Math.floor(element.duration) : 0;
-    const delta = getContinuousWatchDelta({
-      currentTime: element.currentTime,
-      lastTime: lastMediaTimeRef.current,
-      paused: false,
-      playbackRate: element.playbackRate,
-    });
-    watchedSecondsRef.current = Math.max(watchedSecondsRef.current, watchState?.watchedSeconds ?? 0) + delta;
-    const watchedSeconds = Math.floor(watchedSecondsRef.current);
+    const update = getVideoProgressUpdate(element, false);
 
-    onUpdateWatchState(lecture.id, {
-      watchedSeconds,
-      completed: isLecturePlaybackComplete({
-        currentTime: element.currentTime,
-        durationSeconds,
-        watchedSeconds,
-      }),
-    });
+    onUpdateWatchState(lecture.id, update);
     setDetailsExpanded(false);
     setVideoExpanded(false);
   }
@@ -120,7 +152,7 @@ export function LectureCard({
           />
         ) : (
           <div className="lecture-card__thumb lecture-card__thumb--placeholder" aria-hidden="true">
-            {lecture.week.replace('Lecture ', '')}
+            {getLectureThumbnailLabel(lecture)}
           </div>
         )}
         <div className="lecture-card__title-block">
@@ -130,7 +162,7 @@ export function LectureCard({
         </div>
         <div className="lecture-card__meta">
           <span>{lecture.duration}</span>
-          <span>{watchState?.completed ? 'Completed' : isLocked ? 'Locked' : 'Ready'}</span>
+          <span>{statusLabel}</span>
         </div>
         <button
           aria-expanded={detailsExpanded}
@@ -178,7 +210,7 @@ export function LectureCard({
             <a
               className="button button--ghost"
               href={lecture.resourceUrl}
-              onClick={() => onUpdateWatchState(lecture.id, { opened: true })}
+              onClick={() => onUpdateWatchState(lecture.id, { opened: true, quizReady: true })}
               rel="noreferrer"
               target="_blank"
             >
@@ -191,6 +223,7 @@ export function LectureCard({
               onClick={() => {
                 onUpdateWatchState(lecture.id, {
                   completed: true,
+                  quizReady: true,
                   opened: true,
                   watchedSeconds: Math.max(watchState?.watchedSeconds ?? 0, 60),
                 });
@@ -211,7 +244,14 @@ export function LectureCard({
           {lecture.embedUrl ? (
             <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" src={lecture.embedUrl} title={lecture.title} />
           ) : lecture.video ? (
-            <video controls onEnded={handleVideoEnded} onTimeUpdate={handleVideoTimeUpdate} preload="metadata" src={lecture.video} />
+            <video
+              controls
+              onEnded={handleVideoEnded}
+              onLoadedMetadata={handleVideoLoadedMetadata}
+              onTimeUpdate={handleVideoTimeUpdate}
+              preload="metadata"
+              src={lecture.video}
+            />
           ) : (
             <div className="lecture-card__placeholder">
               <strong>Video slot ready</strong>
@@ -222,7 +262,9 @@ export function LectureCard({
       ) : null}
 
       {watchState?.completedAt ? (
-        <p className="lecture-card__status">Completed {new Date(watchState.completedAt).toLocaleString()}</p>
+        <p className="lecture-card__status">Fully viewed {new Date(watchState.completedAt).toLocaleString()}</p>
+      ) : quizReady ? (
+        <p className="lecture-card__status">Viewed {viewedPercent}% ({watchedSeconds} seconds logged)</p>
       ) : null}
     </article>
   );

@@ -1,4 +1,5 @@
 .knobology-lab-notes {
+  align-self: stretch;
   display: grid;
   gap: 16px;
   max-height: clamp(250px, 36svh, 400px);
@@ -68,6 +69,14 @@
 
 .knobology-rescue-panel .button-row {
   flex-wrap: wrap;
+}
+
+@media (min-width: 760px) {
+  .knobology-frame > .knobology-lab-notes {
+    height: 100%;
+    max-height: none;
+    min-height: 0;
+  }
 }
 
 @media (max-width: 560px) {

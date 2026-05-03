@@ -29,6 +29,28 @@ describe('learnerProgressReducer', () => {
       watchedSeconds: 120,
       completed: true,
       completedAt: expect.any(String),
+      quizUnlockedAt: expect.any(String),
+    });
+  });
+
+  it('stores lecture viewing metrics without requiring full completion', () => {
+    const initial = createInitialLearnerProgress();
+    const state = learnerProgressReducer(initial, {
+      type: 'setLectureState',
+      lectureId: 'lecture-02',
+      durationSeconds: 1200,
+      lastPositionSeconds: 35,
+      quizReady: true,
+      watchedSeconds: 30,
+    });
+
+    expect(state.lectureWatchStatus['lecture-02']).toMatchObject({
+      completed: false,
+      completedAt: null,
+      durationSeconds: 1200,
+      lastPositionSeconds: 35,
+      quizUnlockedAt: expect.any(String),
+      watchedSeconds: 30,
     });
   });
 
@@ -68,7 +90,7 @@ describe('learnerProgressReducer', () => {
       correct: true,
     });
 
-    expect(attempted.version).toBe(8);
+    expect(attempted.version).toBe(9);
     expect(attempted.moduleProgress['tnm-staging'].percentComplete).toBe(15);
     expect(attempted.tnmCaseStats['tnm-case-01']).toMatchObject({ attempts: 1, correct: 1 });
     expect(attempted.tnmTagStats.T1c).toMatchObject({ attempts: 1, correct: 1 });
@@ -211,7 +233,10 @@ describe('learnerProgressReducer', () => {
     localState.lectureWatchStatus['lecture-01'] = {
       completed: true,
       completedAt: '2026-05-01T17:00:00.000Z',
+      durationSeconds: 600,
       lastOpenedAt: '2026-05-01T17:00:00.000Z',
+      lastPositionSeconds: 60,
+      quizUnlockedAt: '2026-05-01T17:00:00.000Z',
       watchedSeconds: 60,
     };
 
@@ -222,13 +247,19 @@ describe('learnerProgressReducer', () => {
     remoteState.lectureWatchStatus['lecture-01'] = {
       completed: true,
       completedAt: '2026-05-01T15:00:00.000Z',
+      durationSeconds: 600,
       lastOpenedAt: '2026-05-01T15:00:00.000Z',
+      lastPositionSeconds: 600,
+      quizUnlockedAt: '2026-05-01T15:00:00.000Z',
       watchedSeconds: 600,
     };
     remoteState.lectureWatchStatus['lecture-02'] = {
       completed: true,
       completedAt: '2026-05-01T15:00:00.000Z',
+      durationSeconds: 600,
       lastOpenedAt: '2026-05-01T15:00:00.000Z',
+      lastPositionSeconds: 600,
+      quizUnlockedAt: '2026-05-01T15:00:00.000Z',
       watchedSeconds: 600,
     };
 

@@ -134,6 +134,17 @@ export function isLectureComplete(state: Pick<LearnerProgressState, 'lectureWatc
   return Boolean(state.lectureWatchStatus[lectureId]?.completed);
 }
 
+export function isLectureQuizReady(state: Pick<LearnerProgressState, 'lectureWatchStatus'>, lectureId: string) {
+  const watchState = state.lectureWatchStatus[lectureId];
+
+  return Boolean(
+    watchState?.completed ||
+      watchState?.quizUnlockedAt ||
+      watchState?.lastOpenedAt ||
+      (watchState?.watchedSeconds ?? 0) > 0,
+  );
+}
+
 export function isCoursePretestUnlocked(
   state: Pick<LearnerProgressState, 'lectureWatchStatus' | 'pretest'>,
   options: CourseWorkflowOptions = {},
@@ -172,13 +183,23 @@ function isAccountComplete(options: CourseWorkflowOptions = {}) {
 }
 
 function getStepPercent(state: LearnerProgressState, step: CourseWorkflowStepDefinition, completed: boolean) {
-  if (completed) {
-    return 100;
+  if (step.kind === 'lecture' && step.lectureId) {
+    const watchState = state.lectureWatchStatus[step.lectureId];
+
+    if (watchState?.completed) {
+      return 100;
+    }
+
+    const durationSeconds = watchState?.durationSeconds ?? 0;
+    const watchedSeconds = watchState?.watchedSeconds ?? 0;
+    const watchedPercent =
+      durationSeconds > 0 ? Math.round((watchedSeconds / durationSeconds) * 100) : Math.round((watchedSeconds / 600) * 100);
+
+    return Math.max(completed ? 15 : 0, Math.min(90, watchedPercent));
   }
 
-  if (step.kind === 'lecture' && step.lectureId) {
-    const watchedSeconds = state.lectureWatchStatus[step.lectureId]?.watchedSeconds ?? 0;
-    return Math.min(90, Math.round((watchedSeconds / 600) * 100));
+  if (completed) {
+    return 100;
   }
 
   if (step.kind === 'pretest') {
@@ -202,7 +223,7 @@ function isCourseStepCompleteWithOptions(
   }
 
   if (step.kind === 'lecture' && step.lectureId) {
-    return isLectureComplete(state, step.lectureId);
+    return isLectureQuizReady(state, step.lectureId);
   }
 
   if (step.kind === 'welcome' && step.lectureId) {
@@ -258,7 +279,7 @@ export function getLockedReason(previousStep: CourseWorkflowStepDefinition | nul
   }
 
   if (previousStep.kind === 'lecture') {
-    return `Complete "${previousStep.title}" to unlock this step.`;
+    return `Open "${previousStep.title}" to unlock this step.`;
   }
 
   if (previousStep.kind === 'pretest') {

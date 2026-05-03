@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { getContinuousWatchDelta, isLecturePlaybackComplete } from '@/features/lectures/watchProgress';
+import {
+  getContinuousWatchDelta,
+  getLectureViewedPercent,
+  isLecturePlaybackComplete,
+} from '@/features/lectures/watchProgress';
 
 describe('lecture watch progress', () => {
   it('counts continuous playback and ignores seek jumps', () => {
@@ -13,5 +17,11 @@ describe('lecture watch progress', () => {
     expect(isLecturePlaybackComplete({ currentTime: 597, durationSeconds: 600, watchedSeconds: 570 })).toBe(true);
     expect(isLecturePlaybackComplete({ currentTime: 597, durationSeconds: 600, watchedSeconds: 120 })).toBe(false);
     expect(isLecturePlaybackComplete({ currentTime: 200, durationSeconds: 600, watchedSeconds: 570 })).toBe(false);
+  });
+
+  it('calculates viewed percent from actual watched seconds', () => {
+    expect(getLectureViewedPercent({ durationSeconds: 600, watchedSeconds: 150 })).toBe(25);
+    expect(getLectureViewedPercent({ durationSeconds: 600, watchedSeconds: 900 })).toBe(100);
+    expect(getLectureViewedPercent({ durationSeconds: 0, watchedSeconds: 150 })).toBe(0);
   });
 });

@@ -1,8 +1,27 @@
 import courseAssessmentData from '../../../../content/course/course-assessments.json';
 
+import { resolveAssessmentImageSrc } from '@/content/assessmentImages';
 import type { CourseAssessmentContent } from '@/content/types';
+import { mapNestedAssetPaths } from '@/lib/assets';
 
-export const courseAssessments = courseAssessmentData.assessments as CourseAssessmentContent[];
+function resolveAssessmentImages(assessment: CourseAssessmentContent): CourseAssessmentContent {
+  return {
+    ...assessment,
+    questions: assessment.questions.map((question) => ({
+      ...question,
+      imageAsset: question.imageAsset
+        ? {
+            ...question.imageAsset,
+            src: resolveAssessmentImageSrc(question.imageAsset.src),
+          }
+        : undefined,
+    })),
+  };
+}
+
+export const courseAssessments = mapNestedAssetPaths(
+  (courseAssessmentData.assessments as CourseAssessmentContent[]).map(resolveAssessmentImages),
+);
 
 export const postLectureCourseAssessments = courseAssessments.filter(
   (assessment) => assessment.kind === 'post-lecture-quiz',

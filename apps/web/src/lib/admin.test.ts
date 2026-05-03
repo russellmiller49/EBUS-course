@@ -36,7 +36,9 @@ function createLearner(overrides: Partial<AdminLearnerOverview> = {}): AdminLear
     totalTimeSpentSeconds: 0,
     moduleProgress: [],
     lectureSummary: {
+      averageViewedPercent: 0,
       completedCount: 0,
+      quizReadyCount: 0,
       totalWatchedSeconds: 0,
       lastOpenedAt: null,
     },
@@ -80,7 +82,9 @@ describe('admin learner overview helpers', () => {
         },
       ],
       lecture_summary: {
+        averageViewedPercent: 45,
         completedCount: 3,
+        quizReadyCount: 5,
         totalWatchedSeconds: 900,
         lastOpenedAt: '2026-04-21T10:00:00.000Z',
       },
@@ -107,6 +111,8 @@ describe('admin learner overview helpers', () => {
       timeSpentSeconds: 300,
     });
     expect(learner.lectureSummary.completedCount).toBe(3);
+    expect(learner.lectureSummary.quizReadyCount).toBe(5);
+    expect(learner.lectureSummary.averageViewedPercent).toBe(45);
   });
 
   it('summarizes learner approval counts and average progress', () => {
