@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { postCourseSurveyDefinition, preCourseSurveyDefinition } from '@/content/courseSurveys';
 import { getLectureViewedPercent } from '@/features/lectures/watchProgress';
 import type { LearnerProgressState, LectureWatchState } from '@/lib/progress';
 
@@ -151,9 +152,38 @@ function getLatestPretestAttempt(state: LearnerProgressState) {
   };
 }
 
+function toCourseSurveyRows(userId: string, state: LearnerProgressState) {
+  return [
+    {
+      definition: preCourseSurveyDefinition,
+      progress: state.preCourseSurvey,
+    },
+    {
+      definition: postCourseSurveyDefinition,
+      progress: state.courseSurvey,
+    },
+  ].flatMap(({ definition, progress }) => {
+    if (!progress.submittedAt) {
+      return [];
+    }
+
+    return [
+      {
+        learner_id: userId,
+        survey_id: definition.id,
+        survey_version: definition.version,
+        responses: progress.responses,
+        submitted_at: progress.submittedAt,
+        updated_at: new Date().toISOString(),
+      },
+    ];
+  });
+}
+
 export async function syncLearnerSnapshot(client: SupabaseClient, userId: string, state: LearnerProgressState) {
   const now = new Date().toISOString();
   const latestPretestAttempt = getLatestPretestAttempt(state);
+  const courseSurveyRows = toCourseSurveyRows(userId, state);
   const lectureRows = toLectureProgressRows(userId, state.lectureWatchStatus);
   const trackedModuleRows = toTrackedModuleRows(userId, state);
 
@@ -195,6 +225,14 @@ export async function syncLearnerSnapshot(client: SupabaseClient, userId: string
           onConflict: 'learner_id,attempt_number',
         },
       ),
+    );
+  }
+
+  if (courseSurveyRows.length > 0) {
+    assertSupabaseWrite(
+      await client.from('learner_course_surveys').upsert(courseSurveyRows, {
+        onConflict: 'learner_id,survey_id',
+      }),
     );
   }
 }

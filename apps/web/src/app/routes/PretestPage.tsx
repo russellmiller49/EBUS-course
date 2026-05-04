@@ -2,10 +2,10 @@ import type { FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { preCourseSurveyItems } from '@/content/courseSurveys';
+import { type CourseSurveyResponses, isCourseSurveyComplete, preCourseSurveyItems } from '@/content/courseSurveys';
 import { getPretestImage, pretestContent } from '@/content/pretest';
 import { getFirstUnansweredQuestionIndex, getNextUnansweredQuestionIndex, scorePretest } from '@/features/pretest/logic';
-import { validatePretestAdminPasscode } from '@/lib/access';
+import { CourseSurveyForm } from '@/features/surveys/CourseSurveyForm';
 import { useAuth } from '@/lib/auth';
 import { useLearnerProgress } from '@/lib/progress';
 
@@ -27,12 +27,9 @@ export function PretestPage() {
     setPretestQuestionIndex,
     submitPreCourseSurvey,
     submitPretest,
-    unlockPretestWithPasscode,
   } = useLearnerProgress();
   const { isSupabaseEnabled, user } = useAuth();
-  const [adminPasscode, setAdminPasscode] = useState('');
-  const [adminPasscodeStatus, setAdminPasscodeStatus] = useState<'idle' | 'error' | 'success'>('idle');
-  const [surveyResponses, setSurveyResponses] = useState<Record<string, string>>({});
+  const [surveyResponses, setSurveyResponses] = useState<CourseSurveyResponses>({});
   const questions = pretestContent.questions;
   const pretest = state.pretest;
   const currentIndex = Math.max(0, Math.min(questions.length - 1, pretest.currentQuestionIndex));
@@ -56,7 +53,7 @@ export function PretestPage() {
         : accountComplete
           ? 24
           : 12;
-  const canSubmitSurvey = preCourseSurveyItems.every((item) => surveyResponses[item.id]);
+  const canSubmitSurvey = isCourseSurveyComplete(preCourseSurveyItems, surveyResponses);
 
   useEffect(() => {
     setModuleProgress('pretest', progressPercent, pretestAccessUnlocked);
@@ -92,19 +89,6 @@ export function PretestPage() {
       answeredCount: result.answeredCount,
       totalQuestions: result.totalCount,
     });
-  }
-
-  function handleAdminPasscodeSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!validatePretestAdminPasscode(adminPasscode)) {
-      setAdminPasscodeStatus('error');
-      return;
-    }
-
-    unlockPretestWithPasscode();
-    setAdminPasscode('');
-    setAdminPasscodeStatus('success');
   }
 
   function handleSurveySubmit(event: FormEvent<HTMLFormElement>) {
@@ -179,82 +163,19 @@ export function PretestPage() {
         {preCourseSurveyComplete ? (
           <div className="feedback-banner feedback-banner--success">
             <strong>Survey saved</strong>
-            <p>Your pre-course survey response is saved locally with learner progress.</p>
+            <p>Your pre-course survey response is saved locally and queued for Supabase sync when connected.</p>
           </div>
         ) : (
-          <form className="survey-form" onSubmit={handleSurveySubmit}>
-            {preCourseSurveyItems.map((item) => (
-              <fieldset key={item.id} className="survey-fieldset" disabled={!accountComplete}>
-                <legend>{item.label}</legend>
-                <div className="button-row button-row--wrap">
-                  {item.options.map((option) => (
-                    <label key={option} className="control-pill">
-                      <input
-                        checked={surveyResponses[item.id] === option}
-                        name={item.id}
-                        onChange={() => setSurveyResponses((current) => ({ ...current, [item.id]: option }))}
-                        type="radio"
-                      />
-                      <span>{option}</span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-            ))}
-            <button className="button" disabled={!accountComplete || !canSubmitSurvey} type="submit">
-              Submit pre-course survey
-            </button>
-          </form>
+          <CourseSurveyForm
+            disabled={!accountComplete}
+            items={preCourseSurveyItems}
+            onResponsesChange={setSurveyResponses}
+            onSubmit={handleSurveySubmit}
+            responses={surveyResponses}
+            submitLabel="Submit pre-course survey"
+          />
         )}
       </section>
-
-      {!submitted ? (
-        <section className="section-card section-card--notice">
-          <div className="section-card__heading">
-            <div>
-              <div className="eyebrow">Admin/developer access</div>
-              <h2>Unlock without submitting a learner score</h2>
-            </div>
-          </div>
-          {unlockedByPasscode ? (
-            <div className="feedback-banner feedback-banner--success">
-              <strong>Access unlocked</strong>
-              <p>Course modules are available while the pre-test remains open for optional review or completion.</p>
-            </div>
-          ) : (
-            <form className="pretest-unlock-form" onSubmit={handleAdminPasscodeSubmit}>
-              <label className="field">
-                <span>Passcode</span>
-                <input
-                  autoComplete="off"
-                  onChange={(event) => {
-                    setAdminPasscode(event.target.value);
-                    setAdminPasscodeStatus('idle');
-                  }}
-                  placeholder="Enter passcode"
-                  type="password"
-                  value={adminPasscode}
-                />
-              </label>
-              {adminPasscodeStatus === 'error' ? (
-                <div className="feedback-banner">
-                  <strong>Passcode not recognized</strong>
-                  <p>Check the admin/developer passcode and try again.</p>
-                </div>
-              ) : null}
-              {adminPasscodeStatus === 'success' ? (
-                <div className="feedback-banner feedback-banner--success">
-                  <strong>Access unlocked</strong>
-                  <p>Course modules are now available on this device.</p>
-                </div>
-              ) : null}
-              <button className="button" type="submit">
-                Unlock access
-              </button>
-            </form>
-          )}
-        </section>
-      ) : null}
 
       <section className={`section-card${pretestAccessUnlocked ? '' : ' section-card--locked'}`}>
         <div className="section-card__heading">

@@ -2,8 +2,13 @@ import type { FormEvent } from 'react';
 import { useMemo, useState } from 'react';
 
 import { finalPostTestAssessment } from '@/content/courseAssessments';
-import { postCourseSurveyItems } from '@/content/courseSurveys';
+import {
+  type CourseSurveyResponses,
+  isCourseSurveyComplete as isCourseSurveyResponseComplete,
+  postCourseSurveyItems,
+} from '@/content/courseSurveys';
 import { QuizCard } from '@/features/quiz/QuizCard';
+import { CourseSurveyForm } from '@/features/surveys/CourseSurveyForm';
 import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
 import { useAuth } from '@/lib/auth';
 import { formatCourseEndAvailability, isCourseEndUnlocked } from '@/lib/courseConfig';
@@ -56,7 +61,7 @@ export function PostCoursePage() {
     () => ({ admin: adminSessionActive, nowMs, preview: vendorSessionActive }),
     [adminSessionActive, nowMs, vendorSessionActive],
   );
-  const [surveyResponses, setSurveyResponses] = useState<Record<string, string>>({});
+  const [surveyResponses, setSurveyResponses] = useState<CourseSurveyResponses>({});
   const postTestProgress = finalPostTestAssessment
     ? getCourseAssessmentProgress(state, finalPostTestAssessment.id)
     : null;
@@ -71,7 +76,7 @@ export function PostCoursePage() {
   const courseEnded = isCourseEndUnlocked(nowMs);
   const surveyUnlocked = previewSessionActive || (courseEnded && Boolean(postTestProgress?.completedAt));
   const completionArtifactsUnlocked = previewSessionActive || surveyComplete;
-  const canSubmitSurvey = postCourseSurveyItems.every((item) => surveyResponses[item.id]);
+  const canSubmitSurvey = isCourseSurveyResponseComplete(postCourseSurveyItems, surveyResponses);
   const certificateName = profile?.fullName || user?.email || 'EBUS learner';
 
   function handleCourseAssessmentComplete(result: QuizResult) {
@@ -180,40 +185,17 @@ export function PostCoursePage() {
         {surveyComplete ? (
           <div className="feedback-banner feedback-banner--success">
             <strong>Certificate is unlocked.</strong>
-            <p>Your survey response is saved in local progress and included in synced learner progress when enabled.</p>
+            <p>Your survey response is saved locally and synced to Supabase when connected.</p>
           </div>
         ) : (
-          <form className="survey-form" onSubmit={handleSurveySubmit}>
-            {postCourseSurveyItems.map((item) => (
-              <fieldset key={item.id} className="survey-fieldset" disabled={!surveyUnlocked}>
-                <legend>{item.label}</legend>
-                <div className="button-row button-row--wrap">
-                  {item.options.map((option) => (
-                    <label key={option} className="control-pill">
-                      <input
-                        checked={surveyResponses[item.id] === option}
-                        name={item.id}
-                        onChange={() => setSurveyResponses((current) => ({ ...current, [item.id]: option }))}
-                        type="radio"
-                      />
-                      <span>{option}</span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-            ))}
-            <label className="field">
-              <span>Optional course note</span>
-              <textarea
-                onChange={(event) => setSurveyResponses((current) => ({ ...current, courseNote: event.target.value }))}
-                rows={4}
-                value={surveyResponses.courseNote ?? ''}
-              />
-            </label>
-            <button className="button" disabled={!surveyUnlocked || !canSubmitSurvey} type="submit">
-              Submit survey
-            </button>
-          </form>
+          <CourseSurveyForm
+            disabled={!surveyUnlocked}
+            items={postCourseSurveyItems}
+            onResponsesChange={setSurveyResponses}
+            onSubmit={handleSurveySubmit}
+            responses={surveyResponses}
+            submitLabel="Submit survey"
+          />
         )}
       </section>
 

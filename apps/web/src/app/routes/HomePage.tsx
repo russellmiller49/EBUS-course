@@ -129,6 +129,13 @@ export function HomePage() {
         </div>
       </section>
 
+      <section aria-label="AABIP endorsement" className="course-endorsement">
+        <span aria-hidden="true" className="course-endorsement__seal">
+          <img alt="" loading="eager" src={courseInfo.endorsement.image.src} />
+        </span>
+        <p>{courseInfo.endorsement.text}</p>
+      </section>
+
       {!pretestReady ? (
         <section className="section-card section-card--notice">
           <div className="section-card__heading">

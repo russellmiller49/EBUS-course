@@ -181,6 +181,13 @@
     }
   ],
   "facilityUrl": "https://medicine.llu.edu/about/medical-simulation-center",
+  "endorsement": {
+    "text": "This educational activity is endorsed by the American Association for Bronchology and Interventional Pulmonology (AABIP).",
+    "image": {
+      "src": "/media/course/aabip-endorsement.png",
+      "alt": "American Association for Bronchology and Interventional Pulmonology logo"
+    }
+  },
   "visuals": {
     "logo": {
       "src": "/media/course/loma-linda-school-of-medicine.png",

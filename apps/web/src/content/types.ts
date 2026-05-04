@@ -289,6 +289,11 @@ export interface CourseInfoVisuals {
   gallery: CourseInfoImageAsset[];
 }
 
+export interface CourseInfoEndorsement {
+  text: string;
+  image: CourseInfoImageAsset;
+}
+
 export interface CourseInfoContent {
   courseTitle: string;
   hostLine: string;
@@ -315,6 +320,7 @@ export interface CourseInfoContent {
   travelNote: string;
   travelDirections: CourseInfoDirection[];
   facilityUrl: string;
+  endorsement: CourseInfoEndorsement;
   visuals: CourseInfoVisuals;
 }
 

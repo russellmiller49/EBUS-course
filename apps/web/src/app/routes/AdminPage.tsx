@@ -7,6 +7,7 @@ import {
   getLearnerAverageProgress,
   type AdminAnswerDetail,
   type AdminLearnerOverview,
+  type AdminSurveyResult,
 } from '@/lib/admin';
 import {
   clearCourseAdminPasscode,
@@ -133,6 +134,34 @@ function AdminAssessmentAnswers({
                 <dd>{answer.isCorrect ? 'Correct' : 'Incorrect'}</dd>
               </div>
             </dl>
+          </article>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+function AdminSurveyResponses({ result, title }: { result: AdminSurveyResult; title: string }) {
+  if (!result.submittedAt && result.responses.length === 0) {
+    return (
+      <div className="admin-answer-panel">
+        <strong>{title}</strong>
+        <p>No synced survey response yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <details className="admin-answer-panel">
+      <summary>
+        <strong>{title}</strong>
+        <span>{formatDate(result.submittedAt)}</span>
+      </summary>
+      <div className="admin-answer-list">
+        {result.responses.map((response) => (
+          <article key={response.questionId} className="admin-survey-row">
+            <p>{response.prompt}</p>
+            <strong>{response.response}</strong>
           </article>
         ))}
       </div>
@@ -415,6 +444,7 @@ export function AdminPage() {
                 </div>
 
                 <div className="admin-answer-stack">
+                  <AdminSurveyResponses result={learner.preCourseSurvey} title="Pre-course survey" />
                   <AdminAssessmentAnswers
                     answers={learner.pretestAnswers}
                     emptyLabel="No synced pretest submission answers yet."
@@ -425,6 +455,7 @@ export function AdminPage() {
                     emptyLabel="No synced post-test submission answers yet."
                     title="Post-test answers"
                   />
+                  <AdminSurveyResponses result={learner.postCourseSurvey} title="Post-course survey" />
                 </div>
 
                 <div className="admin-module-progress" aria-label={`${learner.fullName ?? 'Learner'} module progress`}>

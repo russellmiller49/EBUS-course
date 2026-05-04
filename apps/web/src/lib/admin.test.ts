@@ -32,6 +32,20 @@ function createLearner(overrides: Partial<AdminLearnerOverview> = {}): AdminLear
     pretestPercent: null,
     pretestSubmittedAt: null,
     pretestAnswers: [],
+    preCourseSurvey: {
+      responses: [],
+      submittedAt: null,
+      surveyId: 'pre-course-2026',
+      updatedAt: null,
+      version: null,
+    },
+    postCourseSurvey: {
+      responses: [],
+      submittedAt: null,
+      surveyId: 'post-course-2026',
+      updatedAt: null,
+      version: null,
+    },
     postTestAnswers: [],
     totalTimeSpentSeconds: 0,
     moduleProgress: [],
@@ -58,6 +72,25 @@ describe('admin learner overview helpers', () => {
       pretest_percent: 86,
       pretest_answers: {
         [firstPretestQuestion.id]: firstPretestQuestion.correctOptionId,
+      },
+      pre_course_survey_results: {
+        surveyId: 'pre-course-2026',
+        version: 1,
+        submittedAt: '2026-04-20T09:30:00.000Z',
+        responses: {
+          'pgy-level': 'pgy-5',
+          'standard-bronchoscopy-count': '26-50',
+        },
+        updatedAt: '2026-04-20T09:31:00.000Z',
+      },
+      post_course_survey_results: {
+        surveyId: 'post-course-2026',
+        version: 1,
+        submittedAt: '2026-05-03T16:30:00.000Z',
+        responses: {
+          'planned-employment-model': 'academic-tertiary-center',
+          'recommend-course-likelihood': '10',
+        },
       },
       assessment_results: {
         'post-test': {
@@ -98,6 +131,36 @@ describe('admin learner overview helpers', () => {
       selectedOptionIds: [firstPretestQuestion.correctOptionId],
       correctOptionIds: [firstPretestQuestion.correctOptionId],
     });
+    expect(learner.preCourseSurvey).toMatchObject({
+      submittedAt: '2026-04-20T09:30:00.000Z',
+      surveyId: 'pre-course-2026',
+      version: 1,
+    });
+    expect(learner.preCourseSurvey.responses).toEqual([
+      {
+        prompt: 'Please list your PGY level.',
+        questionId: 'pgy-level',
+        response: '5',
+      },
+      {
+        prompt:
+          'Approximately how many standard bronchoscopies (non-EBUS or navigational) have you performed as the primary operator?',
+        questionId: 'standard-bronchoscopy-count',
+        response: '26-50',
+      },
+    ]);
+    expect(learner.postCourseSurvey.responses).toEqual([
+      {
+        prompt: 'In what type of employment model do you hope to / plan on practicing after graduation?',
+        questionId: 'planned-employment-model',
+        response: 'Academic / university-based tertiary center',
+      },
+      {
+        prompt: 'If asked, how likely are you to recommend this course to future pulmonary fellows?',
+        questionId: 'recommend-course-likelihood',
+        response: '10',
+      },
+    ]);
     expect(learner.postTestAnswers[0]).toMatchObject({
       questionId: 'post-test-q01',
       isCorrect: true,

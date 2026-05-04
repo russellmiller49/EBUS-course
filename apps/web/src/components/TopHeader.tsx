@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 import { courseInfo } from '@/content/course';
 import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
@@ -8,6 +8,7 @@ import { useLearnerProgress } from '@/lib/progress';
 import { useTheme } from '@/lib/theme';
 
 export function TopHeader() {
+  const location = useLocation();
   const { isSupabaseEnabled, profile, signOut, user } = useAuth();
   const { state } = useLearnerProgress();
   const { effectiveTheme, toggleTheme } = useTheme();
@@ -21,6 +22,8 @@ export function TopHeader() {
       : pretestReady
         ? 'Modules unlocked'
         : 'Pretest unlock required';
+  const nextPath = `${location.pathname}${location.search}`;
+  const learnerSignInPath = location.pathname.startsWith('/auth') ? '/auth' : `/auth?next=${encodeURIComponent(nextPath)}`;
 
   return (
     <header className="top-header">
@@ -45,6 +48,11 @@ export function TopHeader() {
               <button className="button button--ghost top-header__action" onClick={toggleTheme} type="button">
                 {effectiveTheme === 'dark' ? 'Light mode' : 'Dark mode'}
               </button>
+              {isSupabaseEnabled && !user ? (
+                <Link className="button button--ghost top-header__action" to={learnerSignInPath}>
+                  Sign in
+                </Link>
+              ) : null}
               <Link className="button button--ghost top-header__action" to="/auth?mode=support">
                 Help / Feedback
               </Link>

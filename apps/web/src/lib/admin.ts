@@ -1,4 +1,11 @@
 import { finalPostTestAssessment } from '@/content/courseAssessments';
+import {
+  type CourseSurveyDefinition,
+  type CourseSurveyResponseRow,
+  getCourseSurveyResponseRows,
+  postCourseSurveyDefinition,
+  preCourseSurveyDefinition,
+} from '@/content/courseSurveys';
 import { pretestContent } from '@/content/pretest';
 import type { PretestQuestionContent, QuizQuestionContent } from '@/content/types';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
@@ -29,6 +36,14 @@ export interface AdminAnswerDetail {
   isCorrect: boolean;
 }
 
+export interface AdminSurveyResult {
+  responses: CourseSurveyResponseRow[];
+  submittedAt: string | null;
+  surveyId: string;
+  updatedAt: string | null;
+  version: number | null;
+}
+
 export interface AdminLearnerOverview {
   id: string;
   email: string | null;
@@ -52,6 +67,8 @@ export interface AdminLearnerOverview {
   pretestPercent: number | null;
   pretestSubmittedAt: string | null;
   pretestAnswers: AdminAnswerDetail[];
+  preCourseSurvey: AdminSurveyResult;
+  postCourseSurvey: AdminSurveyResult;
   postTestAnswers: AdminAnswerDetail[];
   totalTimeSpentSeconds: number;
   moduleProgress: AdminModuleProgress[];
@@ -225,6 +242,24 @@ function normalizePostTestAnswerDetails(candidate: unknown): AdminAnswerDetail[]
   });
 }
 
+function normalizeSurveyResult(candidate: unknown, definition: CourseSurveyDefinition): AdminSurveyResult {
+  const raw = candidate && typeof candidate === 'object' ? (candidate as Record<string, unknown>) : {};
+  const responses = raw.responses && typeof raw.responses === 'object' ? (raw.responses as Record<string, unknown>) : {};
+  const stringResponses = Object.fromEntries(
+    Object.entries(responses).flatMap(([questionId, value]) =>
+      typeof value === 'string' ? [[questionId, value]] : [],
+    ),
+  );
+
+  return {
+    responses: getCourseSurveyResponseRows(definition, stringResponses),
+    submittedAt: readString(raw.submittedAt),
+    surveyId: readString(raw.surveyId) ?? definition.id,
+    updatedAt: readString(raw.updatedAt),
+    version: readNumber(raw.version),
+  };
+}
+
 export function normalizeAdminLearnerOverview(candidate: unknown): AdminLearnerOverview {
   const raw = candidate && typeof candidate === 'object' ? (candidate as Record<string, unknown>) : {};
 
@@ -251,6 +286,8 @@ export function normalizeAdminLearnerOverview(candidate: unknown): AdminLearnerO
     pretestPercent: readNumber(raw.pretest_percent),
     pretestSubmittedAt: readString(raw.pretest_submitted_at),
     pretestAnswers: normalizePretestAnswerDetails(raw.pretest_answers),
+    preCourseSurvey: normalizeSurveyResult(raw.pre_course_survey_results, preCourseSurveyDefinition),
+    postCourseSurvey: normalizeSurveyResult(raw.post_course_survey_results, postCourseSurveyDefinition),
     postTestAnswers: normalizePostTestAnswerDetails(raw.assessment_results),
     totalTimeSpentSeconds: Math.max(0, Math.floor(readNumber(raw.total_time_spent_seconds) ?? 0)),
     moduleProgress: normalizeModuleProgress(raw.module_progress),

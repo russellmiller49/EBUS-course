@@ -131,6 +131,32 @@ create table if not exists public.learner_pretest_attempts (
   primary key (learner_id, attempt_number)
 );
 
+create table if not exists public.learner_course_surveys (
+  learner_id uuid not null references public.learner_profiles (id) on delete cascade,
+  survey_id text not null,
+  survey_version integer not null default 1,
+  responses jsonb not null default '{}'::jsonb,
+  submitted_at timestamptz not null,
+  updated_at timestamptz not null default timezone('utc', now()),
+  primary key (learner_id, survey_id)
+);
+
+alter table public.learner_course_surveys
+  add column if not exists survey_version integer not null default 1,
+  add column if not exists responses jsonb not null default '{}'::jsonb,
+  add column if not exists submitted_at timestamptz,
+  add column if not exists updated_at timestamptz not null default timezone('utc', now());
+
+alter table public.learner_course_surveys
+  alter column submitted_at set not null,
+  drop constraint if exists learner_course_surveys_survey_id_check,
+  add constraint learner_course_surveys_survey_id_check check (survey_id in ('pre-course-2026', 'post-course-2026')),
+  drop constraint if exists learner_course_surveys_responses_object_check,
+  add constraint learner_course_surveys_responses_object_check check (jsonb_typeof(responses) = 'object');
+
+create index if not exists learner_course_surveys_survey_id_idx
+on public.learner_course_surveys (survey_id);
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -255,6 +281,12 @@ before update on public.learner_profiles
 for each row
 execute procedure public.set_updated_at();
 
+drop trigger if exists set_learner_course_surveys_updated_at on public.learner_course_surveys;
+create trigger set_learner_course_surveys_updated_at
+before update on public.learner_course_surveys
+for each row
+execute procedure public.set_updated_at();
+
 drop trigger if exists prevent_learner_approval_state_change on public.learner_profiles;
 create trigger prevent_learner_approval_state_change
 before insert or update on public.learner_profiles
@@ -273,6 +305,7 @@ alter table public.learner_module_progress enable row level security;
 alter table public.learner_module_sessions enable row level security;
 alter table public.learner_lecture_progress enable row level security;
 alter table public.learner_pretest_attempts enable row level security;
+alter table public.learner_course_surveys enable row level security;
 
 drop policy if exists "Learners can view their own profile" on public.learner_profiles;
 create policy "Learners can view their own profile"
@@ -381,6 +414,25 @@ for update
 using ((select auth.uid()) = learner_id and public.is_approved_learner(learner_id))
 with check ((select auth.uid()) = learner_id and public.is_approved_learner(learner_id));
 
+drop policy if exists "Learners can read their own course surveys" on public.learner_course_surveys;
+create policy "Learners can read their own course surveys"
+on public.learner_course_surveys
+for select
+using ((select auth.uid()) = learner_id);
+
+drop policy if exists "Learners can write their own course surveys" on public.learner_course_surveys;
+create policy "Learners can write their own course surveys"
+on public.learner_course_surveys
+for insert
+with check ((select auth.uid()) = learner_id and public.is_approved_learner(learner_id));
+
+drop policy if exists "Learners can update their own course surveys" on public.learner_course_surveys;
+create policy "Learners can update their own course surveys"
+on public.learner_course_surveys
+for update
+using ((select auth.uid()) = learner_id and public.is_approved_learner(learner_id))
+with check ((select auth.uid()) = learner_id and public.is_approved_learner(learner_id));
+
 create or replace function public.validate_course_admin_passcode(admin_passcode text)
 returns void
 language plpgsql
@@ -394,7 +446,9 @@ begin
 end;
 $$;
 
-create or replace function public.get_admin_learner_overview(admin_passcode text)
+drop function if exists public.get_admin_learner_overview(text);
+
+create function public.get_admin_learner_overview(admin_passcode text)
 returns table (
   learner_id uuid,
   email text,
@@ -418,6 +472,8 @@ returns table (
   pretest_percent integer,
   pretest_submitted_at timestamptz,
   pretest_answers jsonb,
+  pre_course_survey_results jsonb,
+  post_course_survey_results jsonb,
   assessment_results jsonb,
   total_time_spent_seconds integer,
   module_progress jsonb,
@@ -454,6 +510,8 @@ begin
     pretest_row.percent as pretest_percent,
     pretest_row.submitted_at as pretest_submitted_at,
     coalesce(pretest_row.answers, '{}'::jsonb) as pretest_answers,
+    coalesce(pre_course_survey_row.survey_result, '{}'::jsonb) as pre_course_survey_results,
+    coalesce(post_course_survey_row.survey_result, '{}'::jsonb) as post_course_survey_results,
     coalesce(snapshot.payload->'courseAssessmentResults', '{}'::jsonb) as assessment_results,
     coalesce(module_rows.total_time_spent_seconds, 0)::integer as total_time_spent_seconds,
     coalesce(module_rows.module_progress, '[]'::jsonb) as module_progress,
@@ -502,6 +560,32 @@ begin
     order by pretest_attempt.submitted_at desc
     limit 1
   ) as pretest_row on true
+  left join lateral (
+    select jsonb_build_object(
+      'surveyId', course_survey.survey_id,
+      'version', course_survey.survey_version,
+      'responses', course_survey.responses,
+      'submittedAt', course_survey.submitted_at,
+      'updatedAt', course_survey.updated_at
+    ) as survey_result
+    from public.learner_course_surveys as course_survey
+    where course_survey.learner_id = profile.id
+      and course_survey.survey_id = 'pre-course-2026'
+    limit 1
+  ) as pre_course_survey_row on true
+  left join lateral (
+    select jsonb_build_object(
+      'surveyId', course_survey.survey_id,
+      'version', course_survey.survey_version,
+      'responses', course_survey.responses,
+      'submittedAt', course_survey.submitted_at,
+      'updatedAt', course_survey.updated_at
+    ) as survey_result
+    from public.learner_course_surveys as course_survey
+    where course_survey.learner_id = profile.id
+      and course_survey.survey_id = 'post-course-2026'
+    limit 1
+  ) as post_course_survey_row on true
   order by
     case profile.approval_status when 'pending' then 0 else 1 end,
     profile.created_at desc;
