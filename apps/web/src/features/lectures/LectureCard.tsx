@@ -36,7 +36,7 @@ export function LectureCard({
   readyLabel?: string;
 }) {
   const [posterBroken, setPosterBroken] = useState(false);
-  const shouldExpandPlayerByDefault = defaultPlayerExpanded && !watchState?.completed && Boolean(lecture.video || lecture.embedUrl);
+  const shouldExpandPlayerByDefault = defaultPlayerExpanded && Boolean(lecture.video || lecture.embedUrl);
   const [detailsExpanded, setDetailsExpanded] = useState(
     () => shouldExpandPlayerByDefault || (defaultExpanded && !watchState?.lastOpenedAt && !watchState?.completed),
   );
