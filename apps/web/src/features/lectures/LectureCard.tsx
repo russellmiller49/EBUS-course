@@ -22,6 +22,7 @@ export function LectureCard({
   locked,
   lockedReason,
   defaultExpanded = false,
+  defaultPlayerExpanded = false,
   onUpdateWatchState,
   readyLabel = 'Quiz ready',
 }: {
@@ -30,14 +31,16 @@ export function LectureCard({
   locked?: boolean;
   lockedReason?: string | null;
   defaultExpanded?: boolean;
+  defaultPlayerExpanded?: boolean;
   onUpdateWatchState: (lectureId: string, update: LectureStateUpdate) => void;
   readyLabel?: string;
 }) {
   const [posterBroken, setPosterBroken] = useState(false);
+  const shouldExpandPlayerByDefault = defaultPlayerExpanded && !watchState?.completed && Boolean(lecture.video || lecture.embedUrl);
   const [detailsExpanded, setDetailsExpanded] = useState(
-    () => defaultExpanded && !watchState?.lastOpenedAt && !watchState?.completed,
+    () => shouldExpandPlayerByDefault || (defaultExpanded && !watchState?.lastOpenedAt && !watchState?.completed),
   );
-  const [videoExpanded, setVideoExpanded] = useState(false);
+  const [videoExpanded, setVideoExpanded] = useState(() => shouldExpandPlayerByDefault);
   const [lastReportedSecond, setLastReportedSecond] = useState(() => Math.floor(watchState?.watchedSeconds ?? 0));
   const lastMediaTimeRef = useRef<number | null>(null);
   const watchedSecondsRef = useRef(watchState?.watchedSeconds ?? 0);

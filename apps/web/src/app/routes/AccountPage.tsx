@@ -12,8 +12,8 @@ function profileToInput(profile: LearnerProfile | null): LearnerProfileInput {
     institution: profile?.institution ?? '',
     institutionalEmail: profile?.institutionalEmail ?? '',
     fellowshipYear: profile?.fellowshipYear ?? 'first',
-    flexibleBronchoscopyCount: profile?.flexibleBronchoscopyCount ?? 0,
-    ebusCount: profile?.ebusCount ?? 0,
+    flexibleBronchoscopyCount: profile?.flexibleBronchoscopyCount ?? null,
+    ebusCount: profile?.ebusCount ?? null,
     ebusConfidence: profile?.ebusConfidence ?? 'moderate',
   };
 }

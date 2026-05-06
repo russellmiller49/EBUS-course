@@ -6,15 +6,10 @@ export const emptyProfileInput: LearnerProfileInput = {
   institution: '',
   institutionalEmail: '',
   fellowshipYear: 'first',
-  flexibleBronchoscopyCount: 0,
-  ebusCount: 0,
+  flexibleBronchoscopyCount: null,
+  ebusCount: null,
   ebusConfidence: 'moderate',
 };
-
-export function parseProfileCount(value: string) {
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
-}
 
 export function validateProfileInput(profile: LearnerProfileInput) {
   if (!profile.fullName.trim()) {
@@ -106,28 +101,6 @@ export function LearnerProfileFields({
           <option value="moderate">Moderate</option>
           <option value="low">Low</option>
         </select>
-      </label>
-      <label className="field">
-        <span>Flexible bronchoscopies performed</span>
-        <input
-          inputMode="numeric"
-          min="0"
-          onChange={(event) => onChange({ ...values, flexibleBronchoscopyCount: parseProfileCount(event.target.value) })}
-          required
-          type="number"
-          value={values.flexibleBronchoscopyCount}
-        />
-      </label>
-      <label className="field">
-        <span>EBUS performed</span>
-        <input
-          inputMode="numeric"
-          min="0"
-          onChange={(event) => onChange({ ...values, ebusCount: parseProfileCount(event.target.value) })}
-          required
-          type="number"
-          value={values.ebusCount}
-        />
       </label>
     </div>
   );

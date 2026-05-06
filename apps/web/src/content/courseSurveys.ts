@@ -363,6 +363,110 @@ export function getRankingOtherTextResponseKey(item: CourseSurveyRankingItem) {
   return `${item.id}.other`;
 }
 
+function readRankValue(value: string | undefined, maxRank: number) {
+  const parsed = Number.parseInt(value ?? '', 10);
+
+  return Number.isInteger(parsed) && parsed >= 1 && parsed <= maxRank ? parsed : null;
+}
+
+export function assignUniqueRankingResponse(
+  item: CourseSurveyRankingItem,
+  responses: CourseSurveyResponses,
+  optionId: string,
+  rankValue: string,
+) {
+  const optionIds = item.options.map((option) => option.id);
+  const maxRank = optionIds.length;
+  const targetRank = readRankValue(rankValue, maxRank);
+  const targetKey = getRankingResponseKey(item, optionId);
+  const nextResponses: CourseSurveyResponses = { ...responses };
+
+  if (!optionIds.includes(optionId)) {
+    return nextResponses;
+  }
+
+  if (targetRank === null) {
+    delete nextResponses[targetKey];
+    return nextResponses;
+  }
+
+  const targetIndex = targetRank - 1;
+  const previousRank = readRankValue(responses[targetKey], maxRank);
+  const previousIndex = previousRank === null ? null : previousRank - 1;
+  const slots: Array<string | null> = Array.from({ length: maxRank }, () => null);
+  const overflowOptionIds: string[] = [];
+
+  for (const option of item.options) {
+    if (option.id === optionId) {
+      continue;
+    }
+
+    const rank = readRankValue(responses[getRankingResponseKey(item, option.id)], maxRank);
+
+    if (rank === null) {
+      continue;
+    }
+
+    const index = rank - 1;
+
+    if (slots[index]) {
+      overflowOptionIds.push(option.id);
+    } else {
+      slots[index] = option.id;
+    }
+  }
+
+  for (const overflowOptionId of overflowOptionIds) {
+    const openIndex = slots.findIndex((slot) => slot === null);
+
+    if (openIndex >= 0) {
+      slots[openIndex] = overflowOptionId;
+    }
+  }
+
+  if (slots[targetIndex] && previousIndex !== null && previousIndex > targetIndex) {
+    for (let index = previousIndex; index > targetIndex; index -= 1) {
+      slots[index] = slots[index - 1];
+    }
+  } else if (slots[targetIndex] && previousIndex !== null && previousIndex < targetIndex) {
+    for (let index = previousIndex; index < targetIndex; index += 1) {
+      slots[index] = slots[index + 1];
+    }
+  } else if (slots[targetIndex]) {
+    const openIndexAfterTarget = slots.findIndex((slot, index) => index > targetIndex && slot === null);
+
+    if (openIndexAfterTarget >= 0) {
+      for (let index = openIndexAfterTarget; index > targetIndex; index -= 1) {
+        slots[index] = slots[index - 1];
+      }
+    } else {
+      for (let index = targetIndex - 1; index >= 0; index -= 1) {
+        if (slots[index] === null) {
+          for (let shiftIndex = index; shiftIndex < targetIndex; shiftIndex += 1) {
+            slots[shiftIndex] = slots[shiftIndex + 1];
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  slots[targetIndex] = optionId;
+
+  for (const option of item.options) {
+    const responseKey = getRankingResponseKey(item, option.id);
+    const rankIndex = slots.indexOf(option.id);
+
+    if (rankIndex >= 0) {
+      nextResponses[responseKey] = String(rankIndex + 1);
+    } else {
+      delete nextResponses[responseKey];
+    }
+  }
+
+  return nextResponses;
+}
+
 export function getScaleOptions(item: CourseSurveyScaleItem) {
   return Array.from({ length: item.max - item.min + 1 }, (_, index) => String(item.min + index));
 }

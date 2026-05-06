@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react';
 
 import {
+  assignUniqueRankingResponse,
   type CourseSurveyItem,
   type CourseSurveyRankingItem,
   type CourseSurveyResponses,
@@ -168,10 +169,7 @@ function CourseSurveyRankingField({
                 aria-label={`Rank for ${option.label}`}
                 onChange={(event) =>
                   onResponsesChange(
-                    withoutEmptyValues({
-                      ...responses,
-                      [responseKey]: event.target.value,
-                    }),
+                    withoutEmptyValues(assignUniqueRankingResponse(item, responses, option.id, event.target.value)),
                   )
                 }
                 required

@@ -8,7 +8,8 @@ import { useLearnerProgress } from '@/lib/progress';
 export function WelcomePage() {
   const { isSupabaseEnabled, user } = useAuth();
   const { setLectureState, state } = useLearnerProgress();
-  const welcomeComplete = Boolean(state.lectureWatchStatus[welcomeLecture.id]?.completed);
+  const welcomeWatchState = state.lectureWatchStatus[welcomeLecture.id];
+  const welcomeComplete = Boolean(welcomeWatchState?.completed);
 
   return (
     <div className="page-stack">
@@ -24,6 +25,32 @@ export function WelcomePage() {
           <span className="tag">{isSupabaseEnabled && !user ? 'Account next' : 'Survey next'}</span>
         </div>
         <div className="button-row button-row--wrap">
+          {welcomeLecture.resourceUrl ? (
+            <a
+              className="button"
+              href={welcomeLecture.resourceUrl}
+              onClick={() => setLectureState(welcomeLecture.id, { opened: true, quizReady: true })}
+              rel="noreferrer"
+              target="_blank"
+            >
+              {welcomeLecture.resourceLabel ?? 'Open welcome resource'}
+            </a>
+          ) : null}
+          <button
+            className="button button--ghost"
+            disabled={welcomeComplete}
+            onClick={() =>
+              setLectureState(welcomeLecture.id, {
+                completed: true,
+                opened: true,
+                quizReady: true,
+                watchedSeconds: Math.max(welcomeWatchState?.watchedSeconds ?? 0, 60),
+              })
+            }
+            type="button"
+          >
+            {welcomeComplete ? 'Welcome reviewed' : 'Mark welcome reviewed'}
+          </button>
           <Link className="button" to="/pretest">
             {welcomeComplete ? 'Continue to pre-course survey and test' : 'Open pre-course flow'}
           </Link>
@@ -32,10 +59,11 @@ export function WelcomePage() {
 
       <LectureCard
         defaultExpanded
+        defaultPlayerExpanded
         lecture={welcomeLecture}
         onUpdateWatchState={(lectureId, update) => setLectureState(lectureId, update)}
         readyLabel="Opened"
-        watchState={state.lectureWatchStatus[welcomeLecture.id]}
+        watchState={welcomeWatchState}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  assignUniqueRankingResponse,
   getChoiceFreeTextResponseKey,
   getCourseSurveyResponseRows,
   getRankingResponseKey,
@@ -38,6 +39,50 @@ describe('course survey content helpers', () => {
 
     expect(isCourseSurveyComplete([rankItem], duplicateRanks)).toBe(false);
     expect(isCourseSurveyComplete([rankItem], uniqueRanks)).toBe(true);
+  });
+
+  it('shifts ranking responses so each rank stays unique', () => {
+    const rankItem = preCourseSurveyDefinition.items.find((item) => item.id === 'primary-course-goals');
+
+    if (!rankItem || rankItem.type !== 'ranking') {
+      throw new Error('Expected primary course goals ranking item.');
+    }
+
+    const responses = Object.fromEntries(
+      rankItem.options.map((option, index) => [getRankingResponseKey(rankItem, option.id), String(index + 1)]),
+    );
+    const nextResponses = assignUniqueRankingResponse(rankItem, responses, 'advanced-tools', '1');
+
+    expect(nextResponses).toMatchObject({
+      [getRankingResponseKey(rankItem, 'advanced-tools')]: '1',
+      [getRankingResponseKey(rankItem, 'exam-scope-handling')]: '2',
+      [getRankingResponseKey(rankItem, 'lymph-node-identification')]: '3',
+      [getRankingResponseKey(rankItem, 'basic-sampling-technique')]: '4',
+      [getRankingResponseKey(rankItem, 'baseline-board-prep')]: '5',
+    });
+    expect(isCourseSurveyComplete([rankItem], nextResponses)).toBe(true);
+  });
+
+  it('preserves blank ranking rows when only a partial ranking has to shift', () => {
+    const rankItem = preCourseSurveyDefinition.items.find((item) => item.id === 'primary-course-goals');
+
+    if (!rankItem || rankItem.type !== 'ranking') {
+      throw new Error('Expected primary course goals ranking item.');
+    }
+
+    const nextResponses = assignUniqueRankingResponse(
+      rankItem,
+      {
+        [getRankingResponseKey(rankItem, 'exam-scope-handling')]: '1',
+      },
+      'lymph-node-identification',
+      '1',
+    );
+
+    expect(nextResponses).toEqual({
+      [getRankingResponseKey(rankItem, 'exam-scope-handling')]: '2',
+      [getRankingResponseKey(rankItem, 'lymph-node-identification')]: '1',
+    });
   });
 
   it('maps stored response ids back to dashboard-friendly labels', () => {

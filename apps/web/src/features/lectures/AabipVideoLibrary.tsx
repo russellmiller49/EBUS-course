@@ -45,22 +45,6 @@ export function AabipVideoLibrary({ panelId, labelledBy }: AabipVideoLibraryProp
             <p>AABIP hosts this supplemental playlist on YouTube.</p>
           </div>
 
-          <div className="aabip-video-library__frame">
-            <a className="aabip-video-library__preview" href={selectedVideo.watchUrl} rel="noreferrer" target="_blank">
-              <img
-                alt=""
-                aria-hidden="true"
-                className="aabip-video-library__thumbnail"
-                loading="lazy"
-                src={selectedVideo.thumbnailUrl}
-              />
-              <span className="aabip-video-library__preview-overlay">
-                <strong>Open selected video</strong>
-                <span>{selectedVideo.title}</span>
-              </span>
-            </a>
-          </div>
-
           <div className="button-row button-row--wrap">
             <a className="button" href={selectedVideo.watchUrl} rel="noreferrer" target="_blank">
               Open on YouTube

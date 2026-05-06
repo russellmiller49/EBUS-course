@@ -26,8 +26,8 @@ export interface LearnerProfileInput {
   institution: string;
   institutionalEmail: string;
   fellowshipYear: FellowshipYear;
-  flexibleBronchoscopyCount: number;
-  ebusCount: number;
+  flexibleBronchoscopyCount: number | null;
+  ebusCount: number | null;
   ebusConfidence: EbusConfidence;
 }
 
@@ -117,16 +117,33 @@ function mapProfile(raw: Record<string, unknown> | null): LearnerProfile | null 
 }
 
 function toProfileRow(profile: LearnerProfileInput) {
-  return {
+  const row: {
+    full_name: string;
+    degree: LearnerDegree;
+    institution: string;
+    institutional_email: string;
+    fellowship_year: FellowshipYear;
+    ebus_confidence: EbusConfidence;
+    flexible_bronchoscopy_count?: number;
+    ebus_count?: number;
+  } = {
     full_name: profile.fullName.trim(),
     degree: profile.degree,
     institution: profile.institution.trim(),
     institutional_email: profile.institutionalEmail.trim().toLowerCase(),
     fellowship_year: profile.fellowshipYear,
-    flexible_bronchoscopy_count: profile.flexibleBronchoscopyCount,
-    ebus_count: profile.ebusCount,
     ebus_confidence: profile.ebusConfidence,
   };
+
+  if (profile.flexibleBronchoscopyCount !== null) {
+    row.flexible_bronchoscopy_count = profile.flexibleBronchoscopyCount;
+  }
+
+  if (profile.ebusCount !== null) {
+    row.ebus_count = profile.ebusCount;
+  }
+
+  return row;
 }
 
 async function upsertLearnerProfile(
@@ -369,7 +386,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const normalizedProfile = toProfileRow(nextProfile);
     const normalizedLoginEmail = loginEmail.trim().toLowerCase();
-    const institutionalEmail = normalizedProfile.institutional_email;
 
     if (!normalizedLoginEmail) {
       throw new Error('Enter your login email.');
