@@ -55,7 +55,7 @@ export function LectureCard({
   const quizReady = Boolean(
     watchState?.completed || watchState?.quizUnlockedAt || watchState?.lastOpenedAt || watchedSeconds > 0,
   );
-  const statusLabel = watchState?.completed ? 'Fully viewed' : isLocked ? 'Locked' : quizReady ? readyLabel : 'Ready';
+  const statusLabel = isLocked ? 'Locked' : watchState?.completed ? 'Fully viewed' : quizReady ? readyLabel : 'Ready';
 
   useEffect(() => {
     if (defaultExpanded && !watchState?.lastOpenedAt && !watchState?.completed && !isLocked) {
@@ -264,9 +264,9 @@ export function LectureCard({
         </div>
       ) : null}
 
-      {watchState?.completedAt ? (
+      {!isLocked && watchState?.completedAt ? (
         <p className="lecture-card__status">Fully viewed {new Date(watchState.completedAt).toLocaleString()}</p>
-      ) : quizReady ? (
+      ) : !isLocked && quizReady ? (
         <p className="lecture-card__status">Viewed {viewedPercent}% ({watchedSeconds} seconds logged)</p>
       ) : null}
     </article>

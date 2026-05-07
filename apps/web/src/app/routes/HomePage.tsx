@@ -6,6 +6,7 @@ import { courseInfo } from '@/content/course';
 import { homeModuleCards } from '@/content/modules';
 import { canAccessRoute, getLockedRoutePath, getRouteLockReason, isPretestComplete } from '@/lib/access';
 import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
+import { useAuth } from '@/lib/auth';
 import { getNextCourseStep, isCoursePretestUnlocked } from '@/lib/courseWorkflow';
 import { useLearnerProgress } from '@/lib/progress';
 
@@ -19,10 +20,12 @@ function ProgressMeter({ percent }: { percent: number }) {
 
 export function HomePage() {
   const { state } = useLearnerProgress();
+  const { isSupabaseEnabled, user } = useAuth();
   const adminSessionActive = useCourseAdminSessionActive();
   const vendorSessionActive = useCourseVendorSessionActive();
   const previewSessionActive = adminSessionActive || vendorSessionActive;
-  const accessOptions = { admin: adminSessionActive, preview: vendorSessionActive };
+  const accountComplete = !isSupabaseEnabled || Boolean(user);
+  const accessOptions = { accountComplete, admin: adminSessionActive, preview: vendorSessionActive };
   const { learningSteps, resumeModule } = buildHomeProgressModel(state);
   const pretestReady = previewSessionActive || isPretestComplete(state);
   const pretestUnlocked = previewSessionActive || isCoursePretestUnlocked(state, accessOptions);
@@ -143,8 +146,10 @@ export function HomePage() {
               <div className="eyebrow">Course unlock</div>
               <h2>
                 {pretestUnlocked
-                  ? 'Finish the account, survey, and baseline pre-test flow before Lecture 1 opens.'
-                  : 'Start with the welcome video to unlock the baseline pre-test.'}
+                  ? 'Finish the survey and baseline pre-test flow before Lecture 1 opens.'
+                  : accountComplete
+                    ? 'Start with the welcome video to unlock the baseline pre-test.'
+                    : 'Sign up or log in, then watch the welcome video to unlock the baseline pre-test.'}
               </h2>
             </div>
           </div>

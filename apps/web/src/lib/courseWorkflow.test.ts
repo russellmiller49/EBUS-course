@@ -12,17 +12,23 @@ import {
 import { createInitialLearnerProgress, learnerProgressReducer } from '@/lib/progress';
 
 describe('courseWorkflow', () => {
-  it('starts with welcome unlocked and the pre-course test locked', () => {
+  it('starts with account access before welcome when account is incomplete', () => {
     const state = createInitialLearnerProgress();
-    const steps = getCourseStepModels(state);
+    const steps = getCourseStepModels(state, { accountComplete: false });
 
-    expect(steps.find((step) => step.id === 'lecture-01')?.unlocked).toBe(true);
+    expect(steps.find((step) => step.id === 'account')?.unlocked).toBe(true);
+    expect(steps.find((step) => step.id === 'lecture-01')?.unlocked).toBe(false);
     expect(steps.find((step) => step.id === 'pretest')?.unlocked).toBe(false);
     expect(isCoursePretestUnlocked(state)).toBe(false);
-    expect(getNextCourseStep(state)?.id).toBe('lecture-01');
+    expect(getNextCourseStep(state, { accountComplete: false })?.id).toBe('account');
+
+    expect(getCourseStepModels(state, { accountComplete: true }).find((step) => step.id === 'lecture-01')?.unlocked).toBe(
+      true,
+    );
+    expect(getNextCourseStep(state, { accountComplete: true })?.id).toBe('lecture-01');
   });
 
-  it('unlocks the pre-course survey after welcome and Lecture 1 after survey and pre-test submission', () => {
+  it('unlocks the pre-course survey after account and welcome, then Lecture 1 after survey and pre-test submission', () => {
     const afterIntro = learnerProgressReducer(createInitialLearnerProgress(), {
       type: 'setLectureState',
       lectureId: 'lecture-01',
@@ -31,8 +37,13 @@ describe('courseWorkflow', () => {
     });
 
     expect(isCoursePretestUnlocked(afterIntro)).toBe(true);
-    expect(getCourseStepModels(afterIntro).find((step) => step.id === 'pre-course-survey')?.unlocked).toBe(true);
-    expect(getCourseStepModels(afterIntro).find((step) => step.id === 'pretest')?.unlocked).toBe(false);
+    expect(
+      getCourseStepModels(afterIntro, { accountComplete: true }).find((step) => step.id === 'pre-course-survey')
+        ?.unlocked,
+    ).toBe(true);
+    expect(getCourseStepModels(afterIntro, { accountComplete: true }).find((step) => step.id === 'pretest')?.unlocked).toBe(
+      false,
+    );
 
     const afterSurvey = learnerProgressReducer(afterIntro, {
       type: 'submitPreCourseSurvey',
@@ -46,7 +57,9 @@ describe('courseWorkflow', () => {
       totalQuestions: 25,
     });
 
-    expect(getCourseStepModels(afterPretest).find((step) => step.id === 'lecture-02')?.unlocked).toBe(true);
+    expect(
+      getCourseStepModels(afterPretest, { accountComplete: true }).find((step) => step.id === 'lecture-02')?.unlocked,
+    ).toBe(true);
   });
 
   it('requires a post-lecture quiz before unlocking the next lecture', () => {

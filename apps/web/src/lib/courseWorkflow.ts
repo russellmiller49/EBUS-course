@@ -86,17 +86,17 @@ const lectureWorkflowSteps = lectureManifest.flatMap((lecture) => {
 
 export const courseWorkflowSteps: CourseWorkflowStepDefinition[] = [
   {
+    id: 'account',
+    kind: 'account',
+    title: 'Sign up or log in',
+    path: '/welcome',
+  },
+  {
     id: welcomeLecture.id,
     kind: 'welcome',
     lectureId: welcomeLecture.id,
     title: welcomeLecture.title,
-    path: '/',
-  },
-  {
-    id: 'account',
-    kind: 'account',
-    title: 'Create account / log in',
-    path: '/pretest',
+    path: '/welcome',
   },
   {
     id: 'pre-course-survey',

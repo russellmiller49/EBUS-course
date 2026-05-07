@@ -298,7 +298,15 @@ export function App() {
     return <Navigate replace to={`/auth?next=${encodeURIComponent(next)}`} />;
   }
 
-  if (isSupabaseEnabled && user && profile?.approvalStatus === 'pending' && !previewSessionActive && !isAuthPath && !isAdminPath) {
+  if (
+    isSupabaseEnabled &&
+    user &&
+    profile?.approvalStatus === 'pending' &&
+    !previewSessionActive &&
+    !isAuthPath &&
+    !isAdminPath &&
+    !isPublicOnboardingPath
+  ) {
     const next = `${location.pathname}${location.search}`;
 
     return <Navigate replace to={`/auth?next=${encodeURIComponent(next)}`} />;
