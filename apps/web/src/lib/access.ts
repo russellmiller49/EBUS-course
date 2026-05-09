@@ -1,4 +1,5 @@
 import type { AppRouteId } from '@/content/types';
+import { formatCourseEndAvailability, isCourseEndUnlocked } from '@/lib/courseConfig';
 import {
   getCourseStepModels,
   getLockedReason,
@@ -168,7 +169,11 @@ export function canAccessRoute(
   const steps = getCourseStepModels(state, options);
 
   if (routeId === 'post-course') {
-    return true;
+    if (!isCourseEndUnlocked(options.nowMs)) {
+      return false;
+    }
+
+    return Boolean(steps.find((step) => step.kind === 'post-test')?.unlocked);
   }
 
   const prerequisiteId = getRoutePrerequisiteStepId(routeId);
@@ -188,6 +193,10 @@ export function getLockedRoutePath(
 ) {
   if (canAccessRoute(routeId, state, options)) {
     return path;
+  }
+
+  if (routeId === 'post-course') {
+    return getRouteFallbackPath(routeId);
   }
 
   if (routeId !== 'pretest' && canAccessRoute('pretest', state, options) && !isPretestComplete(state)) {
@@ -211,6 +220,10 @@ export function getRouteLockReason(
   }
 
   if (routeId === 'post-course') {
+    if (!isCourseEndUnlocked(options.nowMs)) {
+      return formatCourseEndAvailability();
+    }
+
     return getCourseStepModels(state, options).find((step) => step.id === 'post-test')?.lockedReason ?? null;
   }
 

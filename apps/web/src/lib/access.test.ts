@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { courseAssessments } from '@/content/courseAssessments';
+import { lectureManifest } from '@/content/lectures';
+import { welcomeLecture } from '@/content/welcome';
 import {
   canAccessRoute,
   clearCourseAdminPasscode,
@@ -26,6 +29,38 @@ function createAdminStorage(passcode: string) {
       storedPasscode = value;
     },
   };
+}
+
+function createPostCourseReadyState() {
+  const state = createInitialLearnerProgress();
+
+  state.preCourseSurvey.submittedAt = '2026-04-06T09:30:00.000Z';
+  state.pretest.submittedAt = '2026-04-06T10:00:00.000Z';
+
+  for (const lecture of [welcomeLecture, ...lectureManifest]) {
+    state.lectureWatchStatus[lecture.id] = {
+      completed: true,
+      completedAt: '2026-04-06T09:00:00.000Z',
+      durationSeconds: 60,
+      lastOpenedAt: '2026-04-06T09:00:00.000Z',
+      lastPositionSeconds: 60,
+      quizUnlockedAt: '2026-04-06T09:00:00.000Z',
+      watchedSeconds: 60,
+    };
+  }
+
+  for (const assessment of courseAssessments.filter((entry) => entry.kind !== 'post-test')) {
+    state.courseAssessmentResults[assessment.id] = {
+      completedAt: '2026-04-06T11:00:00.000Z',
+      correctCount: assessment.questions.length,
+      totalCount: assessment.questions.length,
+      percent: 100,
+      attemptCount: 1,
+      answers: [],
+    };
+  }
+
+  return state;
 }
 
 describe('course access helpers', () => {
@@ -97,6 +132,9 @@ describe('course access helpers', () => {
     expect(isCourseAdminSessionActive(createAdminStorage('EBUS_2026'))).toBe(true);
     expect(isCourseAdminSessionActive(createAdminStorage('wrong'))).toBe(false);
     expect(canAccessRoute('pretest', state, { admin: true })).toBe(true);
+    expect(canAccessRoute('post-course', state, { admin: true, nowMs: Date.parse('2026-05-31T14:59:59-07:00') })).toBe(
+      true,
+    );
     expect(canAccessRoute('simulator', state, { admin: true })).toBe(true);
     expect(getLockedRoutePath('simulator', '/simulator', state, { admin: true })).toBe('/simulator');
     expect(getRouteLockReason('simulator', state, { admin: true })).toBeNull();
@@ -120,8 +158,35 @@ describe('course access helpers', () => {
     expect(isCourseVendorSessionActive(createAdminStorage('SoCal_EBUS_Sponsor'))).toBe(true);
     expect(isCourseAdminSessionActive(createAdminStorage('SoCal_EBUS_Sponsor'))).toBe(false);
     expect(canAccessRoute('pretest', state, { preview: true })).toBe(true);
+    expect(canAccessRoute('post-course', state, { preview: true, nowMs: Date.parse('2026-05-31T14:59:59-07:00') })).toBe(
+      true,
+    );
     expect(canAccessRoute('simulator', state, { preview: true })).toBe(true);
     expect(getLockedRoutePath('simulator', '/simulator', state, { preview: true })).toBe('/simulator');
     expect(getRouteLockReason('simulator', state, { preview: true })).toBeNull();
+  });
+
+  it('locks the post-course route until the May 31 Pacific unlock time', () => {
+    const state = createPostCourseReadyState();
+    const justBeforeUnlock = Date.parse('2026-05-31T14:59:59-07:00');
+    const atUnlock = Date.parse('2026-05-31T15:00:00-07:00');
+
+    expect(canAccessRoute('post-course', state, { nowMs: justBeforeUnlock })).toBe(false);
+    expect(getLockedRoutePath('post-course', '/post-course', state, { nowMs: justBeforeUnlock })).toBe('/lectures');
+    expect(getRouteLockReason('post-course', state, { nowMs: justBeforeUnlock })).toBe(
+      'Available after the live course on May 31, 2026 at 3:00 PM PT',
+    );
+
+    expect(canAccessRoute('post-course', state, { nowMs: atUnlock })).toBe(true);
+  });
+
+  it('keeps post-course locked after the date until the learner reaches the final post-test', () => {
+    const state = createPostCourseReadyState();
+    delete state.courseAssessmentResults['post-lecture-02'];
+
+    expect(canAccessRoute('post-course', state, { nowMs: Date.parse('2026-05-31T15:00:00-07:00') })).toBe(false);
+    expect(getRouteLockReason('post-course', state, { nowMs: Date.parse('2026-05-31T15:00:00-07:00') })).toBe(
+      'Pass the "Introduction to US, physics, knobology" quiz to unlock this step.',
+    );
   });
 });
