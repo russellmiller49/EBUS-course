@@ -115,7 +115,12 @@
           "difficulty": "intermediate",
           "tags": [
             "Post-lecture 1 quiz: Physics and knobology"
-          ]
+          ],
+          "imageAsset": {
+            "src": "/media/assessments/post-lecture-02/question-figure-3.png",
+            "alt": "EBUS ultrasound image with color Doppler flow over a hilar target.",
+            "caption": "Figure: Color Doppler view demonstrating vascular flow adjacent to the target."
+          }
         },
         {
           "id": "post-lecture-02-q04",
@@ -339,42 +344,6 @@
             "a"
           ],
           "explanation": "CP-EBUS scopes are less flexible than standard diagnostic flexible bronchoscopes, and the optics are forward-oblique rather than straight ahead. Modern EBUS scopes also have a slightly larger outer diameter than conventional bronchoscopes. These design features combine to make entry into the upper lobes more challenging. Novices often realize this difference immediately when transitioning from routine flexible bronchoscopy to CP-EBUS, and the forward-oblique endoscopic view often is the most difficult to cognitively accommodate. Option B is incorrect because CP-EBUS scopes have working channels that permit suctioning of simple secretions and introduction of tools. Option C is incorrect because radial scanning describes radial-probe EBUS and does not explain the handling characteristics of a convex-probe EBUS scope. Option D is incorrect because CP-EBUS scopes can angulate both upward and downward, although flexibility remains more limited than standard bronchoscopes.",
-          "difficulty": "intermediate",
-          "tags": [
-            "Post-lecture 2 quiz: Basic scope, tools, and technique"
-          ]
-        },
-        {
-          "id": "post-lecture-03-q04",
-          "moduleId": "station-explorer",
-          "prompt": "During an EBUS exam, a suspicious lymph node is identified, as shown below. What will be the needle’s trajectory during puncture?",
-          "type": "single-best-answer",
-          "options": [
-            {
-              "id": "a",
-              "label": "From the left lower corner, moving obliquely up and right.",
-              "rationale": ""
-            },
-            {
-              "id": "b",
-              "label": "From the center top of the image, moving straight down.",
-              "rationale": ""
-            },
-            {
-              "id": "c",
-              "label": "From the left upper corner, moving obliquely down and right.",
-              "rationale": ""
-            },
-            {
-              "id": "d",
-              "label": "From the right upper corner, moving obliquely down and left.",
-              "rationale": ""
-            }
-          ],
-          "correctOptionIds": [
-            "d"
-          ],
-          "explanation": "On an EBUS image, the site of needle origin is indicated by the orientation marker (usually a solid small blue-teal oval). By standard convention, the marker should align with the cephalad portion of the scope and thus is often placed in the right upper corner. While this can be adjusted per operator preference to be located in any corner, the marker will always indicate the position from which the needle will enter the EBUS image. In the stem image, the orientation marker is in the standard position, the right upper corner. Therefore, the needle will appear from this position and move obliquely down and left (option D correct). To anticipate precise nodal sampling, EBUS bronchoscopists will therefore often place the intended sampling target at a slightly left-sided position on the screen to ensure a ‘center strike’ needle puncture. Options A and C are incorrect because they violate the convention described above. Option B is incorrect because the needle never appears in the center and proceeds straight down, regardless of image orientation preferences.",
           "difficulty": "intermediate",
           "tags": [
             "Post-lecture 2 quiz: Basic scope, tools, and technique"

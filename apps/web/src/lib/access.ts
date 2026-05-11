@@ -108,7 +108,9 @@ export function clearCourseVendorPasscode(storage: CourseAccessStorage | null = 
 }
 
 export function routeRequiresPretest(routeId: AppRouteId | null) {
-  return Boolean(routeId && !['home', 'welcome', 'admin', 'sponsors', 'lectures', 'pretest', 'post-course'].includes(routeId));
+  return Boolean(
+    routeId && !['home', 'progress', 'welcome', 'admin', 'sponsors', 'lectures', 'pretest', 'post-course'].includes(routeId),
+  );
 }
 
 function getRoutePrerequisiteStepId(routeId: AppRouteId): string | null {
@@ -154,6 +156,7 @@ export function canAccessRoute(
 
   if (
     routeId === 'home' ||
+    routeId === 'progress' ||
     routeId === 'welcome' ||
     routeId === 'admin' ||
     routeId === 'sponsors' ||

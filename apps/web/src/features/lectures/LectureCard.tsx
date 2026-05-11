@@ -21,6 +21,7 @@ export function LectureCard({
   watchState,
   locked,
   lockedReason,
+  pauseToken,
   defaultExpanded = false,
   defaultPlayerExpanded = false,
   onUpdateWatchState,
@@ -30,6 +31,7 @@ export function LectureCard({
   watchState?: LectureWatchState;
   locked?: boolean;
   lockedReason?: string | null;
+  pauseToken?: number;
   defaultExpanded?: boolean;
   defaultPlayerExpanded?: boolean;
   onUpdateWatchState: (lectureId: string, update: LectureStateUpdate) => void;
@@ -43,6 +45,8 @@ export function LectureCard({
   const [videoExpanded, setVideoExpanded] = useState(() => shouldExpandPlayerByDefault);
   const [lastReportedSecond, setLastReportedSecond] = useState(() => Math.floor(watchState?.watchedSeconds ?? 0));
   const lastMediaTimeRef = useRef<number | null>(null);
+  const previousPauseTokenRef = useRef(pauseToken);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const watchedSecondsRef = useRef(watchState?.watchedSeconds ?? 0);
   const isLocked = locked ?? lecture.status === 'locked';
   const hasPlayableVideo = Boolean(lecture.video || lecture.embedUrl);
@@ -67,6 +71,33 @@ export function LectureCard({
     watchedSecondsRef.current = Math.max(watchedSecondsRef.current, watchState?.watchedSeconds ?? 0);
   }, [watchState?.watchedSeconds]);
 
+  useEffect(() => {
+    return () => {
+      stopLocalVideoPlayback();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (previousPauseTokenRef.current === pauseToken) {
+      return;
+    }
+
+    previousPauseTokenRef.current = pauseToken;
+    stopLocalVideoPlayback();
+    setVideoExpanded(false);
+  }, [pauseToken]);
+
+  function stopLocalVideoPlayback() {
+    const video = videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    video.pause();
+    lastMediaTimeRef.current = null;
+  }
+
   function handleTogglePlayer() {
     const nextExpanded = !videoExpanded;
     setDetailsExpanded(true);
@@ -75,7 +106,10 @@ export function LectureCard({
     if (nextExpanded) {
       onUpdateWatchState(lecture.id, { opened: true, quizReady: true });
     } else if (watchState?.lastOpenedAt || watchState?.completed) {
+      stopLocalVideoPlayback();
       setDetailsExpanded(false);
+    } else {
+      stopLocalVideoPlayback();
     }
   }
 
@@ -173,6 +207,7 @@ export function LectureCard({
           onClick={() => {
             setDetailsExpanded((current) => !current);
             if (detailsExpanded) {
+              stopLocalVideoPlayback();
               setVideoExpanded(false);
             }
           }}
@@ -253,6 +288,7 @@ export function LectureCard({
               onLoadedMetadata={handleVideoLoadedMetadata}
               onTimeUpdate={handleVideoTimeUpdate}
               preload="metadata"
+              ref={videoRef}
               src={lecture.video}
             />
           ) : (

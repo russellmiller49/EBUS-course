@@ -357,7 +357,7 @@ export function AuthPage() {
               ? 'Create your learner account'
               : mode === 'recover'
                 ? 'Recover your password'
-                : 'Sign in to SoCal EBUS Prep'}
+                : 'Sign in or create account'}
         </h2>
         <p>
           {isPasswordForm
@@ -366,7 +366,7 @@ export function AuthPage() {
               ? 'Choose the email you will use to log in, then add the institutional email tied to your training program.'
               : mode === 'recover'
                 ? 'Enter your login email and Supabase will send a recovery link.'
-                : 'Use the login email and password from your invite or the account you created for the course.'}
+                : 'Use your existing learner login, or choose Create account below if you are new to the course.'}
         </p>
         {message ? <p className="auth-card__message">{message}</p> : null}
         {error ? <p className="auth-card__error">{error}</p> : null}
@@ -503,6 +503,9 @@ export function AuthPage() {
                 value={password}
               />
             </label>
+            <p className="auth-card__helper">
+              Need an account? Choose <strong>Create account</strong> below to request learner access.
+            </p>
             <div className="button-row button-row--wrap">
               <button className="button" disabled={isSubmitting} type="submit">
                 {isSubmitting ? 'Signing in...' : 'Sign in'}

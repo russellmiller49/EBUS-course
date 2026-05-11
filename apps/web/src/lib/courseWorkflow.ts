@@ -39,6 +39,14 @@ export interface CourseWorkflowStepModel extends CourseWorkflowStepDefinition {
   unlocked: boolean;
 }
 
+export interface CourseGuidanceModel {
+  completedCount: number;
+  currentStep: CourseWorkflowStepModel | null;
+  lockedCount: number;
+  nextStep: CourseWorkflowStepModel | null;
+  totalCount: number;
+}
+
 export interface CourseWorkflowOptions {
   admin?: boolean;
   accountComplete?: boolean;
@@ -351,6 +359,22 @@ export function getCourseStepModels(state: LearnerProgressState, options: Course
 
 export function getNextCourseStep(state: LearnerProgressState, options: CourseWorkflowOptions = {}) {
   return getCourseStepModels(state, options).find((step) => step.unlocked && !step.completed) ?? null;
+}
+
+export function getCourseGuidanceModel(steps: CourseWorkflowStepModel[]): CourseGuidanceModel {
+  const currentIndex = steps.findIndex((step) => step.status === 'current');
+  const fallbackIndex = steps.findIndex((step) => step.unlocked && !step.completed);
+  const activeIndex = currentIndex >= 0 ? currentIndex : fallbackIndex;
+  const currentStep = activeIndex >= 0 ? steps[activeIndex] ?? null : null;
+  const nextStep = activeIndex >= 0 ? steps.slice(activeIndex + 1).find((step) => !step.completed) ?? null : null;
+
+  return {
+    completedCount: steps.filter((step) => step.completed).length,
+    currentStep,
+    lockedCount: steps.filter((step) => !step.unlocked).length,
+    nextStep,
+    totalCount: steps.length,
+  };
 }
 
 export function getLectureModuleProgressSummary(state: LearnerProgressState) {

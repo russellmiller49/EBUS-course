@@ -66,6 +66,7 @@ function createPostCourseReadyState() {
 describe('course access helpers', () => {
   it('keeps the home screen outside the pretest gate', () => {
     expect(routeRequiresPretest('home')).toBe(false);
+    expect(routeRequiresPretest('progress')).toBe(false);
     expect(routeRequiresPretest('sponsors')).toBe(false);
     expect(routeRequiresPretest('admin')).toBe(false);
     expect(routeRequiresPretest('pretest')).toBe(false);
@@ -77,6 +78,7 @@ describe('course access helpers', () => {
     const state = createInitialLearnerProgress();
 
     expect(canAccessRoute('lectures', state)).toBe(true);
+    expect(canAccessRoute('progress', state)).toBe(true);
     expect(canAccessRoute('sponsors', state)).toBe(true);
     expect(canAccessRoute('pretest', state)).toBe(false);
     expect(getLockedRoutePath('pretest', '/pretest', state)).toBe('/');

@@ -641,7 +641,7 @@ function normalizeCourseAssessmentResults(candidate: unknown): Record<string, Co
 }
 
 function getModuleForRoute(routeId: AppRouteId): ModuleProgressId | null {
-  if (routeId === 'home' || routeId === 'welcome' || routeId === 'admin' || routeId === 'sponsors') {
+  if (routeId === 'home' || routeId === 'progress' || routeId === 'welcome' || routeId === 'admin' || routeId === 'sponsors') {
     return null;
   }
 

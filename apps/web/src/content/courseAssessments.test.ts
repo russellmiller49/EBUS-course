@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { assessmentImageUrls } from '@/content/assessmentImages';
-import { finalPostTestAssessment } from '@/content/courseAssessments';
+import { finalPostTestAssessment, getCourseAssessmentById } from '@/content/courseAssessments';
 import { getPretestImage, pretestContent } from '@/content/pretest';
 
 function getOptionLabels(options: Array<{ label: string }>) {
@@ -69,5 +69,23 @@ describe('course assessment content', () => {
         getOptionLabels(matchingPostTestQuestion?.options ?? []),
       );
     }
+  });
+
+  it('resolves the post-lecture 2 question 3 Doppler figure', () => {
+    const assessment = getCourseAssessmentById('post-lecture-02');
+    const question = assessment?.questions.find((entry) => entry.id === 'post-lecture-02-q03');
+
+    expect(question?.imageAsset).toMatchObject({
+      src: assessmentImageUrls.postLecture02ColorDoppler,
+      alt: 'EBUS ultrasound image with color Doppler flow over a hilar target.',
+    });
+  });
+
+  it('omits the removed question 4 from the post-lecture 2 scope and tools quiz', () => {
+    const assessment = getCourseAssessmentById('post-lecture-03');
+
+    expect(assessment?.title).toBe('Post-lecture 2 quiz: Basic scope, tools, and technique');
+    expect(assessment?.questions.map((question) => question.id)).not.toContain('post-lecture-03-q04');
+    expect(assessment?.questions).toHaveLength(4);
   });
 });

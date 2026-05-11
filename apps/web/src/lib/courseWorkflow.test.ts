@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { courseAssessments } from '@/content/courseAssessments';
 import { lectureManifest } from '@/content/lectures';
 import {
+  getCourseGuidanceModel,
   getAssessmentWorkflowStatus,
   getCourseStepModels,
   getLectureWorkflowStatus,
@@ -60,6 +61,22 @@ describe('courseWorkflow', () => {
     expect(
       getCourseStepModels(afterPretest, { accountComplete: true }).find((step) => step.id === 'lecture-02')?.unlocked,
     ).toBe(true);
+  });
+
+  it('summarizes current, next, completed, and locked workflow steps for learner guidance', () => {
+    const state = createInitialLearnerProgress();
+    const steps = getCourseStepModels(state, { accountComplete: false });
+    const guidance = getCourseGuidanceModel(steps);
+
+    expect(guidance.currentStep?.id).toBe('account');
+    expect(guidance.nextStep?.id).toBe('lecture-01');
+    expect(guidance.completedCount).toBe(0);
+    expect(guidance.lockedCount).toBeGreaterThan(0);
+
+    const afterAccount = getCourseGuidanceModel(getCourseStepModels(state, { accountComplete: true }));
+
+    expect(afterAccount.currentStep?.id).toBe('lecture-01');
+    expect(afterAccount.completedCount).toBe(1);
   });
 
   it('requires a post-lecture quiz before unlocking the next lecture', () => {

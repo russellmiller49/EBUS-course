@@ -3,9 +3,11 @@ import { NavLink } from 'react-router-dom';
 import type { NavigationItem } from '@/content/types';
 
 export function BottomNav({ items }: { items: NavigationItem[] }) {
+  const visibleItems = items.filter((item) => !item.hideInBottom);
+
   return (
     <nav className="bottom-nav" aria-label="Primary">
-      {items.map((item) => (
+      {visibleItems.map((item) => (
         <NavLink
           key={item.id}
           aria-disabled={item.locked || undefined}

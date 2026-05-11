@@ -1,13 +1,17 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
 import { buildHomeProgressModel } from '@/app/routes/home/progress';
+import { CourseStepGuidance } from '@/components/CourseStepGuidance';
+import { DeviceRecommendationNotice } from '@/components/DeviceRecommendationNotice';
 import { ModuleCard } from '@/components/ModuleCard';
 import { courseInfo } from '@/content/course';
 import { homeModuleCards } from '@/content/modules';
 import { canAccessRoute, getLockedRoutePath, getRouteLockReason, isPretestComplete } from '@/lib/access';
 import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
 import { useAuth } from '@/lib/auth';
-import { getNextCourseStep, isCoursePretestUnlocked } from '@/lib/courseWorkflow';
+import { useCourseNow } from '@/lib/courseClock';
+import { getCourseStepModels, getNextCourseStep, isCoursePretestUnlocked } from '@/lib/courseWorkflow';
 import { useLearnerProgress } from '@/lib/progress';
 
 function ProgressMeter({ percent }: { percent: number }) {
@@ -24,12 +28,17 @@ export function HomePage() {
   const adminSessionActive = useCourseAdminSessionActive();
   const vendorSessionActive = useCourseVendorSessionActive();
   const previewSessionActive = adminSessionActive || vendorSessionActive;
+  const nowMs = useCourseNow();
   const accountComplete = !isSupabaseEnabled || Boolean(user);
-  const accessOptions = { accountComplete, admin: adminSessionActive, preview: vendorSessionActive };
+  const accessOptions = useMemo(
+    () => ({ accountComplete, admin: adminSessionActive, nowMs, preview: vendorSessionActive }),
+    [accountComplete, adminSessionActive, nowMs, vendorSessionActive],
+  );
   const { learningSteps, resumeModule } = buildHomeProgressModel(state);
   const pretestReady = previewSessionActive || isPretestComplete(state);
   const pretestUnlocked = previewSessionActive || isCoursePretestUnlocked(state, accessOptions);
   const nextCourseStep = getNextCourseStep(state, accessOptions);
+  const courseStepModels = useMemo(() => getCourseStepModels(state, accessOptions), [accessOptions, state]);
   const reviewedLectures = Object.values(state.lectureWatchStatus).filter((lecture) => lecture.completed).length;
   const lastAssessment = state.quizScoreHistory[0];
   const pretestTag =
@@ -131,6 +140,10 @@ export function HomePage() {
           </div>
         </div>
       </section>
+
+      <DeviceRecommendationNotice />
+
+      <CourseStepGuidance steps={courseStepModels} />
 
       <section aria-label="AABIP endorsement" className="course-endorsement">
         <span aria-hidden="true" className="course-endorsement__seal">

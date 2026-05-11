@@ -69,18 +69,21 @@ export function AabipVideoLibrary({ panelId, labelledBy }: AabipVideoLibraryProp
 
               return (
                 <li key={video.id} className="aabip-video-library__list-item">
-                  <button
-                    aria-pressed={isSelected}
+                  <a
+                    aria-current={isSelected ? 'true' : undefined}
+                    aria-label={`Open ${video.title} on YouTube`}
                     className={`aabip-video-library__video-button${isSelected ? ' aabip-video-library__video-button--active' : ''}`}
+                    href={video.watchUrl}
                     onClick={() => setSelectedVideoId(video.id)}
-                    type="button"
+                    rel="noreferrer"
+                    target="_blank"
                   >
                     <span className="aabip-video-library__video-index">{String(video.playlistIndex).padStart(2, '0')}</span>
                     <span className="aabip-video-library__video-copy">
                       <strong>{video.title}</strong>
-                      <span>Select video</span>
+                      <span>Open on YouTube</span>
                     </span>
-                  </button>
+                  </a>
                   <a
                     aria-label={`Open ${video.title} on YouTube`}
                     className="action-pill"
@@ -88,7 +91,7 @@ export function AabipVideoLibrary({ panelId, labelledBy }: AabipVideoLibraryProp
                     rel="noreferrer"
                     target="_blank"
                   >
-                    Link
+                    Open
                   </a>
                 </li>
               );

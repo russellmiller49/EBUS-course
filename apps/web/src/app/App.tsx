@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import { AppShell } from '@/components/AppShell';
 import type { AppRouteId, NavigationItem } from '@/content/types';
 import { HomePage } from '@/app/routes/HomePage';
+import { ProgressPage } from '@/app/routes/ProgressPage';
 import { WelcomePage } from '@/app/routes/WelcomePage';
 import { AuthPage } from '@/app/routes/AuthPage';
 import { AdminPage } from '@/app/routes/AdminPage';
@@ -19,7 +20,6 @@ import { KnobologyPage } from '@/app/routes/KnobologyPage';
 import { LecturesPage } from '@/app/routes/LecturesPage';
 import { PretestPage } from '@/app/routes/PretestPage';
 import { PostCoursePage } from '@/app/routes/PostCoursePage';
-import { Case001Page } from '@/app/routes/Case001Page';
 import { SimulatorPage } from '@/app/routes/SimulatorPage';
 import { TnmStagingPage } from '@/app/routes/TnmStagingPage';
 import { NotFoundPage } from '@/app/routes/NotFoundPage';
@@ -33,6 +33,7 @@ import { recordModuleSession } from '@/lib/supabaseTracking';
 
 const navItems: NavigationItem[] = [
   { id: 'home', label: 'Course home', icon: '⌂', path: '/' },
+  { id: 'progress', label: 'My progress', icon: '✓', path: '/progress', hideInBottom: true },
   { id: 'welcome', label: 'Welcome', icon: 'ⓘ', path: '/welcome' },
   { id: 'sponsors', label: 'Sponsors', icon: '☆', path: '/sponsors' },
   { id: 'pretest', label: 'Pre-course survey and test', icon: '◇', path: '/pretest' },
@@ -47,9 +48,28 @@ const navItems: NavigationItem[] = [
 
 const adminNavItem: NavigationItem = { id: 'admin', label: 'Dashboard', icon: '▣', path: '/admin' };
 
+const Case001Page = lazy(() =>
+  import('@/app/routes/Case001Page').then((module) => ({ default: module.Case001Page })),
+);
+
+function RouteLoadingFallback() {
+  return (
+    <div className="page-stack">
+      <section className="section-card">
+        <div className="eyebrow">Loading section</div>
+        <h2>Preparing course content...</h2>
+      </section>
+    </div>
+  );
+}
+
 function resolveRouteId(pathname: string): AppRouteId | null {
   if (pathname === '/') {
     return 'home';
+  }
+
+  if (pathname.startsWith('/progress')) {
+    return 'progress';
   }
 
   if (pathname.startsWith('/welcome')) {
@@ -162,6 +182,7 @@ export function App() {
   const isAdminPath = location.pathname.startsWith('/admin');
   const isPublicOnboardingPath =
     location.pathname === '/' ||
+    location.pathname.startsWith('/progress') ||
     location.pathname.startsWith('/welcome') ||
     location.pathname.startsWith('/course-info') ||
     location.pathname.startsWith('/home') ||
@@ -318,33 +339,36 @@ export function App() {
 
   return (
     <AppShell navItems={gatedNavItems}>
-      <Routes>
-        <Route element={<HomePage />} path="/" />
-        <Route element={<WelcomePage />} path="/welcome" />
-        <Route element={<Navigate replace to="/" />} path="/course-info" />
-        <Route element={<Navigate replace to="/" />} path="/home" />
-        <Route element={<SponsorsPage />} path="/sponsors" />
-        <Route element={<AuthPage />} path="/auth" />
-        <Route element={<AdminPage />} path="/admin" />
-        <Route element={<AccountPage />} path="/account" />
-        <Route element={<PretestPage />} path="/pretest" />
-        <Route element={<PostCoursePage />} path="/post-course" />
-        <Route element={<StationsPage />} path="/stations">
-          <Route element={<Navigate replace to="explore" />} index />
-          <Route element={<StationsExplorePage />} path="explore" />
-          <Route element={<SonographicInterpretationPage />} path="sonographic-interpretation" />
-          <Route element={<StationsFlashcardsPage />} path="flashcards" />
-          <Route element={<StationsQuizPage />} path="quiz" />
-          <Route element={<StationsHandbookPage />} path="handbook" />
-        </Route>
-        <Route element={<KnobologyPage />} path="/knobology" />
-        <Route element={<TnmStagingPage />} path="/tnm-staging" />
-        <Route element={<LecturesPage />} path="/lectures" />
-        <Route element={<Navigate replace to="/lectures" />} path="/quiz" />
-        <Route element={<Case001Page />} path="/cases/case-001" />
-        <Route element={<SimulatorPage />} path="/simulator" />
-        <Route element={<NotFoundPage />} path="*" />
-      </Routes>
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <Routes>
+          <Route element={<HomePage />} path="/" />
+          <Route element={<ProgressPage />} path="/progress" />
+          <Route element={<WelcomePage />} path="/welcome" />
+          <Route element={<Navigate replace to="/" />} path="/course-info" />
+          <Route element={<Navigate replace to="/" />} path="/home" />
+          <Route element={<SponsorsPage />} path="/sponsors" />
+          <Route element={<AuthPage />} path="/auth" />
+          <Route element={<AdminPage />} path="/admin" />
+          <Route element={<AccountPage />} path="/account" />
+          <Route element={<PretestPage />} path="/pretest" />
+          <Route element={<PostCoursePage />} path="/post-course" />
+          <Route element={<StationsPage />} path="/stations">
+            <Route element={<Navigate replace to="explore" />} index />
+            <Route element={<StationsExplorePage />} path="explore" />
+            <Route element={<SonographicInterpretationPage />} path="sonographic-interpretation" />
+            <Route element={<StationsFlashcardsPage />} path="flashcards" />
+            <Route element={<StationsQuizPage />} path="quiz" />
+            <Route element={<StationsHandbookPage />} path="handbook" />
+          </Route>
+          <Route element={<KnobologyPage />} path="/knobology" />
+          <Route element={<TnmStagingPage />} path="/tnm-staging" />
+          <Route element={<LecturesPage />} path="/lectures" />
+          <Route element={<Navigate replace to="/lectures" />} path="/quiz" />
+          <Route element={<Case001Page />} path="/cases/case-001" />
+          <Route element={<SimulatorPage />} path="/simulator" />
+          <Route element={<NotFoundPage />} path="*" />
+        </Routes>
+      </Suspense>
     </AppShell>
   );
 }

@@ -1,10 +1,13 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
+import { CourseStepGuidance } from '@/components/CourseStepGuidance';
 import { welcomeLecture } from '@/content/welcome';
 import { LearnerAccessBox } from '@/features/account/LearnerAccessBox';
 import { LectureCard } from '@/features/lectures/LectureCard';
 import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
 import { useAuth } from '@/lib/auth';
+import { getCourseStepModels } from '@/lib/courseWorkflow';
 import { useLearnerProgress } from '@/lib/progress';
 
 export function WelcomePage() {
@@ -15,8 +18,14 @@ export function WelcomePage() {
   const previewSessionActive = adminSessionActive || vendorSessionActive;
   const welcomeWatchState = state.lectureWatchStatus[welcomeLecture.id];
   const welcomeComplete = Boolean(welcomeWatchState?.completed);
+  const accountComplete = !isSupabaseEnabled || Boolean(user);
   const canViewWelcomeVideo = previewSessionActive || !isSupabaseEnabled || Boolean(user);
   const canOpenPretest = canViewWelcomeVideo && welcomeComplete;
+  const accessOptions = useMemo(
+    () => ({ accountComplete, admin: adminSessionActive, preview: vendorSessionActive }),
+    [accountComplete, adminSessionActive, vendorSessionActive],
+  );
+  const courseStepModels = useMemo(() => getCourseStepModels(state, accessOptions), [accessOptions, state]);
 
   return (
     <div className="page-stack">
@@ -33,6 +42,8 @@ export function WelcomePage() {
           <span className="tag">{canOpenPretest ? 'Survey unlocked' : 'Survey locked'}</span>
         </div>
       </section>
+
+      <CourseStepGuidance steps={courseStepModels} />
 
       <section className="section-card welcome-step">
         <div className="welcome-step__heading">
@@ -69,6 +80,17 @@ export function WelcomePage() {
           readyLabel="Opened"
           watchState={welcomeWatchState}
         />
+        <div className="welcome-step__completion">
+          <p id="welcome-reviewed-help">
+            Click this after watching the welcome video to unlock the pre-course survey and test.
+          </p>
+          {welcomeComplete ? (
+            <div className="feedback-banner feedback-banner--success" role="status">
+              <strong>Welcome reviewed.</strong>
+              <p>The pre-course survey and test are unlocked.</p>
+            </div>
+          ) : null}
+        </div>
         <div className="button-row button-row--wrap welcome-step__actions">
           {welcomeLecture.resourceUrl && canViewWelcomeVideo ? (
             <a
@@ -82,7 +104,8 @@ export function WelcomePage() {
             </a>
           ) : null}
           <button
-            className="button button--ghost"
+            aria-describedby="welcome-reviewed-help"
+            className="button"
             disabled={!canViewWelcomeVideo || welcomeComplete}
             onClick={() =>
               setLectureState(welcomeLecture.id, {
@@ -94,7 +117,7 @@ export function WelcomePage() {
             }
             type="button"
           >
-            {welcomeComplete ? 'Welcome reviewed' : 'Mark welcome reviewed'}
+            {welcomeComplete ? 'Welcome reviewed' : 'I have reviewed the welcome video - unlock next step'}
           </button>
         </div>
       </section>

@@ -130,7 +130,7 @@ export function LearnerAccessBox() {
           role="tab"
           type="button"
         >
-          Log in
+          Sign in
         </button>
         <button
           aria-selected={mode === 'sign-up'}
@@ -139,13 +139,13 @@ export function LearnerAccessBox() {
           role="tab"
           type="button"
         >
-          Sign up
+          Create account
         </button>
       </div>
 
       <p>
-        Use your learner account before opening the course intro. New learners can create an account here, then continue
-        directly to the welcome video once signed in.
+        Sign in with an existing learner account, or choose Create account to request access before opening the course
+        intro.
       </p>
       {message ? <p className="auth-card__message">{message}</p> : null}
       {error ? <p className="auth-card__error">{error}</p> : null}
@@ -206,7 +206,7 @@ export function LearnerAccessBox() {
           </label>
           <div className="button-row button-row--wrap">
             <button className="button" disabled={isSubmitting} type="submit">
-              {isSubmitting ? 'Signing in...' : 'Log in'}
+              {isSubmitting ? 'Signing in...' : 'Sign in'}
             </button>
             <button className="button button--ghost" onClick={() => switchMode('sign-up')} type="button">
               Create account

@@ -2,11 +2,15 @@ import type { FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { CourseStepGuidance } from '@/components/CourseStepGuidance';
 import { type CourseSurveyResponses, isCourseSurveyComplete, preCourseSurveyItems } from '@/content/courseSurveys';
 import { getPretestImage, pretestContent } from '@/content/pretest';
 import { getFirstUnansweredQuestionIndex, getNextUnansweredQuestionIndex, scorePretest } from '@/features/pretest/logic';
 import { CourseSurveyForm } from '@/features/surveys/CourseSurveyForm';
+import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
 import { useAuth } from '@/lib/auth';
+import { useCourseNow } from '@/lib/courseClock';
+import { getCourseStepModels, getNextCourseStep } from '@/lib/courseWorkflow';
 import { useLearnerProgress } from '@/lib/progress';
 
 function formatTimestamp(value: string | null) {
@@ -29,7 +33,11 @@ export function PretestPage() {
     submitPretest,
   } = useLearnerProgress();
   const { isSupabaseEnabled, user } = useAuth();
+  const adminSessionActive = useCourseAdminSessionActive();
+  const vendorSessionActive = useCourseVendorSessionActive();
+  const nowMs = useCourseNow();
   const [surveyResponses, setSurveyResponses] = useState<CourseSurveyResponses>({});
+  const [pretestSubmissionError, setPretestSubmissionError] = useState<string | null>(null);
   const questions = pretestContent.questions;
   const pretest = state.pretest;
   const currentIndex = Math.max(0, Math.min(questions.length - 1, pretest.currentQuestionIndex));
@@ -38,6 +46,10 @@ export function PretestPage() {
   const submitted = Boolean(pretest.submittedAt);
   const unlockedByPasscode = Boolean(pretest.unlockedByPasscodeAt);
   const accountComplete = !isSupabaseEnabled || Boolean(user);
+  const accessOptions = useMemo(
+    () => ({ accountComplete, admin: adminSessionActive, nowMs, preview: vendorSessionActive }),
+    [accountComplete, adminSessionActive, nowMs, vendorSessionActive],
+  );
   const preCourseSurveyComplete = Boolean(state.preCourseSurvey.submittedAt);
   const pretestAccessUnlocked = submitted || unlockedByPasscode || (accountComplete && preCourseSurveyComplete);
   const result = useMemo(() => scorePretest(questions, pretest.answers), [questions, pretest.answers]);
@@ -45,6 +57,8 @@ export function PretestPage() {
   const nextUnansweredQuestionIndex = getNextUnansweredQuestionIndex(questions, pretest.answers, currentIndex);
   const savedScore = pretest.score ?? result.correctCount;
   const savedTotal = pretest.totalQuestions || questions.length;
+  const courseStepModels = useMemo(() => getCourseStepModels(state, accessOptions), [accessOptions, state]);
+  const nextCourseStep = getNextCourseStep(state, accessOptions);
   const progressPercent =
     submitted || unlockedByPasscode || result.totalCount === 0
       ? 100
@@ -84,11 +98,16 @@ export function PretestPage() {
       return;
     }
 
-    submitPretest({
-      score: result.correctCount,
-      answeredCount: result.answeredCount,
-      totalQuestions: result.totalCount,
-    });
+    try {
+      submitPretest({
+        score: result.correctCount,
+        answeredCount: result.answeredCount,
+        totalQuestions: result.totalCount,
+      });
+      setPretestSubmissionError(null);
+    } catch {
+      setPretestSubmissionError('Unable to save the pre-course test. Please try again before continuing.');
+    }
   }
 
   function handleSurveySubmit(event: FormEvent<HTMLFormElement>) {
@@ -126,6 +145,8 @@ export function PretestPage() {
           ))}
         </div>
       </section>
+
+      <CourseStepGuidance steps={courseStepModels} />
 
       <section className="section-card">
         <div className="section-card__heading">
@@ -189,6 +210,28 @@ export function PretestPage() {
         </div>
         {pretestAccessUnlocked ? (
           <>
+            {submitted ? (
+              <div className="feedback-banner feedback-banner--success" role="status">
+                <strong>Your pre-course test has been saved.</strong>
+                <p>
+                  Answers and explanations will be available after course completion. You may now continue to the next
+                  required step.
+                </p>
+                {nextCourseStep ? (
+                  <div className="button-row button-row--wrap">
+                    <Link className="button" to={nextCourseStep.path}>
+                      Continue: {nextCourseStep.title}
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            {pretestSubmissionError ? (
+              <div className="feedback-banner" role="alert">
+                <strong>Pre-test was not saved.</strong>
+                <p>{pretestSubmissionError}</p>
+              </div>
+            ) : null}
             <div className="pretest-chip-grid" role="list" aria-label="Pretest question navigator">
               {questions.map((question, index) => {
                 const answered = Boolean(pretest.answers[question.id]);

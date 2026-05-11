@@ -24,6 +24,12 @@ export function QuizCard({
   questions,
   label,
   onComplete,
+  onRetake,
+  initialAnswers = {},
+  completionRecordedInitially = false,
+  completionMessage = 'You may continue to the next required step.',
+  allowRetake = false,
+  readOnly = false,
   revealAnswers = true,
   deferFeedbackUntilComplete = false,
   showRunningScore = true,
@@ -33,6 +39,12 @@ export function QuizCard({
   questions: QuizQuestionContent[];
   label: string;
   onComplete?: (result: ReturnType<typeof calculateQuizResult>) => void;
+  onRetake?: () => void;
+  initialAnswers?: Record<string, string[] | undefined>;
+  completionRecordedInitially?: boolean;
+  completionMessage?: string;
+  allowRetake?: boolean;
+  readOnly?: boolean;
   revealAnswers?: boolean;
   deferFeedbackUntilComplete?: boolean;
   showRunningScore?: boolean;
@@ -40,23 +52,23 @@ export function QuizCard({
   largeQuestionStem?: boolean;
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string[] | undefined>>({});
+  const [answers, setAnswers] = useState<Record<string, string[] | undefined>>(() => ({ ...initialAnswers }));
   const [draftSelections, setDraftSelections] = useState<Record<string, string[] | undefined>>({});
-  const [completionRecorded, setCompletionRecorded] = useState(false);
+  const [completionRecorded, setCompletionRecorded] = useState(completionRecordedInitially);
   const currentQuestion = questions[currentIndex];
   const finalizedSelection = currentQuestion ? answers[currentQuestion.id] ?? [] : [];
   const draftSelection = currentQuestion ? draftSelections[currentQuestion.id] ?? [] : [];
   const currentSelection = finalizedSelection.length > 0 ? finalizedSelection : draftSelection;
   const answeredCurrent = Boolean(currentQuestion && finalizedSelection.length > 0);
   const result = calculateQuizResult(questions, answers);
-  const shouldRevealAnswers = revealAnswers && (!deferFeedbackUntilComplete || completionRecorded);
+  const shouldRevealAnswers = revealAnswers && (readOnly || !deferFeedbackUntilComplete || completionRecorded);
 
   if (questions.length === 0 || !currentQuestion) {
     return null;
   }
 
   function updateDraft(nextSelection: string[]) {
-    if (answeredCurrent) {
+    if (answeredCurrent || readOnly || completionRecorded) {
       return;
     }
 
@@ -67,7 +79,7 @@ export function QuizCard({
   }
 
   function handleSelect(optionId: string) {
-    if (answeredCurrent) {
+    if (answeredCurrent || readOnly || completionRecorded) {
       return;
     }
 
@@ -85,7 +97,7 @@ export function QuizCard({
   }
 
   function submitCurrentQuestion() {
-    if (!canSubmitQuestion(currentQuestion, currentSelection) || answeredCurrent) {
+    if (readOnly || completionRecorded || !canSubmitQuestion(currentQuestion, currentSelection) || answeredCurrent) {
       return;
     }
 
@@ -104,6 +116,14 @@ export function QuizCard({
     onComplete?.(result);
   }
 
+  function startRetake() {
+    setAnswers({});
+    setDraftSelections({});
+    setCompletionRecorded(false);
+    setCurrentIndex(0);
+    onRetake?.();
+  }
+
   return (
     <section className={`quiz-card${largeQuestionStem ? ' quiz-card--large-stem' : ''}`}>
       <div className="quiz-card__header">
@@ -117,6 +137,13 @@ export function QuizCard({
             : `${result.answeredCount}/${questions.length} answered`}
         </span>
       </div>
+
+      {completionRecorded ? (
+        <div className="feedback-banner feedback-banner--success quiz-card__completion" role="status">
+          <strong>✓ Score recorded.</strong>
+          <p>{completionMessage}</p>
+        </div>
+      ) : null}
 
       <div className="quiz-card__progress">
         {questions.map((question, index) => {
@@ -234,7 +261,27 @@ export function QuizCard({
         >
           Previous
         </button>
-        {!answeredCurrent ? (
+        {completionRecorded ? (
+          <>
+            {currentIndex < questions.length - 1 ? (
+              <button
+                className="button"
+                onClick={() => setCurrentIndex((index) => index + 1)}
+                type="button"
+              >
+                Next
+              </button>
+            ) : null}
+            <button className="button button--ghost" onClick={() => setCurrentIndex(0)} type="button">
+              Review quiz
+            </button>
+            {allowRetake ? (
+              <button className="button button--ghost" onClick={startRetake} type="button">
+                Retake quiz
+              </button>
+            ) : null}
+          </>
+        ) : !answeredCurrent ? (
           <>
             {currentQuestion.type === 'ordering' ? (
               <button
@@ -270,7 +317,7 @@ export function QuizCard({
             onClick={recordCompletion}
             type="button"
           >
-            {completionRecorded ? 'Attempt saved' : showRunningScore ? `Save ${result.percent}% score` : 'Submit attempt'}
+            {showRunningScore ? `Save ${result.percent}% score` : 'Submit attempt'}
           </button>
         )}
       </div>
