@@ -88,4 +88,14 @@ describe('course assessment content', () => {
     expect(assessment?.questions.map((question) => question.id)).not.toContain('post-lecture-03-q04');
     expect(assessment?.questions).toHaveLength(4);
   });
+
+  it('resolves the displayed post-lecture 2 question 4 needle puncture image', () => {
+    const assessment = getCourseAssessmentById('post-lecture-03');
+    const question = assessment?.questions.find((entry) => entry.id === 'post-lecture-03-q05');
+
+    expect(question?.imageAsset).toMatchObject({
+      src: assessmentImageUrls.postLecture03NeedlePuncture,
+      alt: 'EBUS monitor image showing reverberation artifact immediately after needle puncture.',
+    });
+  });
 });

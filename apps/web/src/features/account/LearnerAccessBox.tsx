@@ -3,6 +3,7 @@ import { type FormEvent, useState } from 'react';
 import { emptyProfileInput, LearnerProfileFields, validateProfileInput } from '@/features/account/LearnerProfileFields';
 import type { LearnerProfileInput } from '@/lib/auth';
 import { useAuth } from '@/lib/auth';
+import { getLearnerAuthErrorMessage } from '@/lib/authErrors';
 
 type LearnerAccessMode = 'sign-in' | 'sign-up';
 
@@ -41,7 +42,7 @@ export function LearnerAccessBox() {
       await signInWithPassword(email.trim(), password);
       setMessage('Signed in. The welcome video is unlocked.');
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to sign in with that email and password.');
+      setError(getLearnerAuthErrorMessage(caught, 'Unable to sign in with that email and password.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -77,7 +78,7 @@ export function LearnerAccessBox() {
       setPassword('');
       setMessage('Account created. Stay signed in here to watch the welcome video.');
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to create the learner account.');
+      setError(getLearnerAuthErrorMessage(caught, 'Unable to create the learner account.'));
     } finally {
       setIsSubmitting(false);
     }

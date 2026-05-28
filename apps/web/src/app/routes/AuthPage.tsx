@@ -7,6 +7,7 @@ import { useCourseVendorSessionActive } from '@/lib/adminSession';
 import { storeCourseVendorPasscode, validateCourseVendorPasscode } from '@/lib/access';
 import type { LearnerProfileInput } from '@/lib/auth';
 import { useAuth } from '@/lib/auth';
+import { getLearnerAuthErrorMessage } from '@/lib/authErrors';
 import { getBrowserRecoverySessionTokens } from '@/lib/supabase';
 
 type AuthMode = 'sign-in' | 'sign-up' | 'recover' | 'reset-password' | 'support' | 'vendor';
@@ -117,7 +118,7 @@ export function AuthPage() {
       await signInWithPassword(email.trim(), password);
       setMessage('Signed in. Redirecting to your prep workspace.');
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to sign in with that email and password.');
+      setError(getLearnerAuthErrorMessage(caught, 'Unable to sign in with that email and password.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -153,7 +154,7 @@ export function AuthPage() {
       setMessage('Account created. Course leadership will approve access before the modules open.');
       setPassword('');
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to create the learner account.');
+      setError(getLearnerAuthErrorMessage(caught, 'Unable to create the learner account.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -169,7 +170,7 @@ export function AuthPage() {
       await requestPasswordRecovery(email);
       setMessage('Password recovery email sent. Open the link in that email to choose a new password.');
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to send a password recovery email.');
+      setError(getLearnerAuthErrorMessage(caught, 'Unable to send a password recovery email.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -203,7 +204,7 @@ export function AuthPage() {
       setNewPassword('');
       setConfirmPassword('');
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to save the new password.');
+      setError(getLearnerAuthErrorMessage(caught, 'Unable to save the new password.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -218,7 +219,7 @@ export function AuthPage() {
       await refreshProfile();
       setMessage('Approval status refreshed.');
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to refresh approval status.');
+      setError(getLearnerAuthErrorMessage(caught, 'Unable to refresh approval status.'));
     } finally {
       setIsSubmitting(false);
     }

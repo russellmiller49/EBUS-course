@@ -176,6 +176,7 @@ describe('admin learner overview helpers', () => {
     expect(learner.lectureSummary.completedCount).toBe(3);
     expect(learner.lectureSummary.quizReadyCount).toBe(5);
     expect(learner.lectureSummary.averageViewedPercent).toBe(45);
+    expect(learner.lectureSummary.totalWatchedSeconds).toBe(900);
   });
 
   it('summarizes learner approval counts and average progress', () => {

@@ -383,7 +383,12 @@
           "difficulty": "intermediate",
           "tags": [
             "Post-lecture 2 quiz: Basic scope, tools, and technique"
-          ]
+          ],
+          "imageAsset": {
+            "src": "/media/assessments/post-lecture-03/question-figure-4.png",
+            "alt": "EBUS monitor image showing reverberation artifact immediately after needle puncture.",
+            "caption": "Figure: Loss of airway wall contact after needle puncture with reverberation artifact."
+          }
         }
       ]
     },

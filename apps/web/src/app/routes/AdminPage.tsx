@@ -438,7 +438,11 @@ export function AdminPage() {
                     <strong>{learner.lectureSummary.completedCount}</strong>
                   </div>
                   <div>
-                    <span>Total time</span>
+                    <span>Video watch time</span>
+                    <strong>{formatDuration(learner.lectureSummary.totalWatchedSeconds)}</strong>
+                  </div>
+                  <div>
+                    <span>Page-open time</span>
                     <strong>{formatDuration(learner.totalTimeSpentSeconds)}</strong>
                   </div>
                 </div>
