@@ -4,6 +4,7 @@ import { pretestContent } from '@/content/pretest';
 import {
   buildAdminProgressSummary,
   getLearnerAverageProgress,
+  isLearnerPostCourseComplete,
   normalizeAdminLearnerOverview,
   type AdminLearnerOverview,
 } from '@/lib/admin';
@@ -47,6 +48,7 @@ function createLearner(overrides: Partial<AdminLearnerOverview> = {}): AdminLear
       version: null,
     },
     postTestAnswers: [],
+    postTestSubmittedAt: null,
     totalTimeSpentSeconds: 0,
     moduleProgress: [],
     lectureSummary: {
@@ -94,6 +96,7 @@ describe('admin learner overview helpers', () => {
       },
       assessment_results: {
         'post-test': {
+          completedAt: '2026-05-03T16:15:00.000Z',
           answers: [
             {
               questionId: 'post-test-q01',
@@ -167,6 +170,8 @@ describe('admin learner overview helpers', () => {
       selectedOptionIds: ['a'],
       correctOptionIds: ['a'],
     });
+    expect(learner.postTestSubmittedAt).toBe('2026-05-03T16:15:00.000Z');
+    expect(isLearnerPostCourseComplete(learner)).toBe(true);
     expect(learner.totalTimeSpentSeconds).toBe(1200);
     expect(learner.moduleProgress[0]).toMatchObject({
       moduleId: 'knobology',
@@ -188,6 +193,14 @@ describe('admin learner overview helpers', () => {
     const approved = createLearner({
       id: 'learner-2',
       approvalStatus: 'approved',
+      postCourseSurvey: {
+        responses: [],
+        submittedAt: '2026-05-31T22:30:00.000Z',
+        surveyId: 'post-course-2026',
+        updatedAt: null,
+        version: null,
+      },
+      postTestSubmittedAt: '2026-05-31T22:15:00.000Z',
       moduleProgress: [
         { moduleId: 'pretest', percentComplete: 100, visitedAt: null, completedAt: null, timeSpentSeconds: 0 },
         { moduleId: 'lectures', percentComplete: 80, visitedAt: null, completedAt: null, timeSpentSeconds: 0 },
@@ -199,7 +212,40 @@ describe('admin learner overview helpers', () => {
       approvedCount: 1,
       averageProgressPercent: 70,
       pendingCount: 1,
+      postCourseCompleteCount: 1,
       totalLearners: 2,
     });
+  });
+
+  it('requires post-test completion and post-course survey for admin completion highlighting', () => {
+    expect(
+      isLearnerPostCourseComplete(
+        createLearner({
+          postCourseSurvey: {
+            responses: [],
+            submittedAt: '2026-05-31T22:30:00.000Z',
+            surveyId: 'post-course-2026',
+            updatedAt: null,
+            version: null,
+          },
+          postTestSubmittedAt: null,
+        }),
+      ),
+    ).toBe(false);
+
+    expect(
+      isLearnerPostCourseComplete(
+        createLearner({
+          postCourseSurvey: {
+            responses: [],
+            submittedAt: '2026-05-31T22:30:00.000Z',
+            surveyId: 'post-course-2026',
+            updatedAt: null,
+            version: null,
+          },
+          postTestSubmittedAt: '2026-05-31T22:15:00.000Z',
+        }),
+      ),
+    ).toBe(true);
   });
 });

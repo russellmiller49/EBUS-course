@@ -1204,6 +1204,16 @@ html[data-theme='light'] .flashcard {
   background: #02060a;
 }
 
+.knobology-segment-video__layer {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.knobology-segment-video__layer--active {
+  opacity: 1;
+}
+
 .knobology-frame__video-empty {
   position: absolute;
   inset: 0;
@@ -2470,6 +2480,12 @@ html[data-theme='light'] .choice-card--incorrect {
   background: rgba(91, 67, 24, 0.18);
 }
 
+.admin-summary-card--post-course-complete {
+  border-color: rgba(143, 224, 192, 0.36);
+  background: rgba(20, 96, 68, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(143, 224, 192, 0.1);
+}
+
 .admin-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -2513,9 +2529,25 @@ html[data-theme='light'] .choice-card--incorrect {
   border-color: rgba(230, 189, 121, 0.24);
 }
 
+.admin-learner-card--post-course-complete {
+  border-color: rgba(143, 224, 192, 0.48);
+  background:
+    linear-gradient(90deg, rgba(20, 96, 68, 0.2), rgba(255, 255, 255, 0.035) 34%),
+    rgba(255, 255, 255, 0.04);
+  box-shadow:
+    inset 5px 0 0 rgba(143, 224, 192, 0.82),
+    0 0 0 1px rgba(143, 224, 192, 0.08);
+}
+
 .admin-learner-card__header {
   justify-content: space-between;
   align-items: flex-start;
+}
+
+.admin-learner-card__name--post-course-complete {
+  display: inline;
+  color: #d7ffe9;
+  text-shadow: 0 0 18px rgba(143, 224, 192, 0.22);
 }
 
 .admin-learner-card__actions {
@@ -2547,6 +2579,12 @@ html[data-theme='light'] .choice-card--incorrect {
   color: #ffe1a8;
   border-color: rgba(230, 189, 121, 0.28);
   background: rgba(91, 67, 24, 0.24);
+}
+
+.admin-status--post-course-complete {
+  color: #d7ffe9;
+  border-color: rgba(143, 224, 192, 0.46);
+  background: rgba(20, 96, 68, 0.34);
 }
 
 .admin-info-grid {
@@ -2583,6 +2621,17 @@ html[data-theme='light'] .choice-card--incorrect {
 .admin-progress-summary strong {
   font-family: 'Space Mono', monospace;
   color: var(--text);
+}
+
+.admin-progress-summary__complete {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(143, 224, 192, 0.24);
+  background: rgba(20, 96, 68, 0.2);
+}
+
+.admin-progress-summary__complete strong {
+  color: #d7ffe9;
 }
 
 .admin-answer-stack,
@@ -3918,7 +3967,7 @@ html[data-theme='light'] .course-endorsement {
 .survey-form,
 .survey-fieldset {
   display: grid;
-  gap: 14px;
+  gap: 18px;
 }
 
 .survey-fieldset {
@@ -3930,6 +3979,8 @@ html[data-theme='light'] .course-endorsement {
 .survey-fieldset legend {
   margin-bottom: 10px;
   color: var(--text);
+  font-size: 1.08rem;
+  line-height: 1.4;
   font-weight: 700;
 }
 
@@ -3937,7 +3988,7 @@ html[data-theme='light'] .course-endorsement {
 .survey-fieldset__error {
   margin: -2px 0 4px;
   color: var(--text-muted);
-  font-size: 0.86rem;
+  font-size: 0.95rem;
   line-height: 1.45;
 }
 
@@ -3956,12 +4007,18 @@ html[data-theme='light'] .course-endorsement {
   padding: 0 8px;
 }
 
+.survey-form .control-pill {
+  min-height: 44px;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
 .survey-scale__labels {
   display: flex;
   justify-content: space-between;
   gap: 12px;
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: 0.92rem;
   line-height: 1.4;
 }
 
@@ -3979,10 +4036,11 @@ html[data-theme='light'] .course-endorsement {
   border-radius: 16px;
   border: 1px solid rgba(123, 163, 200, 0.12);
   background: rgba(255, 255, 255, 0.035);
+  font-size: 1rem;
 }
 
 .survey-rank-row span {
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .survey-rank-row select {
@@ -3992,11 +4050,44 @@ html[data-theme='light'] .course-endorsement {
   border: 1px solid rgba(123, 163, 200, 0.18);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text);
+  font-size: 1rem;
 }
 
 .survey-inline-field,
 .survey-text-field {
   margin-top: 4px;
+}
+
+.survey-form .field span {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.survey-form .field input,
+.survey-form .field textarea {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.survey-intro {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(143, 224, 192, 0.2);
+  background: rgba(46, 138, 106, 0.1);
+}
+
+.survey-intro strong {
+  color: var(--accent-green);
+}
+
+.survey-intro p {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.02rem;
+  line-height: 1.5;
 }
 
 .certificate-card {

@@ -122,6 +122,15 @@ function writePersistedState(value: PersistedSimulatorState) {
   }
 }
 
+function isPublicTrainingSimulatorMode() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  return params.get('publicTraining') === '1' && params.get('publicScope') !== 'tnm';
+}
+
 function normalizeSimulatorLayers(layers: Partial<SimulatorLayerState> | null | undefined): SimulatorLayerState {
   return {
     ...DEFAULT_LAYERS,
@@ -975,7 +984,7 @@ export function buildPointCloudSectorItems({
   caseData: SimulatorCaseManifest;
   lineIndex: number;
   pose: SimulatorProbePose;
-  selectedPreset: SimulatorPreset;
+  selectedPreset: SimulatorPreset | null;
   sMm: number;
 }): SimulatorSectorItem[] {
   const maxDepth = caseData.render_defaults.max_depth_mm;
@@ -1025,9 +1034,12 @@ export function buildPointCloudSectorItems({
     items.push(item);
   }
 
-  const atStationSnap = lineIndex === selectedPreset.line_index && Math.abs(sMm - selectedPreset.centerline_s_mm) <= 1;
+  const atStationSnap =
+    selectedPreset !== null &&
+    lineIndex === selectedPreset.line_index &&
+    Math.abs(sMm - selectedPreset.centerline_s_mm) <= 1;
 
-  if (atStationSnap && !items.some((item) => item.kind === 'node')) {
+  if (selectedPreset && atStationSnap && !items.some((item) => item.kind === 'node')) {
     const nodeProjection = projectToSector(
       selectedPreset.target,
       pose,
@@ -1081,6 +1093,7 @@ export function buildPointCloudSectorItems({
 export function SimulatorPage() {
   const { setModuleProgress } = useLearnerProgress();
   const { assets, caseData, error } = useSimulatorCase();
+  const publicTrainingMode = useMemo(() => isPublicTrainingSimulatorMode(), []);
   const [selectedKey, setSelectedKey] = useState('');
   const [lineIndex, setLineIndex] = useState<number | null>(null);
   const [sMm, setSMm] = useState(0);
@@ -1090,28 +1103,48 @@ export function SimulatorPage() {
   const [activeStructure, setActiveStructure] = useState<string | null>(null);
   const [hiddenSceneStructureIds, setHiddenSceneStructureIds] = useState<string[]>([]);
   const [lockSceneView, setLockSceneView] = useState(false);
+  const [simulatorStateInitialized, setSimulatorStateInitialized] = useState(false);
 
   const selectedPreset = useMemo(() => {
     if (!caseData?.presets.length) {
       return null;
     }
 
-    return caseData.presets.find((preset) => preset.preset_key === selectedKey) ?? caseData.presets[0];
+    return caseData.presets.find((preset) => preset.preset_key === selectedKey) ?? null;
   }, [caseData, selectedKey]);
+
+  const navigationPreset = useMemo(() => selectedPreset ?? caseData?.presets[0] ?? null, [caseData, selectedPreset]);
 
   const { snapshot, status: snapshotStatus } = useSimulatorSectorSnapshot(caseData, selectedPreset?.preset_key ?? null);
 
   useEffect(() => {
-    if (!caseData || selectedKey || !caseData.presets.length) {
+    if (!caseData || simulatorStateInitialized || !caseData.presets.length) {
+      return;
+    }
+
+    const first = caseData.presets[0];
+    const publicStartLineIndex = caseData.navigation.primary_line_index ?? first.line_index;
+
+    if (publicTrainingMode) {
+      setSelectedKey('');
+      setLineIndex(publicStartLineIndex);
+      setSMm(0);
+      setRollDeg(clampProbeRollDeg(caseData.render_defaults.roll_deg));
+      setLayers(normalizeSimulatorLayers(undefined));
+      setTeachingView(true);
+      setHiddenSceneStructureIds([]);
+      setLockSceneView(true);
+      setActiveStructure(null);
+      setSimulatorStateInitialized(true);
       return;
     }
 
     const persisted = readPersistedState();
     const persistedPreset = caseData.presets.find((preset) => preset.preset_key === persisted?.selectedKey);
-    const first = persistedPreset ?? caseData.presets[0];
-    setSelectedKey(first.preset_key);
-    setLineIndex(typeof persisted?.lineIndex === 'number' ? persisted.lineIndex : first.line_index);
-    setSMm(typeof persisted?.sMm === 'number' ? persisted.sMm : first.centerline_s_mm);
+    const firstPreset = persistedPreset ?? first;
+    setSelectedKey(firstPreset.preset_key);
+    setLineIndex(typeof persisted?.lineIndex === 'number' ? persisted.lineIndex : firstPreset.line_index);
+    setSMm(typeof persisted?.sMm === 'number' ? persisted.sMm : firstPreset.centerline_s_mm);
     setRollDeg(
       typeof persisted?.rollDeg === 'number'
         ? clampProbeRollDeg(persisted.rollDeg)
@@ -1121,10 +1154,11 @@ export function SimulatorPage() {
     setTeachingView(typeof persisted?.teachingView === 'boolean' ? persisted.teachingView : true);
     setHiddenSceneStructureIds(normalizeHiddenSceneStructureIds(persisted?.hiddenSceneStructureIds));
     setLockSceneView(typeof persisted?.lockSceneView === 'boolean' ? persisted.lockSceneView : false);
-  }, [caseData, selectedKey]);
+    setSimulatorStateInitialized(true);
+  }, [caseData, publicTrainingMode, simulatorStateInitialized]);
 
   useEffect(() => {
-    if (!selectedPreset) {
+    if (publicTrainingMode || !simulatorStateInitialized || !selectedPreset) {
       return;
     }
 
@@ -1138,7 +1172,18 @@ export function SimulatorPage() {
       selectedKey: selectedPreset.preset_key,
       teachingView,
     });
-  }, [hiddenSceneStructureIds, layers, lineIndex, lockSceneView, rollDeg, sMm, selectedPreset, teachingView]);
+  }, [
+    hiddenSceneStructureIds,
+    layers,
+    lineIndex,
+    lockSceneView,
+    publicTrainingMode,
+    rollDeg,
+    sMm,
+    selectedPreset,
+    simulatorStateInitialized,
+    teachingView,
+  ]);
 
   useEffect(() => {
     if (caseData) {
@@ -1147,34 +1192,34 @@ export function SimulatorPage() {
   }, [caseData, setModuleProgress]);
 
   const activePolyline = useMemo(() => {
-    if (!assets?.centerlines.polylines.length || !selectedPreset) {
+    if (!assets?.centerlines.polylines.length || !navigationPreset) {
       return null;
     }
 
-    const resolvedLineIndex = lineIndex ?? selectedPreset.line_index;
+    const resolvedLineIndex = lineIndex ?? navigationPreset.line_index;
 
     return (
       assets.centerlines.polylines.find((polyline) => polyline.line_index === resolvedLineIndex) ??
-      assets.centerlines.polylines.find((polyline) => polyline.line_index === selectedPreset.line_index) ??
+      assets.centerlines.polylines.find((polyline) => polyline.line_index === navigationPreset.line_index) ??
       assets.centerlines.polylines[0]
     );
-  }, [assets, lineIndex, selectedPreset]);
+  }, [assets, lineIndex, navigationPreset]);
 
   const pose = useMemo(() => {
-    if (!activePolyline || !selectedPreset) {
+    if (!activePolyline || !navigationPreset) {
       return null;
     }
 
-    return computeSimulatorPose(activePolyline, sMm, rollDeg, selectedPreset);
-  }, [activePolyline, rollDeg, sMm, selectedPreset]);
+    return computeSimulatorPose(activePolyline, sMm, rollDeg, navigationPreset);
+  }, [activePolyline, navigationPreset, rollDeg, sMm]);
 
   const cameraPose = useMemo(() => {
-    if (!activePolyline || !selectedPreset) {
+    if (!activePolyline || !navigationPreset) {
       return null;
     }
 
-    return computeSimulatorPose(activePolyline, sMm, 0, selectedPreset);
-  }, [activePolyline, sMm, selectedPreset]);
+    return computeSimulatorPose(activePolyline, sMm, 0, navigationPreset);
+  }, [activePolyline, navigationPreset, sMm]);
 
   const hasCurrentSnapshot = Boolean(selectedPreset && snapshot?.preset_key === selectedPreset.preset_key);
   const atSnapshotPose = Boolean(
@@ -1191,7 +1236,7 @@ export function SimulatorPage() {
   });
 
   const sectorItems = useMemo<SimulatorSectorItem[]>(() => {
-    if (!caseData || !assets || !pose || !selectedPreset || !activePolyline) {
+    if (!caseData || !assets || !pose || !navigationPreset || !activePolyline) {
       return [];
     }
 
@@ -1216,7 +1261,7 @@ export function SimulatorPage() {
       },
     ];
 
-    if (shouldUseSnapshotSectorItems(sectorSource) && snapshot?.preset_key === selectedPreset.preset_key) {
+    if (selectedPreset && shouldUseSnapshotSectorItems(sectorSource) && snapshot?.preset_key === selectedPreset.preset_key) {
       return [
         ...baseItems,
         ...snapshot.response.sector.labels.map(volumeLabelToSectorItem),
@@ -1234,7 +1279,7 @@ export function SimulatorPage() {
       selectedPreset,
       sMm,
     });
-  }, [activePolyline, assets, caseData, pose, sectorSource, selectedPreset, sMm, snapshot]);
+  }, [activePolyline, assets, caseData, navigationPreset, pose, sectorSource, selectedPreset, sMm, snapshot]);
 
   const intersectedStructureIds = useMemo(() => {
     return new Set(
@@ -1275,7 +1320,7 @@ export function SimulatorPage() {
     );
   }
 
-  if (!caseData || !assets || !selectedPreset || !activePolyline || !pose || !cameraPose) {
+  if (!caseData || !assets || !navigationPreset || !activePolyline || !pose || !cameraPose) {
     return (
       <main className="simulator-load-shell">
         <section className="simulator-load-panel">
@@ -1333,10 +1378,10 @@ export function SimulatorPage() {
       <section className="simulator-topbar">
         <div>
           <span className="eyebrow">{caseData.case_id}</span>
-          <h2>Station {formatSimulatorStation(selectedPreset.station)}</h2>
+          <h2>{selectedPreset ? `Station ${formatSimulatorStation(selectedPreset.station)}` : 'Free airway drive'}</h2>
         </div>
         <div className="simulator-status-strip">
-          <span>{selectedPreset.approach}</span>
+          <span>{selectedPreset?.approach ?? 'No station selected'}</span>
           <span>{Math.round(sMm)} mm</span>
           <span>{simulatorSectorSourceLabel(sectorSource)}</span>
         </div>
@@ -1346,14 +1391,25 @@ export function SimulatorPage() {
         <label>
           <span>Station snap</span>
           <select
-            value={selectedPreset.preset_key}
+            value={selectedPreset?.preset_key ?? ''}
             onChange={(event) => {
+              if (!event.target.value) {
+                setSelectedKey('');
+                setLineIndex(caseData.navigation.primary_line_index ?? navigationPreset.line_index);
+                setSMm(0);
+                setRollDeg(clampProbeRollDeg(caseData.render_defaults.roll_deg));
+                setActiveStructure(null);
+                setModuleProgress('simulator', 45);
+                return;
+              }
+
               const preset = caseData.presets.find((candidate) => candidate.preset_key === event.target.value);
               if (preset) {
                 snapToPreset(preset);
               }
             }}
           >
+            {publicTrainingMode ? <option value="">Free drive - no station snap</option> : null}
             {caseData.presets.map((preset) => (
               <option key={preset.preset_key} value={preset.preset_key}>
                 {preset.label}
@@ -1455,7 +1511,16 @@ export function SimulatorPage() {
                   })}
                 </div>
               </details>
-              <button className="simulator-button" onClick={() => snapToPreset(selectedPreset)} type="button">
+              <button
+                className="simulator-button"
+                disabled={!selectedPreset}
+                onClick={() => {
+                  if (selectedPreset) {
+                    snapToPreset(selectedPreset);
+                  }
+                }}
+                type="button"
+              >
                 Snap
               </button>
             </div>

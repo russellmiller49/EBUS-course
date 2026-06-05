@@ -71,10 +71,13 @@ describe('course access helpers', () => {
     expect(routeRequiresPretest('admin')).toBe(false);
     expect(routeRequiresPretest('pretest')).toBe(false);
     expect(routeRequiresPretest('lectures')).toBe(false);
-    expect(routeRequiresPretest('knobology')).toBe(true);
+    expect(routeRequiresPretest('knobology')).toBe(false);
+    expect(routeRequiresPretest('stations')).toBe(false);
+    expect(routeRequiresPretest('simulator')).toBe(false);
+    expect(routeRequiresPretest('tnm-staging')).toBe(false);
   });
 
-  it('unlocks the pre-course flow after welcome and locks practice modules until their lecture quiz', () => {
+  it('unlocks the pre-course flow after welcome while public training modules stay open', () => {
     const state = createInitialLearnerProgress();
 
     expect(canAccessRoute('lectures', state)).toBe(true);
@@ -82,7 +85,13 @@ describe('course access helpers', () => {
     expect(canAccessRoute('sponsors', state)).toBe(true);
     expect(canAccessRoute('pretest', state)).toBe(false);
     expect(getLockedRoutePath('pretest', '/pretest', state)).toBe('/');
-    expect(canAccessRoute('knobology', state)).toBe(false);
+    expect(canAccessRoute('knobology', state)).toBe(true);
+    expect(canAccessRoute('stations', state)).toBe(true);
+    expect(canAccessRoute('simulator', state)).toBe(true);
+    expect(canAccessRoute('tnm-staging', state)).toBe(true);
+    expect(getLockedRoutePath('knobology', '/knobology', state)).toBe('/knobology');
+    expect(getLockedRoutePath('stations', '/stations/explore', state)).toBe('/stations/explore');
+    expect(getRouteLockReason('simulator', state)).toBeNull();
 
     state.lectureWatchStatus['lecture-01'] = {
       completed: true,
@@ -95,13 +104,9 @@ describe('course access helpers', () => {
     };
 
     expect(canAccessRoute('pretest', state)).toBe(true);
-    expect(getLockedRoutePath('knobology', '/knobology', state)).toBe('/pretest');
 
     state.preCourseSurvey.submittedAt = '2026-04-06T09:30:00.000Z';
     state.pretest.submittedAt = '2026-04-06T10:00:00.000Z';
-
-    expect(canAccessRoute('knobology', state)).toBe(false);
-    expect(getLockedRoutePath('knobology', '/knobology', state)).toBe('/lectures');
 
     state.courseAssessmentResults['post-lecture-02'] = {
       completedAt: '2026-04-06T11:00:00.000Z',
@@ -125,7 +130,7 @@ describe('course access helpers', () => {
     state.pretest.unlockedByPasscodeAt = '2026-04-15T10:00:00.000Z';
 
     expect(canAccessRoute('pretest', state)).toBe(true);
-    expect(canAccessRoute('knobology', state)).toBe(false);
+    expect(canAccessRoute('knobology', state)).toBe(true);
   });
 
   it('opens every route while the course admin session is active', () => {
@@ -182,13 +187,20 @@ describe('course access helpers', () => {
     expect(canAccessRoute('post-course', state, { nowMs: atUnlock })).toBe(true);
   });
 
-  it('keeps post-course locked after the date until the learner reaches the final post-test', () => {
+  it('opens post-course after the date for pre-test complete learners even when modules are incomplete', () => {
     const state = createPostCourseReadyState();
     delete state.courseAssessmentResults['post-lecture-02'];
 
+    expect(canAccessRoute('post-course', state, { nowMs: Date.parse('2026-05-31T15:00:00-07:00') })).toBe(true);
+    expect(getRouteLockReason('post-course', state, { nowMs: Date.parse('2026-05-31T15:00:00-07:00') })).toBeNull();
+  });
+
+  it('keeps post-course locked after the date until the learner completes the pre-test', () => {
+    const state = createInitialLearnerProgress();
+
     expect(canAccessRoute('post-course', state, { nowMs: Date.parse('2026-05-31T15:00:00-07:00') })).toBe(false);
     expect(getRouteLockReason('post-course', state, { nowMs: Date.parse('2026-05-31T15:00:00-07:00') })).toBe(
-      'Pass the "Introduction to US, physics, knobology" quiz to unlock this step.',
+      'Complete "Pre-test" to unlock the post-course survey and test.',
     );
   });
 });

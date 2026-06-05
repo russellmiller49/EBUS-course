@@ -5,6 +5,7 @@ import {
   buildAdminProgressSummary,
   fetchAdminLearnerOverview,
   getLearnerAverageProgress,
+  isLearnerPostCourseComplete,
   type AdminAnswerDetail,
   type AdminLearnerOverview,
   type AdminSurveyResult,
@@ -84,6 +85,17 @@ function formatAnswerLabels(labels: string[]) {
 
 function getCorrectAnswerCount(answers: AdminAnswerDetail[]) {
   return answers.filter((answer) => answer.isCorrect).length;
+}
+
+function getPostTestScoreLabel(learner: Pick<AdminLearnerOverview, 'postTestAnswers' | 'postTestSubmittedAt'>) {
+  if (learner.postTestAnswers.length > 0) {
+    const correctCount = getCorrectAnswerCount(learner.postTestAnswers);
+    const percent = Math.round((correctCount / learner.postTestAnswers.length) * 100);
+
+    return `${percent}% (${correctCount}/${learner.postTestAnswers.length})`;
+  }
+
+  return learner.postTestSubmittedAt ? 'Submitted' : 'Not submitted';
 }
 
 function AdminAssessmentAnswers({
@@ -332,6 +344,10 @@ export function AdminPage() {
           <span>Average progress</span>
           <strong>{summary.averageProgressPercent}%</strong>
         </article>
+        <article className="admin-summary-card admin-summary-card--post-course-complete">
+          <span>Ready for cert + feedback</span>
+          <strong>{summary.postCourseCompleteCount}</strong>
+        </article>
       </section>
 
       <section className="admin-toolbar" aria-label="Learner filters">
@@ -359,16 +375,35 @@ export function AdminPage() {
           filteredLearners.map((learner) => {
             const moduleProgressById = getProgressByModule(learner);
             const averageProgress = getLearnerAverageProgress(learner);
+            const postCourseComplete = isLearnerPostCourseComplete(learner);
 
             return (
-              <article key={learner.id} className={`admin-learner-card admin-learner-card--${learner.approvalStatus}`}>
+              <article
+                key={learner.id}
+                className={`admin-learner-card admin-learner-card--${learner.approvalStatus}${
+                  postCourseComplete ? ' admin-learner-card--post-course-complete' : ''
+                }`}
+              >
                 <header className="admin-learner-card__header">
                   <div>
-                    <div className="eyebrow">{learner.approvalStatus === 'approved' ? 'Approved learner' : 'Awaiting approval'}</div>
-                    <h3>{learner.fullName ?? learner.email ?? 'Unnamed learner'}</h3>
+                    <div className="eyebrow">
+                      {postCourseComplete
+                        ? 'Post-course complete'
+                        : learner.approvalStatus === 'approved'
+                          ? 'Approved learner'
+                          : 'Awaiting approval'}
+                    </div>
+                    <h3 className={postCourseComplete ? 'admin-learner-card__name--post-course-complete' : undefined}>
+                      {learner.fullName ?? learner.email ?? 'Unnamed learner'}
+                    </h3>
                     <p>{learner.institution ?? 'Institution not provided'}</p>
                   </div>
                   <div className="admin-learner-card__actions">
+                    {postCourseComplete ? (
+                      <span className="admin-status admin-status--post-course-complete">
+                        Ready for certificate + feedback
+                      </span>
+                    ) : null}
                     <span className={`admin-status admin-status--${learner.approvalStatus}`}>
                       {learner.approvalStatus}
                     </span>
@@ -444,6 +479,14 @@ export function AdminPage() {
                   <div>
                     <span>Page-open time</span>
                     <strong>{formatDuration(learner.totalTimeSpentSeconds)}</strong>
+                  </div>
+                  <div>
+                    <span>Post-test</span>
+                    <strong>{getPostTestScoreLabel(learner)}</strong>
+                  </div>
+                  <div className={postCourseComplete ? 'admin-progress-summary__complete' : undefined}>
+                    <span>Certificate status</span>
+                    <strong>{postCourseComplete ? 'Ready to email' : 'Pending'}</strong>
                   </div>
                 </div>
 

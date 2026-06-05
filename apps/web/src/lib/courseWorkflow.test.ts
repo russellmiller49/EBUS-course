@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { courseAssessments } from '@/content/courseAssessments';
+import { courseAssessments, finalPostTestAssessment } from '@/content/courseAssessments';
 import { lectureManifest } from '@/content/lectures';
 import {
   getCourseGuidanceModel,
@@ -120,7 +120,35 @@ describe('courseWorkflow', () => {
     expect(getCourseStepModels(afterQuiz).find((step) => step.id === 'lecture-03')?.unlocked).toBe(true);
   });
 
-  it('unlocks the certificate after the survey', () => {
+  it('unlocks the final post-test and post-course survey after course end once the pre-test is complete', () => {
+    const state = createInitialLearnerProgress();
+    state.pretest.submittedAt = '2026-04-10T10:00:00.000Z';
+
+    const beforeCourseEnd = getCourseStepModels(state, { nowMs: Date.parse('2026-05-31T14:59:59-07:00') });
+
+    expect(beforeCourseEnd.find((step) => step.kind === 'post-test')?.unlocked).toBe(false);
+    expect(beforeCourseEnd.find((step) => step.id === 'post-course-survey')?.lockedReason).toBe(
+      'Available after the live course on May 31, 2026 at 3:00 PM PT',
+    );
+
+    const afterCourseEnd = getCourseStepModels(state, { nowMs: Date.parse('2026-05-31T15:00:00-07:00') });
+
+    expect(afterCourseEnd.find((step) => step.id === 'lecture-02')?.unlocked).toBe(false);
+    expect(afterCourseEnd.find((step) => step.kind === 'post-test')?.unlocked).toBe(true);
+    expect(afterCourseEnd.find((step) => step.id === 'post-course-survey')?.unlocked).toBe(true);
+    expect(afterCourseEnd.find((step) => step.id === 'certificate')?.lockedReason).toBe(
+      'Complete the final post-test and post-course survey to unlock the certificate.',
+    );
+
+    state.courseSurvey.submittedAt = '2026-05-31T22:05:00.000Z';
+
+    expect(getCourseStepModels(state, { nowMs: Date.parse('2026-05-31T15:01:00-07:00') }).find((step) => step.id === 'certificate')?.unlocked).toBe(false);
+    expect(getCourseStepModels(state, { nowMs: Date.parse('2026-05-31T15:01:00-07:00') }).find((step) => step.id === 'certificate')?.lockedReason).toBe(
+      'Complete the final post-test to unlock the certificate.',
+    );
+  });
+
+  it('unlocks the certificate after the final post-test and survey', () => {
     const state = createInitialLearnerProgress();
     state.lectureWatchStatus['lecture-01'] = {
       completed: true,
@@ -159,10 +187,19 @@ describe('courseWorkflow', () => {
 
     expect(getCourseStepModels(state, { nowMs: Date.parse('2026-05-31T15:01:00-07:00') }).find((step) => step.id === 'post-course-survey')?.unlocked).toBe(true);
     expect(getCourseStepModels(state, { nowMs: Date.parse('2026-05-31T15:01:00-07:00') }).find((step) => step.id === 'certificate')?.unlocked).toBe(false);
+    expect(getCourseStepModels(state, { nowMs: Date.parse('2026-05-31T15:01:00-07:00') }).find((step) => step.id === 'certificate')?.lockedReason).toBe(
+      'Complete the post-course survey to unlock the certificate.',
+    );
 
     state.courseSurvey.submittedAt = '2026-04-12T12:15:00.000Z';
 
     expect(getCourseStepModels(state, { nowMs: Date.parse('2026-05-31T15:01:00-07:00') }).find((step) => step.id === 'certificate')?.unlocked).toBe(true);
+
+    if (finalPostTestAssessment) {
+      delete state.courseAssessmentResults[finalPostTestAssessment.id];
+    }
+
+    expect(getCourseStepModels(state, { nowMs: Date.parse('2026-05-31T15:01:00-07:00') }).find((step) => step.id === 'certificate')?.unlocked).toBe(false);
   });
 
   it('unlocks the full course workflow for admin preview without marking steps complete', () => {

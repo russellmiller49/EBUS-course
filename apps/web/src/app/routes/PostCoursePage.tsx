@@ -16,7 +16,10 @@ import { useCourseNow } from '@/lib/courseClock';
 import {
   getAssessmentWorkflowStatus,
   getCourseAssessmentProgress,
+  isCourseCertificateUnlocked,
   getLectureModuleProgressSummary,
+  getPostCourseAssessmentLockReason,
+  isPostCourseAssessmentUnlocked,
   isCourseSurveyComplete,
 } from '@/lib/courseWorkflow';
 import type { QuizResult } from '@/lib/quiz';
@@ -42,6 +45,16 @@ function getAssessmentScoreLabel(progress: CourseAssessmentProgress | null) {
   }
 
   return `${progress.percent}% saved`;
+}
+
+function getSavedAssessmentAnswers(progress: CourseAssessmentProgress | null) {
+  if (!progress) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    progress.answers.map((answer) => [answer.questionId, answer.selectedOptionIds]),
+  );
 }
 
 export function PostCoursePage() {
@@ -74,10 +87,14 @@ export function PostCoursePage() {
   );
   const surveyComplete = isCourseSurveyComplete(state);
   const courseEnded = isCourseEndUnlocked(nowMs);
-  const surveyUnlocked = previewSessionActive || (courseEnded && Boolean(postTestProgress?.completedAt));
-  const completionArtifactsUnlocked = previewSessionActive || surveyComplete;
+  const postCourseUnlocked = isPostCourseAssessmentUnlocked(state, accessOptions);
+  const postCourseLockReason = getPostCourseAssessmentLockReason(state, accessOptions) ?? formatCourseEndAvailability();
+  const postTestUnlocked = Boolean(finalPostTestAssessment && postCourseUnlocked);
+  const surveyUnlocked = postCourseUnlocked;
+  const completionArtifactsUnlocked = previewSessionActive || isCourseCertificateUnlocked(state);
+  const reviewPostTest = Boolean(postTestProgress?.completedAt && completionArtifactsUnlocked);
   const canSubmitSurvey = isCourseSurveyResponseComplete(postCourseSurveyItems, surveyResponses);
-  const certificateName = profile?.fullName || user?.email || 'EBUS learner';
+  const learnerName = profile?.fullName || user?.email || 'EBUS learner';
 
   function handleCourseAssessmentComplete(result: QuizResult) {
     if (!finalPostTestAssessment) {
@@ -136,10 +153,11 @@ export function PostCoursePage() {
     <div className="page-stack">
       <section className="hero-card">
         <div className="eyebrow">Post-course survey and test</div>
-        <h2>Post-course assessment unlocks after the live course.</h2>
+        <h2>Post-course assessment is open after the pre-test.</h2>
         <p>
-          The post-test and post-course survey stay locked until the course end timestamp. Answers remain hidden during
-          the test experience for cohort review.
+          Learners who completed the pre-test can submit the final post-test and post-course survey after the live
+          course ends, even if module progress is incomplete. Answers remain hidden during the test experience for
+          cohort review.
         </p>
         <div className="tag-row">
           <span className="tag">{courseEnded ? 'Course ended' : formatCourseEndAvailability()}</span>
@@ -147,26 +165,31 @@ export function PostCoursePage() {
         </div>
       </section>
 
-      <section className={`section-card${postTestWorkflow?.unlocked ? '' : ' section-card--locked'}`}>
+      <section className={`section-card${postTestUnlocked ? '' : ' section-card--locked'}`}>
         <div className="section-card__heading">
           <div>
             <div className="eyebrow">Post-test</div>
             <h2>{postTestProgress?.completedAt ? 'Post-test submitted' : 'Post-test'}</h2>
             <p>
-              {postTestWorkflow?.unlocked
-                ? 'Submit the post-test before the post-course survey.'
-                : postTestWorkflow?.lockedReason ?? formatCourseEndAvailability()}
+              {postTestUnlocked
+                ? 'Final post-test is open; module completion is not required.'
+                : postTestWorkflow?.lockedReason ?? postCourseLockReason}
             </p>
           </div>
           <span className="tag">{formatTimestamp(postTestProgress?.completedAt)}</span>
         </div>
-        {finalPostTestAssessment && postTestWorkflow?.unlocked ? (
+        {finalPostTestAssessment && postTestUnlocked ? (
           <QuizCard
-            key={`${finalPostTestAssessment.id}-${postTestProgress?.attemptCount ?? 0}`}
+            key={`${finalPostTestAssessment.id}-${postTestProgress?.attemptCount ?? 0}-${reviewPostTest ? 'review' : 'attempt'}`}
+            completionMessage="Answers are available because the final post-test and post-course survey are complete."
+            completionRecordedInitially={reviewPostTest}
+            deferFeedbackUntilComplete
+            initialAnswers={reviewPostTest ? getSavedAssessmentAnswers(postTestProgress) : undefined}
             label={finalPostTestAssessment.title}
             largeQuestionStem
             onComplete={handleCourseAssessmentComplete}
             questions={finalPostTestAssessment.questions}
+            readOnly={reviewPostTest}
             revealAnswers={completionArtifactsUnlocked}
             showRunningScore={false}
           />
@@ -178,14 +201,24 @@ export function PostCoursePage() {
           <div>
             <div className="eyebrow">Post-course survey</div>
             <h2>{surveyComplete ? 'Survey submitted' : 'Submit the survey to unlock the certificate'}</h2>
-            <p>{surveyUnlocked ? 'Survey status is saved locally.' : 'Complete the post-test after the live course first.'}</p>
+            <p>{surveyUnlocked ? 'Survey is open; module completion is not required.' : postCourseLockReason}</p>
           </div>
           <span className="tag">{formatTimestamp(state.courseSurvey.submittedAt)}</span>
         </div>
+        {!surveyComplete ? (
+          <div className="survey-intro">
+            <strong>Before you begin</strong>
+            <p>Please provide your impressions of each question as you'd rate them AFTER the EBUS course.</p>
+          </div>
+        ) : null}
         {surveyComplete ? (
           <div className="feedback-banner feedback-banner--success">
-            <strong>Certificate is unlocked.</strong>
-            <p>Your survey response is saved locally and synced to Supabase when connected.</p>
+            <strong>{completionArtifactsUnlocked ? 'Post-course work complete.' : 'Survey saved.'}</strong>
+            <p>
+              {completionArtifactsUnlocked
+                ? 'Post-test answers are now available in the portal.'
+                : 'Complete the final post-test to unlock the certificate.'}
+            </p>
           </div>
         ) : (
           <CourseSurveyForm
@@ -199,23 +232,17 @@ export function PostCoursePage() {
         )}
       </section>
 
-      {completionArtifactsUnlocked ? (
-        <section className="section-card certificate-card">
-          <div className="eyebrow">Certificate of completion</div>
-          <h2>{certificateName}</h2>
-          <p>
-            has completed the SoCal EBUS Prep online curriculum, pre-test, lecture quizzes, final post-test, and
-            post-course survey.
-          </p>
-          <div className="tag-row">
-            <span className="tag">Completed {formatTimestamp(state.courseSurvey.submittedAt)}</span>
-            <span className="tag">SoCal EBUS Prep 2026</span>
-          </div>
-          <button className="button button--ghost" onClick={() => window.print()} type="button">
-            Print certificate
-          </button>
-        </section>
-      ) : null}
+      <section className={`section-card certificate-card${completionArtifactsUnlocked ? '' : ' section-card--locked'}`}>
+        <div className="eyebrow">Certificate and feedback</div>
+        <h2>{completionArtifactsUnlocked ? 'Course completion recorded' : 'Certificate pending'}</h2>
+        <p>The Course Staff will email you a course completion certificate along with personalized performance feedback.</p>
+        <div className="tag-row">
+          <span className="tag">{learnerName}</span>
+          <span className="tag">
+            {completionArtifactsUnlocked ? `Completed ${formatTimestamp(state.courseSurvey.submittedAt)}` : 'Complete post-test and survey'}
+          </span>
+        </div>
+      </section>
     </div>
   );
 }

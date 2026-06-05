@@ -138,6 +138,32 @@ export function isPretestComplete(state: Pick<LearnerProgressState, 'pretest'>) 
   return Boolean(state.pretest.submittedAt || state.pretest.unlockedByPasscodeAt);
 }
 
+export function isPostCourseAssessmentUnlocked(
+  state: Pick<LearnerProgressState, 'pretest'>,
+  options: CourseWorkflowOptions = {},
+) {
+  if (hasFullCoursePreviewAccess(options)) {
+    return true;
+  }
+
+  return isPretestComplete(state) && isCourseEndUnlocked(options.nowMs);
+}
+
+export function getPostCourseAssessmentLockReason(
+  state: Pick<LearnerProgressState, 'pretest'>,
+  options: CourseWorkflowOptions = {},
+) {
+  if (isPostCourseAssessmentUnlocked(state, options)) {
+    return null;
+  }
+
+  if (!isCourseEndUnlocked(options.nowMs)) {
+    return formatCourseEndAvailability();
+  }
+
+  return 'Complete "Pre-test" to unlock the post-course survey and test.';
+}
+
 export function isLectureComplete(state: Pick<LearnerProgressState, 'lectureWatchStatus'>, lectureId: string) {
   return Boolean(state.lectureWatchStatus[lectureId]?.completed);
 }
@@ -184,6 +210,16 @@ export function isCourseAssessmentComplete(
 
 export function isCourseSurveyComplete(state: Pick<LearnerProgressState, 'courseSurvey'>) {
   return Boolean(state.courseSurvey.submittedAt);
+}
+
+export function isCourseCertificateUnlocked(
+  state: Pick<LearnerProgressState, 'courseAssessmentResults' | 'courseSurvey'>,
+) {
+  const postTestComplete = finalPostTestAssessment
+    ? isCourseAssessmentComplete(state, finalPostTestAssessment.id)
+    : true;
+
+  return postTestComplete && isCourseSurveyComplete(state);
 }
 
 function isAccountComplete(options: CourseWorkflowOptions = {}) {
@@ -250,8 +286,12 @@ function isCourseStepCompleteWithOptions(
     return isCourseAssessmentComplete(state, step.assessmentId);
   }
 
-  if (step.kind === 'survey' || step.kind === 'certificate') {
+  if (step.kind === 'survey') {
     return isCourseSurveyComplete(state);
+  }
+
+  if (step.kind === 'certificate') {
+    return isCourseCertificateUnlocked(state);
   }
 
   return false;
@@ -313,6 +353,53 @@ function isTimeLockedStep(step: CourseWorkflowStepDefinition, options: CourseWor
   return (step.kind === 'post-test' || step.kind === 'survey') && !isCourseEndUnlocked(options.nowMs);
 }
 
+function isPostCourseAssessmentStep(step: CourseWorkflowStepDefinition) {
+  return step.kind === 'post-test' || step.kind === 'survey';
+}
+
+function getStepLockReason({
+  postCourseUnlocked,
+  previousBlockingStep,
+  state,
+  step,
+  timeLocked,
+  options,
+}: {
+  postCourseUnlocked: boolean;
+  previousBlockingStep: CourseWorkflowStepDefinition | null;
+  state: LearnerProgressState;
+  step: CourseWorkflowStepDefinition;
+  timeLocked: boolean;
+  options: CourseWorkflowOptions;
+}) {
+  if (postCourseUnlocked) {
+    return null;
+  }
+
+  if (isPostCourseAssessmentStep(step)) {
+    return getPostCourseAssessmentLockReason(state, options);
+  }
+
+  if (step.kind === 'certificate' && isPostCourseAssessmentUnlocked(state, options)) {
+    const postTestComplete = finalPostTestAssessment
+      ? isCourseAssessmentComplete(state, finalPostTestAssessment.id)
+      : true;
+    const surveyComplete = isCourseSurveyComplete(state);
+
+    if (!postTestComplete && !surveyComplete) {
+      return 'Complete the final post-test and post-course survey to unlock the certificate.';
+    }
+
+    if (!postTestComplete) {
+      return 'Complete the final post-test to unlock the certificate.';
+    }
+
+    return 'Complete the post-course survey to unlock the certificate.';
+  }
+
+  return timeLocked && previousBlockingStep === null ? formatCourseEndAvailability() : getLockedReason(previousBlockingStep);
+}
+
 export function getCourseStepModels(state: LearnerProgressState, options: CourseWorkflowOptions = {}): CourseWorkflowStepModel[] {
   if (hasFullCoursePreviewAccess(options)) {
     return courseWorkflowSteps.map((step) => {
@@ -335,12 +422,22 @@ export function getCourseStepModels(state: LearnerProgressState, options: Course
   return courseWorkflowSteps.map((step) => {
     const completed = isCourseStepCompleteWithOptions(state, step, options);
     const timeLocked = isTimeLockedStep(step, options);
-    const unlocked = completed || (priorStepsComplete && !timeLocked);
+    const postCourseUnlocked = isPostCourseAssessmentStep(step) && isPostCourseAssessmentUnlocked(state, options);
+    const unlocked = completed || postCourseUnlocked || (priorStepsComplete && !timeLocked);
     const status = completed ? 'completed' : unlocked && priorStepsComplete ? 'current' : unlocked ? 'available' : 'locked';
     const model: CourseWorkflowStepModel = {
       ...step,
       completed,
-      lockedReason: unlocked ? null : timeLocked && priorStepsComplete ? formatCourseEndAvailability() : getLockedReason(previousBlockingStep),
+      lockedReason: unlocked
+        ? null
+        : getStepLockReason({
+            postCourseUnlocked,
+            previousBlockingStep,
+            state,
+            step,
+            timeLocked,
+            options,
+          }),
       percent: getStepPercent(state, step, completed),
       status,
       unlocked,

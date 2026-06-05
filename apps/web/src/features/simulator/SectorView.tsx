@@ -1020,7 +1020,7 @@ export function SectorView({
   activeStructure: string | null;
   caseData: SimulatorCaseManifest;
   items: SimulatorSectorItem[];
-  selectedPreset: SimulatorPreset;
+  selectedPreset: SimulatorPreset | null;
   setActiveStructure: (value: string | null) => void;
   source: string;
 }) {
@@ -1291,11 +1291,13 @@ export function SectorView({
         <div>
           <span className="eyebrow">EBUS sector</span>
           <h2>
-            Station {formatSimulatorStation(selectedPreset.station)} Node {selectedPreset.node.toUpperCase()}
+            {selectedPreset
+              ? `Station ${formatSimulatorStation(selectedPreset.station)} Node ${selectedPreset.node.toUpperCase()}`
+              : 'Live free-drive sector'}
           </h2>
         </div>
         <div className="simulator-sector-header-actions">
-          <span className="simulator-chip">{selectedPreset.approach}</span>
+          <span className="simulator-chip">{selectedPreset?.approach ?? 'Free drive'}</span>
           <span className="simulator-chip">Realistic</span>
         </div>
       </div>

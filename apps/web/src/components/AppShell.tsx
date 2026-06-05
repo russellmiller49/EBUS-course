@@ -8,14 +8,19 @@ import type { NavigationItem } from '@/content/types';
 export function AppShell({
   children,
   navItems,
+  publicMode,
 }: {
   children: ReactNode;
   navItems: NavigationItem[];
+  publicMode?: {
+    subtitle: string;
+    title: string;
+  };
 }) {
   return (
     <div className="app-shell">
       <div className="app-shell__frame">
-        <TopHeader />
+        <TopHeader publicMode={publicMode} />
         <nav className="top-nav" aria-label="Primary">
           {navItems.map((item) => (
             <NavLink

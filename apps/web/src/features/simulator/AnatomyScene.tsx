@@ -33,6 +33,7 @@ const GLB_SCENE_TO_WEB_MM_MATRIX = new THREE.Matrix4().set(
   1,
 );
 const AIRWAY_TRANSLUCENCY_REDUCTION = 0.15;
+const FREE_DRIVE_ANTERIOR_CAMERA_OFFSET = new THREE.Vector3(0, 120, 620);
 
 type GlbAsset = Pick<SimulatorCleanModelAsset, 'asset'> | Pick<SimulatorScopeModelAsset, 'asset'>;
 
@@ -198,13 +199,13 @@ function withClipping<T extends THREE.Material>(material: T, clippingPlanes: THR
 
 function isTeachingFocus(
   structureId: string,
-  selectedPreset: SimulatorPreset,
+  selectedPreset: SimulatorPreset | null,
   intersectedStructureIds: Set<string>,
   activeStructure: string | null,
 ): boolean {
   return (
     structureId === 'airway_wall' ||
-    structureId === selectedPreset.station_key ||
+    structureId === selectedPreset?.station_key ||
     activeStructure === structureId ||
     intersectedStructureIds.has(structureId)
   );
@@ -340,7 +341,7 @@ export function AnatomyScene({
   layers: SimulatorLayerState;
   lockView?: boolean;
   pose: SimulatorProbePose;
-  selectedPreset: SimulatorPreset;
+  selectedPreset: SimulatorPreset | null;
   teachingView: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -367,15 +368,20 @@ export function AnatomyScene({
     const boundsCenter = toVector(caseData.bounds.center);
     const size = toVector(caseData.bounds.size);
     const sceneRadius = Math.max(size.x, size.y, size.z, 180);
-    const focus = cameraPose.position.clone().add(cameraPose.depthAxis.clone().multiplyScalar(15));
-    const autoCameraPosition = focus
-      .clone()
-      .add(cameraPose.lateralAxis.clone().multiplyScalar(92))
-      .add(cameraPose.depthAxis.clone().multiplyScalar(-118))
-      .add(cameraPose.tangent.clone().multiplyScalar(58))
-      .add(new THREE.Vector3(0, 54, 0));
-    const lockedCameraView = lockView ? lockedCameraViewRef.current : null;
-    const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, sceneRadius * 8);
+    const freeDriveView = selectedPreset === null;
+    const focus = freeDriveView
+      ? boundsCenter.clone().lerp(cameraPose.position, 0.52).add(new THREE.Vector3(0, 34, 0))
+      : cameraPose.position.clone().add(cameraPose.depthAxis.clone().multiplyScalar(15));
+    const autoCameraPosition = freeDriveView
+      ? focus.clone().add(FREE_DRIVE_ANTERIOR_CAMERA_OFFSET)
+      : focus
+          .clone()
+          .add(cameraPose.lateralAxis.clone().multiplyScalar(92))
+          .add(cameraPose.depthAxis.clone().multiplyScalar(-118))
+          .add(cameraPose.tangent.clone().multiplyScalar(58))
+          .add(new THREE.Vector3(0, 54, 0));
+    const lockedCameraView = lockView && !freeDriveView ? lockedCameraViewRef.current : null;
+    const camera = new THREE.PerspectiveCamera(freeDriveView ? 52 : 42, width / height, 0.1, sceneRadius * 8);
     camera.position.copy(lockedCameraView?.position ?? autoCameraPosition);
     camera.lookAt(lockedCameraView?.target ?? focus);
 
@@ -486,8 +492,8 @@ export function AnatomyScene({
         const geometry = new THREE.BufferGeometry().setFromPoints(polyline.points.map(toVector));
         const material = withClipping(
           new THREE.LineBasicMaterial({
-            color: polyline.line_index === selectedPreset.line_index ? '#eef4f2' : '#56666a',
-            opacity: polyline.line_index === selectedPreset.line_index ? 0.82 : 0.28,
+            color: selectedPreset && polyline.line_index === selectedPreset.line_index ? '#eef4f2' : '#56666a',
+            opacity: selectedPreset && polyline.line_index === selectedPreset.line_index ? 0.82 : 0.28,
             transparent: true,
           }),
           anatomyClippingPlanes,

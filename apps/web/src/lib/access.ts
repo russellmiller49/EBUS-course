@@ -1,9 +1,10 @@
 import type { AppRouteId } from '@/content/types';
-import { formatCourseEndAvailability, isCourseEndUnlocked } from '@/lib/courseConfig';
 import {
   getCourseStepModels,
   getLockedReason,
+  getPostCourseAssessmentLockReason,
   isCoursePretestUnlocked,
+  isPostCourseAssessmentUnlocked,
   isPretestComplete,
 } from '@/lib/courseWorkflow';
 import type { LearnerProgressState } from '@/lib/progress';
@@ -26,6 +27,12 @@ export interface CourseAccessOptions {
 }
 
 export { isPretestComplete };
+
+const publicTrainingRouteIds = new Set<AppRouteId>(['knobology', 'stations', 'simulator', 'tnm-staging']);
+
+export function isPublicTrainingRoute(routeId: AppRouteId | null) {
+  return Boolean(routeId && publicTrainingRouteIds.has(routeId));
+}
 
 export function validateCourseAdminPasscode(value: string) {
   return value.trim() === COURSE_ADMIN_SHARED_PASSCODE;
@@ -109,7 +116,9 @@ export function clearCourseVendorPasscode(storage: CourseAccessStorage | null = 
 
 export function routeRequiresPretest(routeId: AppRouteId | null) {
   return Boolean(
-    routeId && !['home', 'progress', 'welcome', 'admin', 'sponsors', 'lectures', 'pretest', 'post-course'].includes(routeId),
+    routeId &&
+      !isPublicTrainingRoute(routeId) &&
+      !['home', 'progress', 'welcome', 'admin', 'sponsors', 'lectures', 'pretest', 'post-course'].includes(routeId),
   );
 }
 
@@ -160,7 +169,8 @@ export function canAccessRoute(
     routeId === 'welcome' ||
     routeId === 'admin' ||
     routeId === 'sponsors' ||
-    routeId === 'lectures'
+    routeId === 'lectures' ||
+    isPublicTrainingRoute(routeId)
   ) {
     return true;
   }
@@ -169,16 +179,11 @@ export function canAccessRoute(
     return isCoursePretestUnlocked(state, options);
   }
 
-  const steps = getCourseStepModels(state, options);
-
   if (routeId === 'post-course') {
-    if (!isCourseEndUnlocked(options.nowMs)) {
-      return false;
-    }
-
-    return Boolean(steps.find((step) => step.kind === 'post-test')?.unlocked);
+    return isPostCourseAssessmentUnlocked(state, options);
   }
 
+  const steps = getCourseStepModels(state, options);
   const prerequisiteId = getRoutePrerequisiteStepId(routeId);
 
   if (!prerequisiteId) {
@@ -223,11 +228,7 @@ export function getRouteLockReason(
   }
 
   if (routeId === 'post-course') {
-    if (!isCourseEndUnlocked(options.nowMs)) {
-      return formatCourseEndAvailability();
-    }
-
-    return getCourseStepModels(state, options).find((step) => step.id === 'post-test')?.lockedReason ?? null;
+    return getPostCourseAssessmentLockReason(state, options);
   }
 
   const prerequisiteId = getRoutePrerequisiteStepId(routeId);

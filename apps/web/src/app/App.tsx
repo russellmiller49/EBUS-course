@@ -23,7 +23,7 @@ import { PostCoursePage } from '@/app/routes/PostCoursePage';
 import { SimulatorPage } from '@/app/routes/SimulatorPage';
 import { TnmStagingPage } from '@/app/routes/TnmStagingPage';
 import { NotFoundPage } from '@/app/routes/NotFoundPage';
-import { canAccessRoute, getLockedRoutePath, getRouteLockReason } from '@/lib/access';
+import { canAccessRoute, getLockedRoutePath, getRouteLockReason, isPublicTrainingRoute } from '@/lib/access';
 import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
 import { useAuth } from '@/lib/auth';
 import { useCourseNow } from '@/lib/courseClock';
@@ -47,6 +47,9 @@ const navItems: NavigationItem[] = [
 ];
 
 const adminNavItem: NavigationItem = { id: 'admin', label: 'Dashboard', icon: '▣', path: '/admin' };
+const publicEbusRouteIds = new Set<AppRouteId>(['knobology', 'stations', 'simulator']);
+
+type PublicTrainingScope = 'ebus' | 'tnm';
 
 const Case001Page = lazy(() =>
   import('@/app/routes/Case001Page').then((module) => ({ default: module.Case001Page })),
@@ -159,6 +162,52 @@ function getTrackedModuleId(pathname: string) {
   return null;
 }
 
+function getPublicTrainingScope(): PublicTrainingScope | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get('publicTraining') !== '1') {
+    return null;
+  }
+
+  return params.get('publicScope') === 'tnm' ? 'tnm' : 'ebus';
+}
+
+function isRouteInPublicTrainingScope(routeId: AppRouteId | null, scope: PublicTrainingScope | null) {
+  if (!routeId || !scope) {
+    return false;
+  }
+
+  if (scope === 'tnm') {
+    return routeId === 'tnm-staging';
+  }
+
+  return publicEbusRouteIds.has(routeId);
+}
+
+function getPublicNavItems(scope: PublicTrainingScope) {
+  const routeIds = scope === 'tnm' ? new Set<AppRouteId>(['tnm-staging']) : publicEbusRouteIds;
+
+  return navItems.filter((item) => routeIds.has(item.id));
+}
+
+function getPublicModeHeader(scope: PublicTrainingScope) {
+  if (scope === 'tnm') {
+    return {
+      title: 'TNM-9 Staging',
+      subtitle: 'Standalone lung cancer staging module',
+    };
+  }
+
+  return {
+    title: 'Public EBUS Training',
+    subtitle: 'Open knobology, stations, and simulator modules',
+  };
+}
+
 export function App() {
   const location = useLocation();
   const { hydrated, recordModuleEngagement, state, visitRoute } = useLearnerProgress();
@@ -178,8 +227,12 @@ export function App() {
     startedAt: number;
   } | null>(null);
   const routeId = resolveRouteId(location.pathname);
+  const publicTrainingScope = getPublicTrainingScope();
+  const publicTrainingMode = isRouteInPublicTrainingScope(routeId, publicTrainingScope);
+  const publicModeHeader = publicTrainingMode && publicTrainingScope ? getPublicModeHeader(publicTrainingScope) : undefined;
   const isAuthPath = location.pathname.startsWith('/auth');
   const isAdminPath = location.pathname.startsWith('/admin');
+  const isPublicTrainingPath = isPublicTrainingRoute(routeId);
   const isPublicOnboardingPath =
     location.pathname === '/' ||
     location.pathname.startsWith('/progress') ||
@@ -187,9 +240,16 @@ export function App() {
     location.pathname.startsWith('/course-info') ||
     location.pathname.startsWith('/home') ||
     location.pathname.startsWith('/pretest') ||
-    location.pathname.startsWith('/sponsors');
+    location.pathname.startsWith('/sponsors') ||
+    isPublicTrainingPath;
 
-  const activeNavItems = useMemo(() => (adminSessionActive ? [...navItems, adminNavItem] : navItems), [adminSessionActive]);
+  const activeNavItems = useMemo(() => {
+    if (publicTrainingMode && publicTrainingScope) {
+      return getPublicNavItems(publicTrainingScope);
+    }
+
+    return adminSessionActive ? [...navItems, adminNavItem] : navItems;
+  }, [adminSessionActive, publicTrainingMode, publicTrainingScope]);
 
   const gatedNavItems = useMemo(() => {
     return activeNavItems.map((item) => ({
@@ -290,9 +350,9 @@ export function App() {
     };
   }, [isSupabaseEnabled, recordModuleEngagement, user]);
 
-  if (!hydrated || (isSupabaseEnabled && authLoading && !previewSessionActive)) {
+  if (!hydrated || (isSupabaseEnabled && authLoading && !previewSessionActive && !publicTrainingMode)) {
     return (
-      <AppShell navItems={gatedNavItems}>
+      <AppShell navItems={gatedNavItems} publicMode={publicModeHeader}>
         <div className="page-stack">
           <section className="section-card">
             <div className="eyebrow">Loading workspace</div>
@@ -338,7 +398,7 @@ export function App() {
   }
 
   return (
-    <AppShell navItems={gatedNavItems}>
+    <AppShell navItems={gatedNavItems} publicMode={publicModeHeader}>
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
           <Route element={<HomePage />} path="/" />

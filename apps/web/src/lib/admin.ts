@@ -70,6 +70,7 @@ export interface AdminLearnerOverview {
   preCourseSurvey: AdminSurveyResult;
   postCourseSurvey: AdminSurveyResult;
   postTestAnswers: AdminAnswerDetail[];
+  postTestSubmittedAt: string | null;
   totalTimeSpentSeconds: number;
   moduleProgress: AdminModuleProgress[];
   lectureSummary: AdminLectureSummary;
@@ -79,6 +80,7 @@ export interface AdminProgressSummary {
   approvedCount: number;
   averageProgressPercent: number;
   pendingCount: number;
+  postCourseCompleteCount: number;
   totalLearners: number;
 }
 
@@ -242,6 +244,21 @@ function normalizePostTestAnswerDetails(candidate: unknown): AdminAnswerDetail[]
   });
 }
 
+function normalizePostTestSubmittedAt(candidate: unknown) {
+  if (!finalPostTestAssessment || !candidate || typeof candidate !== 'object') {
+    return null;
+  }
+
+  const assessmentResults = candidate as Record<string, unknown>;
+  const postTestResult = assessmentResults[finalPostTestAssessment.id];
+
+  if (!postTestResult || typeof postTestResult !== 'object') {
+    return null;
+  }
+
+  return readString((postTestResult as Record<string, unknown>).completedAt);
+}
+
 function normalizeSurveyResult(candidate: unknown, definition: CourseSurveyDefinition): AdminSurveyResult {
   const raw = candidate && typeof candidate === 'object' ? (candidate as Record<string, unknown>) : {};
   const responses = raw.responses && typeof raw.responses === 'object' ? (raw.responses as Record<string, unknown>) : {};
@@ -289,10 +306,17 @@ export function normalizeAdminLearnerOverview(candidate: unknown): AdminLearnerO
     preCourseSurvey: normalizeSurveyResult(raw.pre_course_survey_results, preCourseSurveyDefinition),
     postCourseSurvey: normalizeSurveyResult(raw.post_course_survey_results, postCourseSurveyDefinition),
     postTestAnswers: normalizePostTestAnswerDetails(raw.assessment_results),
+    postTestSubmittedAt: normalizePostTestSubmittedAt(raw.assessment_results),
     totalTimeSpentSeconds: Math.max(0, Math.floor(readNumber(raw.total_time_spent_seconds) ?? 0)),
     moduleProgress: normalizeModuleProgress(raw.module_progress),
     lectureSummary: normalizeLectureSummary(raw.lecture_summary),
   };
+}
+
+export function isLearnerPostCourseComplete(
+  learner: Pick<AdminLearnerOverview, 'postCourseSurvey' | 'postTestSubmittedAt'>,
+) {
+  return Boolean(learner.postTestSubmittedAt && learner.postCourseSurvey.submittedAt);
 }
 
 export function getLearnerAverageProgress(learner: Pick<AdminLearnerOverview, 'moduleProgress'>) {
@@ -310,12 +334,14 @@ export function getLearnerAverageProgress(learner: Pick<AdminLearnerOverview, 'm
 export function buildAdminProgressSummary(learners: AdminLearnerOverview[]): AdminProgressSummary {
   const approvedCount = learners.filter((learner) => learner.approvalStatus === 'approved').length;
   const pendingCount = learners.length - approvedCount;
+  const postCourseCompleteCount = learners.filter(isLearnerPostCourseComplete).length;
   const progressTotal = learners.reduce((sum, learner) => sum + getLearnerAverageProgress(learner), 0);
 
   return {
     approvedCount,
     averageProgressPercent: learners.length > 0 ? Math.round(progressTotal / learners.length) : 0,
     pendingCount,
+    postCourseCompleteCount,
     totalLearners: learners.length,
   };
 }
