@@ -73,6 +73,7 @@ describe('course access helpers', () => {
     expect(routeRequiresPretest('lectures')).toBe(false);
     expect(routeRequiresPretest('knobology')).toBe(false);
     expect(routeRequiresPretest('stations')).toBe(false);
+    expect(routeRequiresPretest('case-001')).toBe(false);
     expect(routeRequiresPretest('simulator')).toBe(false);
     expect(routeRequiresPretest('tnm-staging')).toBe(false);
   });
@@ -133,7 +134,7 @@ describe('course access helpers', () => {
     expect(canAccessRoute('knobology', state)).toBe(true);
   });
 
-  it('opens every route while the course admin session is active', () => {
+  it('opens available routes while the course admin session is active', () => {
     const state = createInitialLearnerProgress();
 
     expect(isCourseAdminSessionActive(createAdminStorage('EBUS_2026'))).toBe(true);
@@ -145,6 +146,17 @@ describe('course access helpers', () => {
     expect(canAccessRoute('simulator', state, { admin: true })).toBe(true);
     expect(getLockedRoutePath('simulator', '/simulator', state, { admin: true })).toBe('/simulator');
     expect(getRouteLockReason('simulator', state, { admin: true })).toBeNull();
+  });
+
+  it('keeps the virtual bronchoscopy case suppressed while the simplified simulator remains live', () => {
+    const state = createInitialLearnerProgress();
+
+    expect(canAccessRoute('simulator', state)).toBe(true);
+    expect(canAccessRoute('case-001', state)).toBe(false);
+    expect(canAccessRoute('case-001', state, { admin: true })).toBe(false);
+    expect(canAccessRoute('case-001', state, { preview: true })).toBe(false);
+    expect(getLockedRoutePath('case-001', '/cases/case-001', state, { admin: true })).toBe('/');
+    expect(getRouteLockReason('case-001', state, { admin: true })).toBe('This module is not currently available.');
   });
 
   it('clears the course admin browser session when the admin logs out', () => {

@@ -5,7 +5,7 @@ import { getLectureViewedPercent } from '@/features/lectures/watchProgress';
 import type { LearnerProgressState, LectureWatchState } from '@/lib/progress';
 
 export interface ModuleSessionRecordInput {
-  moduleId: 'pretest' | 'lectures' | 'knobology' | 'stations' | 'tnm-staging' | 'case-001' | 'simulator';
+  moduleId: 'pretest' | 'lectures' | 'knobology' | 'stations' | 'tnm-staging' | 'simulator';
   routePath: string;
   startedAt: string;
   endedAt: string;
@@ -113,14 +113,6 @@ function toTrackedModuleRows(userId: string, state: LearnerProgressState) {
       visited_at: state.moduleProgress['tnm-staging'].visitedAt,
       completed_at: state.moduleProgress['tnm-staging'].completedAt,
       time_spent_seconds: state.engagement['tnm-staging'].totalSeconds,
-    },
-    {
-      learner_id: userId,
-      module_id: 'case-001',
-      percent_complete: state.moduleProgress['case-001'].percentComplete,
-      visited_at: state.moduleProgress['case-001'].visitedAt,
-      completed_at: state.moduleProgress['case-001'].completedAt,
-      time_spent_seconds: state.engagement['case-001'].totalSeconds,
     },
     {
       learner_id: userId,

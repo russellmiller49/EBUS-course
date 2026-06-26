@@ -89,6 +89,7 @@ async function main() {
     const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
       redirectTo,
       data: {
+        app_scope: 'socal_ebus_course',
         course: 'SoCal EBUS Prep',
       },
     });

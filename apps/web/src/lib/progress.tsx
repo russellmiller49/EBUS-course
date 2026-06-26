@@ -653,10 +653,6 @@ function getModuleForRoute(routeId: AppRouteId): ModuleProgressId | null {
     return 'station-map';
   }
 
-  if (routeId === 'case-001') {
-    return 'case-001';
-  }
-
   return routeId;
 }
 

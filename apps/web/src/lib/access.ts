@@ -29,6 +29,7 @@ export interface CourseAccessOptions {
 export { isPretestComplete };
 
 const publicTrainingRouteIds = new Set<AppRouteId>(['knobology', 'stations', 'simulator', 'tnm-staging']);
+const suppressedRouteIds = new Set<AppRouteId>(['case-001']);
 
 export function isPublicTrainingRoute(routeId: AppRouteId | null) {
   return Boolean(routeId && publicTrainingRouteIds.has(routeId));
@@ -117,6 +118,7 @@ export function clearCourseVendorPasscode(storage: CourseAccessStorage | null = 
 export function routeRequiresPretest(routeId: AppRouteId | null) {
   return Boolean(
     routeId &&
+      !suppressedRouteIds.has(routeId) &&
       !isPublicTrainingRoute(routeId) &&
       !['home', 'progress', 'welcome', 'admin', 'sponsors', 'lectures', 'pretest', 'post-course'].includes(routeId),
   );
@@ -135,7 +137,7 @@ function getRoutePrerequisiteStepId(routeId: AppRouteId): string | null {
     return 'post-lecture-05';
   }
 
-  if (routeId === 'tnm-staging' || routeId === 'case-001' || routeId === 'simulator') {
+  if (routeId === 'tnm-staging' || routeId === 'simulator') {
     return 'post-lecture-08';
   }
 
@@ -159,6 +161,10 @@ export function canAccessRoute(
   state: LearnerProgressState,
   options: CourseAccessOptions = {},
 ) {
+  if (suppressedRouteIds.has(routeId)) {
+    return false;
+  }
+
   if (options.admin || options.preview) {
     return true;
   }
@@ -199,6 +205,10 @@ export function getLockedRoutePath(
   state: LearnerProgressState,
   options: CourseAccessOptions = {},
 ) {
+  if (suppressedRouteIds.has(routeId)) {
+    return '/';
+  }
+
   if (canAccessRoute(routeId, state, options)) {
     return path;
   }
@@ -219,6 +229,10 @@ export function getRouteLockReason(
   state: LearnerProgressState,
   options: CourseAccessOptions = {},
 ) {
+  if (suppressedRouteIds.has(routeId)) {
+    return 'This module is not currently available.';
+  }
+
   if (canAccessRoute(routeId, state, options)) {
     return null;
   }

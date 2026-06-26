@@ -320,7 +320,9 @@ export function isLearnerPostCourseComplete(
 }
 
 export function getLearnerAverageProgress(learner: Pick<AdminLearnerOverview, 'moduleProgress'>) {
-  const activeModuleProgress = learner.moduleProgress.filter((module) => module.moduleId !== 'quiz');
+  const activeModuleProgress = learner.moduleProgress.filter(
+    (module) => module.moduleId !== 'quiz' && module.moduleId !== 'case-001',
+  );
 
   if (activeModuleProgress.length === 0) {
     return 0;

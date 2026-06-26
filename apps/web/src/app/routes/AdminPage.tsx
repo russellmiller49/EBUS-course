@@ -20,14 +20,13 @@ import { isSupabaseConfigured } from '@/lib/supabase';
 
 type AdminFilter = 'pending' | 'approved' | 'all';
 
-const moduleOrder = ['pretest', 'lectures', 'knobology', 'stations', 'tnm-staging', 'case-001', 'simulator'];
+const moduleOrder = ['pretest', 'lectures', 'knobology', 'stations', 'tnm-staging', 'simulator'];
 const moduleLabels: Record<string, string> = {
   pretest: 'Pretest',
   lectures: 'Lectures',
   knobology: 'Knobology',
   stations: 'Stations',
   'tnm-staging': 'TNM-9',
-  'case-001': '3D Anatomy',
   simulator: 'Simulator',
 };
 

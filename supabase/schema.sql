@@ -218,6 +218,44 @@ as $$
   );
 $$;
 
+create or replace function public.is_main_site_auth_user(target_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = auth, public
+as $$
+  select exists (
+    select 1
+    from auth.users
+    where id = target_user_id
+      and coalesce(raw_user_meta_data ->> 'app_scope', '') = 'main_site'
+  );
+$$;
+
+revoke execute on function public.is_main_site_auth_user(uuid)
+  from public, anon, authenticated;
+
+create or replace function public.current_auth_user_is_main_site()
+returns boolean
+language sql
+stable
+security definer
+set search_path = auth, public
+as $$
+  select exists (
+    select 1
+    from auth.users
+    where id = auth.uid()
+      and coalesce(raw_user_meta_data ->> 'app_scope', '') = 'main_site'
+  );
+$$;
+
+revoke execute on function public.current_auth_user_is_main_site()
+  from public, anon;
+grant execute on function public.current_auth_user_is_main_site()
+  to authenticated;
+
 create or replace function public.handle_new_learner_profile()
 returns trigger
 language plpgsql
@@ -225,15 +263,20 @@ security definer
 set search_path = public
 as $$
 declare
+  metadata jsonb := coalesce(new.raw_user_meta_data, '{}'::jsonb);
   flexible_count integer;
   ebus_case_count integer;
 begin
-  if new.raw_user_meta_data->>'flexible_bronchoscopy_count' ~ '^[0-9]+$' then
-    flexible_count = (new.raw_user_meta_data->>'flexible_bronchoscopy_count')::integer;
+  if coalesce(metadata ->> 'app_scope', '') = 'main_site' then
+    return new;
   end if;
 
-  if new.raw_user_meta_data->>'ebus_count' ~ '^[0-9]+$' then
-    ebus_case_count = (new.raw_user_meta_data->>'ebus_count')::integer;
+  if metadata ->> 'flexible_bronchoscopy_count' ~ '^[0-9]+$' then
+    flexible_count = (metadata ->> 'flexible_bronchoscopy_count')::integer;
+  end if;
+
+  if metadata ->> 'ebus_count' ~ '^[0-9]+$' then
+    ebus_case_count = (metadata ->> 'ebus_count')::integer;
   end if;
 
   insert into public.learner_profiles (
@@ -253,18 +296,18 @@ begin
   values (
     new.id,
     new.email,
-    new.raw_user_meta_data->>'full_name',
-    new.raw_user_meta_data->>'degree',
-    new.raw_user_meta_data->>'institution',
-    coalesce(new.raw_user_meta_data->>'institutional_email', new.email),
-    new.raw_user_meta_data->>'fellowship_year',
+    metadata ->> 'full_name',
+    metadata ->> 'degree',
+    metadata ->> 'institution',
+    coalesce(metadata ->> 'institutional_email', new.email),
+    metadata ->> 'fellowship_year',
     flexible_count,
     ebus_case_count,
-    new.raw_user_meta_data->>'ebus_confidence',
-    coalesce((new.raw_user_meta_data->>'must_set_password')::boolean, true),
+    metadata ->> 'ebus_confidence',
+    coalesce((metadata ->> 'must_set_password')::boolean, true),
     case
-      when new.raw_user_meta_data ? 'must_set_password'
-        and (new.raw_user_meta_data->>'must_set_password')::boolean = false
+      when metadata ? 'must_set_password'
+        and (metadata ->> 'must_set_password')::boolean = false
       then timezone('utc', now())
       else null
     end
@@ -311,20 +354,44 @@ drop policy if exists "Learners can view their own profile" on public.learner_pr
 create policy "Learners can view their own profile"
 on public.learner_profiles
 for select
-using ((select auth.uid()) = id);
+using (
+  (select auth.uid()) = id
+  and (
+    not public.current_auth_user_is_main_site()
+    or public.is_approved_learner(id)
+  )
+);
 
 drop policy if exists "Learners can upsert their own profile" on public.learner_profiles;
 create policy "Learners can upsert their own profile"
 on public.learner_profiles
 for insert
-with check ((select auth.uid()) = id);
+with check (
+  (select auth.uid()) = id
+  and (
+    not public.current_auth_user_is_main_site()
+    or public.is_approved_learner(id)
+  )
+);
 
 drop policy if exists "Learners can update their own profile" on public.learner_profiles;
 create policy "Learners can update their own profile"
 on public.learner_profiles
 for update
-using ((select auth.uid()) = id)
-with check ((select auth.uid()) = id);
+using (
+  (select auth.uid()) = id
+  and (
+    not public.current_auth_user_is_main_site()
+    or public.is_approved_learner(id)
+  )
+)
+with check (
+  (select auth.uid()) = id
+  and (
+    not public.current_auth_user_is_main_site()
+    or public.is_approved_learner(id)
+  )
+);
 
 drop policy if exists "Learners can read their own snapshots" on public.learner_progress_snapshots;
 create policy "Learners can read their own snapshots"
@@ -586,6 +653,13 @@ begin
       and course_survey.survey_id = 'post-course-2026'
     limit 1
   ) as post_course_survey_row on true
+  where not (
+    public.is_main_site_auth_user(profile.id)
+    and profile.approval_status = 'pending'
+    and profile.invite_sent_at is null
+    and profile.approved_at is null
+    and profile.onboarding_completed_at is null
+  )
   order by
     case profile.approval_status when 'pending' then 0 else 1 end,
     profile.created_at desc;
