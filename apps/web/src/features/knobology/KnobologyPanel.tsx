@@ -1,8 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import { EducationSectionCard } from '@/components/education/EducationModuleRenderer';
-import { knobologyAdvancedContent } from '@/content/education';
-import { knobologyContent, knobologyControlMeta, knobologyReferenceCards } from '@/content/knobology';
+import { knobologyControlMeta } from '@/content/knobology';
 import { getKnobologyMedia } from '@/content/media';
 import type { KnobologyControlId } from '@/content/types';
 import { KnobologySegmentVideo } from '@/features/knobology/KnobologySegmentVideo';
@@ -29,6 +28,12 @@ import {
   type KnobologyProcessorActionId,
 } from '@/features/knobology/logic';
 import { mapNestedAssetPaths } from '@/lib/assets';
+import {
+  useLocalizedKnobologyAdvancedContent,
+  useLocalizedKnobologyContent,
+  useLocalizedKnobologyReferenceCards,
+} from '@/i18n/localizedContent';
+import { useCourseShellText } from '@/i18n/courseShell';
 import { useLearnerProgress } from '@/lib/progress';
 
 import './knobology.css';
@@ -136,6 +141,10 @@ function buildMeasurementLineModel(
 }
 
 export function KnobologyPanel({ processorDebug = false }: { processorDebug?: boolean }) {
+  const t = useCourseShellText();
+  const knobologyContent = useLocalizedKnobologyContent();
+  const knobologyAdvancedContent = useLocalizedKnobologyAdvancedContent();
+  const knobologyReferenceCards = useLocalizedKnobologyReferenceCards();
   const { setLastUsedKnobologyControl, setModuleProgress, state: progressState } = useLearnerProgress();
   const [activeExerciseId, setActiveExerciseId] = useState(knobologyContent.controlLabExercises[0]?.id ?? '');
   const [activeControl, setActiveControl] = useState<KnobologyControlId>(
@@ -391,8 +400,8 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
       <section className="section-card">
         <div className="section-card__heading">
           <div>
-            <div className="eyebrow">Primer</div>
-            <h2>Control sequence before you touch the needle</h2>
+            <div className="eyebrow">{t('Primer')}</div>
+            <h2>{t('Control sequence before you touch the needle')}</h2>
           </div>
         </div>
         <div className="mini-card-grid">
@@ -404,8 +413,8 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
               </div>
               <p>{section.summary}</p>
               <div className="mini-card__footer">
-                <span>Best move: {section.bestMove}</span>
-                <span>Pitfall: {section.pitfall}</span>
+                <span>{t('Best move:')} {section.bestMove}</span>
+                <span>{t('Pitfall')}: {section.pitfall}</span>
               </div>
             </article>
           ))}
@@ -415,8 +424,8 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
       <section className="section-card">
         <div className="section-card__heading">
           <div>
-            <div className="eyebrow">Fix The Image</div>
-            <h2>Control lab</h2>
+            <div className="eyebrow">{t('Fix The Image')}</div>
+            <h2>{t('Control lab')}</h2>
           </div>
           <select
             aria-label="Select image rescue exercise"
@@ -521,15 +530,16 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
               </div>
 
               <div
-                aria-label="Control lab keyboard feedback, rescue guidance, and learn more reference"
+                aria-label={t('Control lab keyboard feedback, rescue guidance, and learn more reference')}
                 className="knobology-lab-notes"
                 tabIndex={0}
               >
                 <section className="knobology-lab-notes__section knobology-keyboard-feedback">
-                  <div className="eyebrow">Keyboard feedback</div>
+                  <div className="eyebrow">{t('Keyboard feedback')}</div>
                   <p>
-                    The processor is now the only control surface here. Depth, gain, and contrast highlight as you change
-                    them from the keyboard.
+                    {t(
+                      'The processor is now the only control surface here. Depth, gain, and contrast highlight as you change them from the keyboard.',
+                    )}
                   </p>
                   <div className="knobology-keyboard-feedback__grid">
                     {keyboardFeedbackCards.map((card) => (
@@ -540,21 +550,23 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                         <div className="knobology-keyboard-feedback__header">
                           <div className="mini-card__title">
                             <span>{knobologyControlMeta[card.controlId].icon}</span>
-                            <strong>{knobologyControlMeta[card.controlId].shortLabel}</strong>
+                            <strong>{t(knobologyControlMeta[card.controlId].shortLabel)}</strong>
                           </div>
                           <div className="tag-row">
-                            {card.isExerciseFocus ? <span className="tag">Exercise focus</span> : null}
-                            {card.hasRecentKeyboardChange ? <span className="tag">Recent keyboard change</span> : null}
+                            {card.isExerciseFocus ? <span className="tag">{t('Exercise focus')}</span> : null}
+                            {card.hasRecentKeyboardChange ? (
+                              <span className="tag">{t('Recent keyboard change')}</span>
+                            ) : null}
                           </div>
                         </div>
                         <div className="knobology-keyboard-feedback__values">
-                          <span>Current {card.currentValue}</span>
-                          <span>Target {card.targetValue}</span>
+                          <span>{t('Current')} {card.currentValue}</span>
+                          <span>{t('Target')} {card.targetValue}</span>
                         </div>
                         <strong className="knobology-keyboard-feedback__status">
-                          {card.hasRecentKeyboardChange ? frameState.statusMessage : card.status}
+                          {t(card.hasRecentKeyboardChange ? frameState.statusMessage : card.status)}
                         </strong>
-                        <p>{card.guidance}</p>
+                        <p>{t(card.guidance)}</p>
                       </article>
                     ))}
                   </div>
@@ -562,20 +574,20 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
 
                 <section className="knobology-lab-notes__section knobology-rescue-panel">
                   <div className="knobology-lab-notes__heading">
-                    <div className="eyebrow">Rescue</div>
+                    <div className="eyebrow">{t('Rescue')}</div>
                     <h3>{activeExercise.title}</h3>
                     <p>{activeExercise.symptom}</p>
                   </div>
-                  <p className="knobology-frame__status-line">{frameState.statusMessage}</p>
+                  <p className="knobology-frame__status-line">{t(frameState.statusMessage)}</p>
                   {activeVideoMedia.caption ? (
                     <p className="knobology-frame__media-note">{activeVideoMedia.caption}</p>
                   ) : null}
                   <div>
-                    <div className="eyebrow">Instructions</div>
+                    <div className="eyebrow">{t('Instructions')}</div>
                     <p>{activeExercise.instructions}</p>
                   </div>
                   <div className={`feedback-banner${evaluation.solved ? ' feedback-banner--success' : ''}`}>
-                    <strong>{evaluation.solved ? 'Solved' : `Score ${evaluation.score}`}</strong>
+                    <strong>{evaluation.solved ? t('Solved') : `${t('Score')} ${evaluation.score}`}</strong>
                     <p>{evaluation.feedback}</p>
                   </div>
                   <div className="button-row">
@@ -584,10 +596,10 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                       onClick={() => dispatchFrame({ type: 'RESET_FOR_EXERCISE', exercise: activeExercise })}
                       type="button"
                     >
-                      Reset frame
+                      {t('Reset frame')}
                     </button>
                     <button className="button" onClick={markExerciseSolved} type="button">
-                      Save progress
+                      {t('Save progress')}
                     </button>
                   </div>
                 </section>
@@ -595,16 +607,21 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                 <section className="learn-more-drawer knobology-lab-notes__section">
                   <div className="learn-more-drawer__header">
                     <div>
-                      <div className="eyebrow">Learn More</div>
-                      <h3>{knobologyControlMeta[activeControl].shortLabel} in context</h3>
-                      <p>Reference content now follows the control you are actively adjusting.</p>
+                      <div className="eyebrow">{t('Learn More')}</div>
+                      <h3>
+                        {t(`${knobologyControlMeta[activeControl].shortLabel} in context`) ===
+                        `${knobologyControlMeta[activeControl].shortLabel} in context`
+                          ? `${t(knobologyControlMeta[activeControl].shortLabel)} ${t('in context')}`
+                          : t(`${knobologyControlMeta[activeControl].shortLabel} in context`)}
+                      </h3>
+                      <p>{t('Reference content now follows the control you are actively adjusting.')}</p>
                     </div>
                     <button
                       className="button button--ghost"
                       onClick={() => setShowLearnMore((current) => !current)}
                       type="button"
                     >
-                      {showLearnMore ? 'Hide reference' : 'Show reference'}
+                      {showLearnMore ? t('Hide reference') : t('Show reference')}
                     </button>
                   </div>
                   {showLearnMore ? (
@@ -620,8 +637,8 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
 
             <div className="stack-card knobology-console">
               <div className="knobology-console__prompt">
-                <div className="eyebrow">Interactive processor</div>
-                <strong>Tap a glowing control on the processor to update the ultrasound image.</strong>
+                <div className="eyebrow">{t('Interactive processor')}</div>
+                <strong>{t('Tap a glowing control on the processor to update the ultrasound image.')}</strong>
               </div>
 
               <EuMe2Keyboard
@@ -631,6 +648,7 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                 menuMode={frameState.menu}
                 onAction={handleProcessorAction}
                 onTrackballMove={handleTrackballMove}
+                formatLabel={t}
                 showHotspotHints
                 trackballActive={trackballActive}
               />
@@ -638,23 +656,23 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
               <div className="knobology-console__details">
                 <div className="knobology-console__hero">
                   <div>
-                    <h3>Use the processor and touch panel together.</h3>
+                    <h3>{t('Use the processor and touch panel together.')}</h3>
                     <p>
-                      Freeze first, then tap `CALIPER` to drop the initial cursor. The trackball moves the active
-                      marker, `SET` fixes the first point and arms the second, and `CURSOR` swaps between the two if
-                      you want to fine-tune the measurement.
+                      {t(
+                        'Freeze first, then tap `CALIPER` to drop the initial cursor. The trackball moves the active marker, `SET` fixes the first point and arms the second, and `CURSOR` swaps between the two if you want to fine-tune the measurement.',
+                      )}
                     </p>
                   </div>
                 </div>
 
                 <div className="tag-row">
-                  <span className="tag">Glowing overlays = tappable controls</span>
-                  <span className="tag">Touch panel hotspots change with the active screen</span>
-                  <span className="tag">Trackball drives calipers on frozen images</span>
+                  <span className="tag">{t('Glowing overlays = tappable controls')}</span>
+                  <span className="tag">{t('Touch panel hotspots change with the active screen')}</span>
+                  <span className="tag">{t('Trackball drives calipers on frozen images')}</span>
                 </div>
 
                 <div className="knobology-console__touch-panel">
-                  <div className="eyebrow">Touch panel mirror</div>
+                  <div className="eyebrow">{t('Touch panel mirror')}</div>
                   <div className="button-row button-row--wrap">
                     {compactTouchButtons.map((button) => (
                       <button
@@ -663,7 +681,7 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                         onClick={() => handleProcessorAction(button.actionId)}
                         type="button"
                       >
-                        {button.label}
+                        {t(button.label)}
                       </button>
                     ))}
                   </div>
@@ -678,7 +696,7 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
       <section className="section-card">
         <div className="section-card__heading">
           <div>
-            <div className="eyebrow">Doppler mini-lab</div>
+            <div className="eyebrow">{t('Doppler mini-lab')}</div>
             <h2>{knobologyContent.dopplerLab.title}</h2>
           </div>
         </div>
@@ -700,10 +718,10 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                   </div>
                 )}
                 <span className="doppler-lab__state">
-                  {dopplerEnabled ? FLOW_PREVIEW_MODE_LABELS[flowPreviewMode] : 'Doppler off'}
+                  {dopplerEnabled ? t(FLOW_PREVIEW_MODE_LABELS[flowPreviewMode]) : t('Doppler off')}
                 </span>
                 <span className="doppler-lab__label">
-                  {dopplerPreviewSegment?.label ?? dopplerMedia.caption ?? 'Toggle Doppler to reveal flow'}
+                  {dopplerPreviewSegment?.label ?? dopplerMedia.caption ?? t('Toggle Doppler to reveal flow')}
                 </span>
               </div>
               <div className="button-row button-row--wrap">
@@ -712,7 +730,7 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                   onClick={() => handleProcessorAction(dopplerEnabled ? 'B_MODE' : 'FLOW_MODE')}
                   type="button"
                 >
-                  {dopplerEnabled ? 'Doppler Off' : 'Doppler On'}
+                  {dopplerEnabled ? t('Doppler Off') : t('Doppler On')}
                 </button>
                 {FLOW_PREVIEW_MODES.map((mode) => (
                   <button
@@ -727,14 +745,14 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
                     }}
                     type="button"
                   >
-                    {FLOW_PREVIEW_MODE_LABELS[mode]}
+                    {t(FLOW_PREVIEW_MODE_LABELS[mode])}
                   </button>
                 ))}
               </div>
             </div>
           </div>
           <div className="stack-card">
-            <div className="eyebrow">Path challenge</div>
+            <div className="eyebrow">{t('Path challenge')}</div>
             <p>{knobologyContent.dopplerLab.prompt}</p>
             <div className="stack-list">
               {knobologyContent.dopplerLab.paths.map((path) => (
@@ -756,11 +774,13 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
             </div>
             {selectedPathId ? (
               <div className={`feedback-banner${safePathSelected ? ' feedback-banner--success' : ''}`}>
-                <strong>{safePathSelected ? 'Safe path selected' : 'Try again'}</strong>
+                <strong>{safePathSelected ? t('Safe path selected') : t('Try again')}</strong>
                 <p>
-                  {safePathSelected
-                    ? 'The selected path routes around the color-filled vessel instead of crossing it.'
-                    : 'That path still crosses Doppler signal. Pick the trajectory that avoids the color-filled vessel.'}
+                  {t(
+                    safePathSelected
+                      ? 'The selected path routes around the color-filled vessel instead of crossing it.'
+                      : 'That path still crosses Doppler signal. Pick the trajectory that avoids the color-filled vessel.',
+                  )}
                 </p>
               </div>
             ) : null}
@@ -771,14 +791,14 @@ export function KnobologyPanel({ processorDebug = false }: { processorDebug?: bo
       <section className="section-card">
         <div className="section-card__heading">
           <div>
-            <div className="eyebrow">Quick reference</div>
-            <h2>Searchable control cards</h2>
+            <div className="eyebrow">{t('Quick reference')}</div>
+            <h2>{t('Searchable control cards')}</h2>
           </div>
           <input
-            aria-label="Filter quick reference cards"
+            aria-label={t('Filter quick reference cards')}
             className="input"
             onChange={(event) => setReferenceFilter(event.target.value)}
-            placeholder="Filter by control or scenario…"
+            placeholder={t('Filter by control or scenario...')}
             type="search"
             value={referenceFilter}
           />

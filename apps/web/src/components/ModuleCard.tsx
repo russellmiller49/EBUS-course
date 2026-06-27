@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
 import type { AppModuleCard } from '@/content/types';
+import { useLocalizedPath } from '@/i18n/locale';
 
 export function ModuleCard({
   module,
@@ -13,8 +14,11 @@ export function ModuleCard({
   lockedPath?: string;
   lockedReason?: string | null;
 }) {
+  const localizePath = useLocalizedPath();
+  const targetPath = locked ? lockedPath : module.path;
+
   return (
-    <Link className={`module-card${locked ? ' module-card--locked' : ''}`} to={locked ? lockedPath : module.path}>
+    <Link className={`module-card${locked ? ' module-card--locked' : ''}`} to={localizePath(targetPath)}>
       <div className="module-card__icon" style={{ color: module.accent }}>
         {module.icon}
       </div>

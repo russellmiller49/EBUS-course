@@ -5,8 +5,8 @@ import { buildHomeProgressModel } from '@/app/routes/home/progress';
 import { CourseStepGuidance } from '@/components/CourseStepGuidance';
 import { DeviceRecommendationNotice } from '@/components/DeviceRecommendationNotice';
 import { ModuleCard } from '@/components/ModuleCard';
-import { courseInfo } from '@/content/course';
-import { homeModuleCards } from '@/content/modules';
+import { useCourseShellText, useLocalizedCourseInfo, useLocalizedHomeModuleCards } from '@/i18n/courseShell';
+import { useLocalizedPath } from '@/i18n/locale';
 import { canAccessRoute, getLockedRoutePath, getRouteLockReason, isPretestComplete } from '@/lib/access';
 import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
 import { useAuth } from '@/lib/auth';
@@ -23,6 +23,10 @@ function ProgressMeter({ percent }: { percent: number }) {
 }
 
 export function HomePage() {
+  const courseInfo = useLocalizedCourseInfo();
+  const homeModuleCards = useLocalizedHomeModuleCards();
+  const localizePath = useLocalizedPath();
+  const t = useCourseShellText();
   const { state } = useLearnerProgress();
   const { isSupabaseEnabled, profile } = useAuth();
   const adminSessionActive = useCourseAdminSessionActive();
@@ -49,19 +53,19 @@ export function HomePage() {
   const pretestTag =
     state.pretest.submittedAt && state.pretest.totalQuestions > 0
       ? `Pre-test ${Math.round(((state.pretest.score ?? 0) / state.pretest.totalQuestions) * 100)}%`
-      : 'Pre-test not submitted';
+      : t('Pre-test not submitted');
   const progressHighlights = [
     pretestTag,
-    `${state.bookmarkedStations.length} bookmarked stations`,
-    `${reviewedLectures} reviewed lectures`,
-    lastAssessment ? `Latest assessment ${lastAssessment.percent}%` : 'No assessment saved yet',
+    `${state.bookmarkedStations.length} ${t('bookmarked stations')}`,
+    `${reviewedLectures} ${t('reviewed lectures')}`,
+    lastAssessment ? `${t('Latest assessment')} ${lastAssessment.percent}%` : t('No assessment saved yet'),
   ];
   const resumePath = nextCourseStep?.path ?? resumeModule?.path ?? '/lectures';
   const resumeLabel = nextCourseStep
-    ? `Continue: ${nextCourseStep.title}`
+    ? `${t('Continue:')} ${t(nextCourseStep.title)}`
     : resumeModule
-      ? `Resume ${resumeModule.title}`
-      : 'Start the prep path';
+      ? `${t('Resume')} ${t(resumeModule.title)}`
+      : t('Start the prep path');
 
   return (
     <div className="page-stack page-stack--course-overview">
@@ -76,40 +80,40 @@ export function HomePage() {
                 src={courseInfo.visuals.logo.src}
               />
               <div className="course-hero__brand-copy">
-                <div className="eyebrow">Hosted by</div>
+                <div className="eyebrow">{t('Hosted by')}</div>
                 <p className="course-hero__brand-line">{courseInfo.hostLine}</p>
                 <p className="course-hero__department">{courseInfo.hostDepartment}</p>
               </div>
             </div>
 
-            <div className="eyebrow">10th Annual Southwest regional course</div>
+            <div className="eyebrow">{t('10th Annual Southwest regional course')}</div>
             <h2 className="course-hero__title">{courseInfo.courseTitle}</h2>
             <p className="course-hero__lead">{courseInfo.overview}</p>
 
             <div className="course-hero__meta-grid">
               <article className="course-meta-card">
-                <span>When</span>
+                <span>{t('When')}</span>
                 <strong>{courseInfo.dateLabel}</strong>
                 <p>{courseInfo.timeLabel}</p>
               </article>
               <article className="course-meta-card">
-                <span>Where</span>
+                <span>{t('Where')}</span>
                 <strong>{courseInfo.venueName}</strong>
                 <p>{courseInfo.venueDetail}</p>
               </article>
               <article className="course-meta-card">
-                <span>Who</span>
+                <span>{t('Who')}</span>
                 <strong>1st-year fellows</strong>
                 <p>Pulmonary and PCCM focus</p>
               </article>
             </div>
 
             <div className="button-row button-row--wrap">
-              <Link className="button" to={resumePath}>
+              <Link className="button" to={localizePath(resumePath)}>
                 {resumeLabel}
               </Link>
-              <Link className="button button--ghost" to="/lectures">
-                Browse prep lectures
+              <Link className="button button--ghost" to={localizePath('/lectures')}>
+                {t('Browse prep lectures')}
               </Link>
             </div>
 
@@ -137,7 +141,7 @@ export function HomePage() {
               </figure>
 
               <aside className="course-hero__callout">
-                <div className="eyebrow">Why fellows come here</div>
+                <div className="eyebrow">{t('Why fellows come here')}</div>
                 <h3>Early, structured EBUS training with real faculty access.</h3>
                 <ul className="course-checklist">
                   {courseInfo.positioningHighlights.map((highlight) => (
@@ -165,13 +169,13 @@ export function HomePage() {
         <section className="section-card section-card--notice">
           <div className="section-card__heading">
             <div>
-              <div className="eyebrow">Course unlock</div>
+              <div className="eyebrow">{t('Course unlock')}</div>
               <h2>
                 {pretestUnlocked
-                  ? 'Finish the survey and baseline pre-test flow before Lecture 1 opens.'
+                  ? t('Finish the survey and baseline pre-test flow before Lecture 1 opens.')
                   : accountComplete
-                    ? 'Start with the welcome video to unlock the baseline pre-test.'
-                    : 'Sign up or log in, then watch the welcome video to unlock the baseline pre-test.'}
+                    ? t('Start with the welcome video to unlock the baseline pre-test.')
+                    : t('Sign up or log in, then watch the welcome video to unlock the baseline pre-test.')}
               </h2>
             </div>
           </div>
@@ -180,8 +184,8 @@ export function HomePage() {
             modules, in-lecture quizzes, final post-test, survey, answers, and certificate.
           </p>
           <div className="button-row button-row--wrap">
-            <Link className="button" to={pretestUnlocked ? '/pretest' : '/welcome'}>
-              {pretestUnlocked ? 'Complete the pre-test' : 'Open welcome video'}
+            <Link className="button" to={localizePath(pretestUnlocked ? '/pretest' : '/welcome')}>
+              {pretestUnlocked ? t('Complete the pre-test') : t('Open welcome video')}
             </Link>
           </div>
         </section>
@@ -189,7 +193,7 @@ export function HomePage() {
 
       <section className="course-section course-section--split">
         <div className="course-section__lede">
-          <div className="eyebrow">Why this course exists</div>
+          <div className="eyebrow">{t('Why this course exists')}</div>
           <h2>EBUS training demand has outpaced standardization, so the course starts early and stays practical.</h2>
           <p>{courseInfo.audience}</p>
           <ul className="course-checklist course-checklist--muted">
@@ -202,7 +206,7 @@ export function HomePage() {
         <div className="course-highlight-grid">
           {courseInfo.experienceHighlights.map((highlight) => (
             <article key={highlight.title} className="course-highlight">
-              <div className="eyebrow">Course design</div>
+              <div className="eyebrow">{t('Course design')}</div>
               <h3>{highlight.title}</h3>
               <p>{highlight.detail}</p>
             </article>
@@ -212,7 +216,7 @@ export function HomePage() {
 
       <section className="course-section course-section--grid">
         <article className="course-panel">
-          <div className="eyebrow">Before the live day</div>
+          <div className="eyebrow">{t('Before the live day')}</div>
           <h2>Prep opens weeks ahead so fellows arrive ready for simulation instead of cold-starting on site.</h2>
           <p>{courseInfo.prepWindow}</p>
           <div className="course-topic-list">
@@ -225,7 +229,7 @@ export function HomePage() {
         </article>
 
         <article className="course-panel">
-          <div className="eyebrow">Live day format</div>
+          <div className="eyebrow">{t('Live day format')}</div>
           <h2>Teams rotate through tools, anatomy, planning, and execution with protected time for discussion.</h2>
           <div className="course-track-list">
             {courseInfo.liveSessionTracks.map((track) => (
@@ -236,7 +240,7 @@ export function HomePage() {
             ))}
           </div>
           <a className="button button--ghost" href={courseInfo.facilityUrl} rel="noreferrer" target="_blank">
-            View simulation center
+            {t('View simulation center')}
           </a>
         </article>
       </section>
@@ -244,7 +248,7 @@ export function HomePage() {
       <section className="course-section">
         <div className="course-section__heading">
           <div>
-            <div className="eyebrow">Live day agenda</div>
+            <div className="eyebrow">{t('Live day agenda')}</div>
             <h2>One sample team schedule shows a full day of motion, stations, and coached repetition.</h2>
           </div>
         </div>
@@ -264,13 +268,13 @@ export function HomePage() {
       <section className="course-section course-section--community">
         <div className="course-section__heading course-section__heading--spread">
           <div>
-            <div className="eyebrow">Faculty and community</div>
+            <div className="eyebrow">{t('Faculty and community')}</div>
             <h2>Small groups make the course feel regional, connected, and heavily coached.</h2>
             <p>{courseInfo.facultySummary}</p>
           </div>
 
           <div className="course-directors">
-            <span>Course directors</span>
+            <span>{t('Course directors')}</span>
             {courseInfo.courseDirectors.map((director) => (
               <strong key={director}>{director}</strong>
             ))}
@@ -297,7 +301,7 @@ export function HomePage() {
 
       <section className="course-section course-section--grid">
         <article className="course-panel">
-          <div className="eyebrow">Location</div>
+          <div className="eyebrow">{t('Location')}</div>
           <h2>{courseInfo.venueName}</h2>
           <p>{courseInfo.venueDetail}</p>
           <address className="course-address">
@@ -309,7 +313,7 @@ export function HomePage() {
         </article>
 
         <article className="course-panel">
-          <div className="eyebrow">Driving directions</div>
+          <div className="eyebrow">{t('Driving directions')}</div>
           <h2>Regional routes are called out directly on the flyer for arriving fellows.</h2>
           <div className="course-route-list">
             {courseInfo.travelDirections.map((route) => (
@@ -326,7 +330,7 @@ export function HomePage() {
       <section className="course-section course-section--workspace" id="digital-prep">
         <div className="course-section__heading">
           <div>
-            <div className="eyebrow">Digital prep workspace</div>
+            <div className="eyebrow">{t('Digital prep workspace')}</div>
             <h2>The app mirrors the course flow so fellows can study in sequence before the live event.</h2>
             <p>
               Use the pre-course test, lecture module, knobology labs, station tools, and case review to arrive ready
@@ -338,13 +342,13 @@ export function HomePage() {
         <div className="course-workspace">
           <div className="course-workspace__sidebar">
             {resumeModule ? (
-              <Link className="course-resume-card" to={resumeModule.path}>
+              <Link className="course-resume-card" to={localizePath(resumeModule.path)}>
                 <div className="course-resume-card__body">
-                  <div className="eyebrow">Pick up where you left off</div>
-                  <strong>{resumeModule.title}</strong>
+                  <div className="eyebrow">{t('Pick up where you left off')}</div>
+                  <strong>{t(resumeModule.title)}</strong>
                   <ProgressMeter percent={resumeModule.percent} />
                 </div>
-                <span className="button">Resume</span>
+                <span className="button">{t('Resume')}</span>
               </Link>
             ) : null}
 
@@ -353,16 +357,16 @@ export function HomePage() {
                 <Link
                   key={step.id}
                   className={`course-step${canAccessRoute(step.id, state, accessOptions) ? '' : ' course-step--locked'}`}
-                  to={getLockedRoutePath(step.id, step.path, state, accessOptions)}
+                  to={localizePath(getLockedRoutePath(step.id, step.path, state, accessOptions))}
                 >
                   <span className={`course-step__marker${step.percent >= 100 ? ' course-step__marker--done' : ''}`}>
                     {step.percent >= 100 ? '✓' : index + 1}
                   </span>
                   <div className="course-step__body">
-                    <strong>{step.title}</strong>
+                    <strong>{t(step.title)}</strong>
                     <ProgressMeter percent={step.percent} />
                     {!canAccessRoute(step.id, state, accessOptions) ? (
-                      <p>{getRouteLockReason(step.id, state, accessOptions)}</p>
+                      <p>{t(getRouteLockReason(step.id, state, accessOptions) ?? '')}</p>
                     ) : null}
                   </div>
                   <span className="course-step__percent">{step.percent}%</span>

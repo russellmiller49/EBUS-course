@@ -2,15 +2,19 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
 import { CourseStepGuidance } from '@/components/CourseStepGuidance';
-import { welcomeLecture } from '@/content/welcome';
 import { LearnerAccessBox } from '@/features/account/LearnerAccessBox';
 import { LectureCard } from '@/features/lectures/LectureCard';
+import { useCourseShellText, useLocalizedWelcomeLecture } from '@/i18n/courseShell';
+import { useLocalizedPath } from '@/i18n/locale';
 import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
 import { useAuth } from '@/lib/auth';
 import { getCourseStepModels } from '@/lib/courseWorkflow';
 import { useLearnerProgress } from '@/lib/progress';
 
 export function WelcomePage() {
+  const localizePath = useLocalizedPath();
+  const t = useCourseShellText();
+  const welcomeLecture = useLocalizedWelcomeLecture();
   const { isSupabaseEnabled, profile } = useAuth();
   const { setLectureState, state } = useLearnerProgress();
   const adminSessionActive = useCourseAdminSessionActive();
@@ -34,16 +38,17 @@ export function WelcomePage() {
   return (
     <div className="page-stack">
       <section className="hero-card welcome-hero">
-        <div className="eyebrow">Welcome</div>
-        <h2>Start with account access, then the welcome video, then the survey and baseline pre-test.</h2>
+        <div className="eyebrow">{t('Welcome')}</div>
+        <h2>{t('Start with account access, then the welcome video, then the survey and baseline pre-test.')}</h2>
         <p>
-          The course intro is gated behind learner sign-in. Once it is marked reviewed, the pre-course survey and
-          baseline pre-test flow opens in the next tab.
+          {t(
+            'The course intro is gated behind learner sign-in. Once it is marked reviewed, the pre-course survey and baseline pre-test flow opens in the next tab.',
+          )}
         </p>
         <div className="tag-row">
-          <span className="tag">{canViewWelcomeVideo ? 'Account complete' : 'Account required'}</span>
-          <span className="tag">{welcomeComplete ? 'Welcome complete' : 'Welcome video next'}</span>
-          <span className="tag">{canOpenPretest ? 'Survey unlocked' : 'Survey locked'}</span>
+          <span className="tag">{canViewWelcomeVideo ? t('Account complete') : t('Account required')}</span>
+          <span className="tag">{welcomeComplete ? t('Welcome complete') : t('Welcome video next')}</span>
+          <span className="tag">{canOpenPretest ? t('Survey unlocked') : t('Survey locked')}</span>
         </div>
       </section>
 
@@ -53,9 +58,9 @@ export function WelcomePage() {
         <div className="welcome-step__heading">
           <span className="welcome-step__number">#1</span>
           <div>
-            <div className="eyebrow">Account access</div>
-            <h2>Sign up or log in</h2>
-            <p>Complete this step before the welcome video is available.</p>
+            <div className="eyebrow">{t('Account access')}</div>
+            <h2>{t('Sign up or log in')}</h2>
+            <p>{t('Complete this step before the welcome video is available.')}</p>
           </div>
         </div>
         <LearnerAccessBox />
@@ -65,12 +70,12 @@ export function WelcomePage() {
         <div className="welcome-step__heading welcome-step__heading--standalone">
           <span className="welcome-step__number">#2</span>
           <div>
-            <div className="eyebrow">Welcome video</div>
-            <h2 id="welcome-video-heading">Course intro video</h2>
+            <div className="eyebrow">{t('Welcome video')}</div>
+            <h2 id="welcome-video-heading">{t('Course intro video')}</h2>
             <p>
               {canViewWelcomeVideo
-                ? 'Watch the intro and mark it reviewed to open the next step.'
-                : 'Locked until step #1 is complete.'}
+                ? t('Watch the intro and mark it reviewed to open the next step.')
+                : t('Locked until step #1 is complete.')}
             </p>
           </div>
         </div>
@@ -79,19 +84,19 @@ export function WelcomePage() {
           defaultPlayerExpanded={canViewWelcomeVideo}
           lecture={welcomeLecture}
           locked={!canViewWelcomeVideo}
-          lockedReason="Sign up or log in in step #1 to watch the welcome video."
+          lockedReason={t('Sign up or log in in step #1 to watch the welcome video.')}
           onUpdateWatchState={(lectureId, update) => setLectureState(lectureId, update)}
-          readyLabel="Opened"
+          readyLabel={t('Opened')}
           watchState={welcomeWatchState}
         />
         <div className="welcome-step__completion">
           <p id="welcome-reviewed-help">
-            Click this after watching the welcome video to unlock the pre-course survey and test.
+            {t('Click this after watching the welcome video to unlock the pre-course survey and test.')}
           </p>
           {welcomeComplete ? (
             <div className="feedback-banner feedback-banner--success" role="status">
-              <strong>Welcome reviewed.</strong>
-              <p>The pre-course survey and test are unlocked.</p>
+              <strong>{t('Welcome reviewed.')}</strong>
+              <p>{t('The pre-course survey and test are unlocked.')}</p>
             </div>
           ) : null}
         </div>
@@ -109,7 +114,7 @@ export function WelcomePage() {
               rel="noreferrer"
               target="_blank"
             >
-              {welcomeLecture.resourceLabel ?? 'Open welcome resource'}
+              {welcomeLecture.resourceLabel ?? t('Open welcome resource')}
             </a>
           ) : null}
           <button
@@ -126,7 +131,7 @@ export function WelcomePage() {
             }
             type="button"
           >
-            {welcomeComplete ? 'Welcome reviewed' : 'I have reviewed the welcome video - unlock next step'}
+            {welcomeComplete ? t('Welcome reviewed') : t('I have reviewed the welcome video - unlock next step')}
           </button>
         </div>
       </section>
@@ -135,19 +140,19 @@ export function WelcomePage() {
         <div className="welcome-step__heading">
           <span className="welcome-step__number">#3</span>
           <div>
-            <div className="eyebrow">Start here</div>
-            <h2>Survey and baseline pre-test</h2>
-            <p>After the intro video is reviewed, continue to the pre-course survey and baseline pre-test.</p>
+            <div className="eyebrow">{t('Start here')}</div>
+            <h2>{t('Survey and baseline pre-test')}</h2>
+            <p>{t('After the intro video is reviewed, continue to the pre-course survey and baseline pre-test.')}</p>
           </div>
         </div>
         <div className="button-row button-row--wrap">
           {canOpenPretest ? (
-            <Link className="button" to="/pretest">
-              Open survey and baseline pre-test
+            <Link className="button" to={localizePath('/pretest')}>
+              {t('Open survey and baseline pre-test')}
             </Link>
           ) : (
             <button className="button" disabled type="button">
-              Open survey and baseline pre-test
+              {t('Open survey and baseline pre-test')}
             </button>
           )}
         </div>

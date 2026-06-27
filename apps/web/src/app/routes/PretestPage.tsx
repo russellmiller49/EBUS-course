@@ -11,6 +11,7 @@ import {
   scorePretest,
 } from '@/features/pretest/logic';
 import { CourseSurveyForm } from '@/features/surveys/CourseSurveyForm';
+import { useLocalizedPath } from '@/i18n/locale';
 import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
 import { useAuth } from '@/lib/auth';
 import { useCourseNow } from '@/lib/courseClock';
@@ -28,6 +29,7 @@ function formatTimestamp(value: string | null) {
 }
 
 export function PretestPage() {
+  const localizePath = useLocalizedPath();
   const { state, setModuleProgress, setPretestAnswer, setPretestQuestionIndex, submitPreCourseSurvey, submitPretest } =
     useLearnerProgress();
   const { isSupabaseEnabled, profile } = useAuth();
@@ -165,10 +167,10 @@ export function PretestPage() {
         </div>
         {!accountComplete ? (
           <div className="button-row button-row--wrap">
-            <Link className="button" to="/auth?mode=sign-up&next=%2Fpretest">
+            <Link className="button" to={localizePath('/auth?mode=sign-up&next=%2Fpretest')}>
               Create account
             </Link>
-            <Link className="button button--ghost" to="/auth?next=%2Fpretest">
+            <Link className="button button--ghost" to={localizePath('/auth?next=%2Fpretest')}>
               Sign in
             </Link>
           </div>
@@ -222,7 +224,7 @@ export function PretestPage() {
                 </p>
                 {nextCourseStep ? (
                   <div className="button-row button-row--wrap">
-                    <Link className="button" to={nextCourseStep.path}>
+                    <Link className="button" to={localizePath(nextCourseStep.path)}>
                       Continue: {nextCourseStep.title}
                     </Link>
                   </div>

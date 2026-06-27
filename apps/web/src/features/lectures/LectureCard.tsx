@@ -6,6 +6,7 @@ import {
   getLectureViewedPercent,
   isLecturePlaybackComplete,
 } from '@/features/lectures/watchProgress';
+import { useCourseShellText } from '@/i18n/courseShell';
 import type { LectureStateUpdate, LectureWatchState } from '@/lib/progress';
 
 function getLectureThumbnailLabel(lecture: LectureManifestItem): string {
@@ -37,6 +38,7 @@ export function LectureCard({
   onUpdateWatchState: (lectureId: string, update: LectureStateUpdate) => void;
   readyLabel?: string;
 }) {
+  const t = useCourseShellText();
   const [posterBroken, setPosterBroken] = useState(false);
   const shouldExpandPlayerByDefault = defaultPlayerExpanded && Boolean(lecture.video || lecture.embedUrl);
   const [detailsExpanded, setDetailsExpanded] = useState(
@@ -59,7 +61,7 @@ export function LectureCard({
   const quizReady = Boolean(
     watchState?.completed || watchState?.quizUnlockedAt || watchState?.lastOpenedAt || watchedSeconds > 0,
   );
-  const statusLabel = isLocked ? 'Locked' : watchState?.completed ? 'Fully viewed' : quizReady ? readyLabel : 'Ready';
+  const statusLabel = isLocked ? t('Locked') : watchState?.completed ? t('Fully viewed') : quizReady ? t(readyLabel) : t('Ready');
 
   useEffect(() => {
     if (defaultExpanded && !watchState?.lastOpenedAt && !watchState?.completed && !isLocked) {
@@ -241,7 +243,7 @@ export function LectureCard({
         <div className="lecture-card__actions">
           {hasPlayableVideo ? (
             <button className="button button--ghost" onClick={handleTogglePlayer} type="button">
-              {videoExpanded ? 'Hide player' : 'Open player'}
+              {videoExpanded ? t('Hide player') : t('Open player')}
             </button>
           ) : null}
           {lecture.resourceUrl ? (
@@ -252,7 +254,7 @@ export function LectureCard({
               rel="noreferrer"
               target="_blank"
             >
-              {lecture.resourceLabel ?? 'Open resource'}
+              {lecture.resourceLabel ?? t('Open resource')}
             </a>
           ) : null}
           {!hasPlayableVideo ? (
@@ -269,12 +271,12 @@ export function LectureCard({
               }}
               type="button"
             >
-              {watchState?.completed ? 'Completed' : 'Mark reviewed'}
+              {watchState?.completed ? t('Completed') : t('Mark reviewed')}
             </button>
           ) : null}
         </div>
       ) : isLocked ? (
-        <p className="lecture-card__status">{lockedReason ?? 'Complete the previous course step to unlock this lecture.'}</p>
+        <p className="lecture-card__status">{t(lockedReason ?? 'Complete the previous course step to unlock this lecture.')}</p>
       ) : null}
 
       {videoExpanded && detailsExpanded && !isLocked ? (

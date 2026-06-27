@@ -55,6 +55,7 @@ export function EuMe2Keyboard({
   activeActionId,
   debug = false,
   layout,
+  formatLabel = (label: string) => label,
   menuMode = 'none',
   onAction,
   onHotspotPointerDown,
@@ -66,6 +67,7 @@ export function EuMe2Keyboard({
 }: {
   activeActionId?: KnobologyProcessorActionId | null;
   debug?: boolean;
+  formatLabel?: (label: string) => string;
   layout: EuMe2Layout;
   menuMode?: KnobologyMenuMode;
   onAction?: (actionId: KnobologyProcessorActionId) => void;
@@ -85,7 +87,7 @@ export function EuMe2Keyboard({
   const touchPanelRegion = layout.regions.touchPanel;
   const imageAdjustPanel = menuMode === 'image-adjust' ? layout.imageAdjustPanel : undefined;
   const panelCropRegion = imageAdjustPanel?.sourceRegion ?? touchPanelRegion;
-  const caption = imageAdjustPanel?.image.notes ?? layout.image.notes;
+  const caption = formatLabel(imageAdjustPanel?.image.notes ?? layout.image.notes ?? '');
   const figureClassName = [
     'eu-me2',
     debug ? 'eu-me2--debug' : '',
@@ -125,7 +127,7 @@ export function EuMe2Keyboard({
         <div className="eu-me2__overlay">
           {onTrackballMove ? (
             <button
-              aria-label="Trackball"
+              aria-label={formatLabel('Trackball')}
               className={`eu-me2__trackball-control${trackballActive ? ' eu-me2__trackball-control--active' : ''}${trackballDragging ? ' eu-me2__trackball-control--dragging' : ''}`}
               onBlur={() => {
                 setTrackballDragging(false);
@@ -185,7 +187,7 @@ export function EuMe2Keyboard({
               })}
               type="button"
             >
-              <span className="sr-only">Trackball</span>
+              <span className="sr-only">{formatLabel('Trackball')}</span>
             </button>
           ) : null}
 
@@ -203,7 +205,7 @@ export function EuMe2Keyboard({
                   shape: 'circle',
                 })}
               >
-                <span>Trackball</span>
+                <span>{formatLabel('Trackball')}</span>
               </div>
               {Object.entries(layout.regions).map(([regionId, region]) => (
                 <div
@@ -218,6 +220,7 @@ export function EuMe2Keyboard({
           ) : null}
 
           {layout.hotspots.map((hotspot) => {
+            const label = formatLabel(hotspot.label);
             const isActive =
               hoveredHotspotId === hotspot.id ||
               pressedHotspotId === hotspot.id ||
@@ -227,7 +230,7 @@ export function EuMe2Keyboard({
             return (
               <button
                 key={hotspot.id}
-                aria-label={`${hotspot.label} (${hotspot.action})`}
+                aria-label={`${label} (${hotspot.action})`}
                 aria-pressed={editorMode ? selectedHotspotId === hotspot.id : activeActionId === hotspot.action}
                 className={`eu-me2__hotspot eu-me2__hotspot--${hotspot.shape}${isActive ? ' eu-me2__hotspot--active' : ''}${selectedHotspotId === hotspot.id ? ' eu-me2__hotspot--selected' : ''}`}
                 onBlur={() => setHoveredHotspotId((current) => (current === hotspot.id ? null : current))}
@@ -253,10 +256,10 @@ export function EuMe2Keyboard({
                 style={getHotspotStyle(hotspot)}
                 type="button"
               >
-                <span className="sr-only">{hotspot.label}</span>
+                <span className="sr-only">{label}</span>
                 {showHotspotLabels ? (
                   <span className="eu-me2__hotspot-label">
-                    {hotspot.label}
+                    {label}
                     <small>{hotspot.action}</small>
                   </span>
                 ) : null}

@@ -33,13 +33,20 @@ const GLB_SCENE_TO_WEB_MM_MATRIX = new THREE.Matrix4().set(
   1,
 );
 const AIRWAY_TRANSLUCENCY_REDUCTION = 0.15;
-const FREE_DRIVE_ANTERIOR_CAMERA_OFFSET = new THREE.Vector3(0, 120, 620);
+const FREE_DRIVE_ANTERIOR_CAMERA_OFFSET = new THREE.Vector3(0, 96, 390);
 
 type GlbAsset = Pick<SimulatorCleanModelAsset, 'asset'> | Pick<SimulatorScopeModelAsset, 'asset'>;
 
 interface LockedCameraView {
   position: THREE.Vector3;
   target: THREE.Vector3;
+}
+
+export function resolveLockedAnatomyCameraView(
+  lockView: boolean | undefined,
+  previousView: LockedCameraView | null,
+): LockedCameraView | null {
+  return lockView ? previousView : null;
 }
 
 const glbModelCache = new Map<string, Promise<THREE.Group>>();
@@ -380,7 +387,7 @@ export function AnatomyScene({
           .add(cameraPose.depthAxis.clone().multiplyScalar(-118))
           .add(cameraPose.tangent.clone().multiplyScalar(58))
           .add(new THREE.Vector3(0, 54, 0));
-    const lockedCameraView = lockView && !freeDriveView ? lockedCameraViewRef.current : null;
+    const lockedCameraView = resolveLockedAnatomyCameraView(lockView, lockedCameraViewRef.current);
     const camera = new THREE.PerspectiveCamera(freeDriveView ? 52 : 42, width / height, 0.1, sceneRadius * 8);
     camera.position.copy(lockedCameraView?.position ?? autoCameraPosition);
     camera.lookAt(lockedCameraView?.target ?? focus);

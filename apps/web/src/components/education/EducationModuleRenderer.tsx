@@ -7,6 +7,7 @@ import type {
   StationBoundaryDefinition,
   StationStagingImplication,
 } from '@/content/types';
+import { useCourseShellText } from '@/i18n/courseShell';
 import { isQuizAnswerCorrect } from '@/lib/quiz';
 
 import './education.css';
@@ -37,9 +38,11 @@ export function LearningObjectivesCard({
   objectives: string[];
   title?: string;
 }) {
+  const t = useCourseShellText();
+
   return (
     <article className="education-card education-card--objectives">
-      <div className="eyebrow">{title}</div>
+      <div className="eyebrow">{t(title)}</div>
       <ul className="plain-list education-objectives">
         {objectives.map((objective) => (
           <li key={objective}>{objective}</li>
@@ -50,18 +53,22 @@ export function LearningObjectivesCard({
 }
 
 export function ClinicalPearlCallout({ children }: { children: string }) {
+  const t = useCourseShellText();
+
   return (
     <aside className="education-callout education-callout--pearl">
-      <strong>Clinical pearl</strong>
+      <strong>{t('Clinical pearl')}</strong>
       <p>{children}</p>
     </aside>
   );
 }
 
 export function PitfallCallout({ children }: { children: string }) {
+  const t = useCourseShellText();
+
   return (
     <aside className="education-callout education-callout--pitfall">
-      <strong>Pitfall</strong>
+      <strong>{t('Pitfall')}</strong>
       <p>{children}</p>
     </aside>
   );
@@ -76,9 +83,11 @@ export function StagingImplicationBadge({
   value: string;
   tone?: 'neutral' | 'warning' | 'accent';
 }) {
+  const t = useCourseShellText();
+
   return (
     <span className={`staging-badge staging-badge--${tone}`}>
-      <strong>{label}</strong>
+      <strong>{t(label)}</strong>
       <span>{value}</span>
     </span>
   );
@@ -91,6 +100,7 @@ export function StationBoundaryCard({
   boundary: StationBoundaryDefinition;
   notes: string[];
 }) {
+  const t = useCourseShellText();
   const entries = [
     { label: 'Superior', value: boundary.superior },
     { label: 'Inferior', value: boundary.inferior },
@@ -102,11 +112,11 @@ export function StationBoundaryCard({
 
   return (
     <article className="education-card">
-      <div className="eyebrow">Station boundary</div>
+      <div className="eyebrow">{t('Station boundary')}</div>
       <div className="boundary-grid">
         {entries.map((entry) => (
           <div key={entry.label} className="boundary-grid__item">
-            <strong>{entry.label}</strong>
+            <strong>{t(entry.label)}</strong>
             <p>{entry.value}</p>
           </div>
         ))}
@@ -129,9 +139,11 @@ export function LandmarkChecklist({
   items: string[];
   title?: string;
 }) {
+  const t = useCourseShellText();
+
   return (
     <article className="education-card education-card--checklist">
-      <div className="eyebrow">{title}</div>
+      <div className="eyebrow">{t(title)}</div>
       <ul className="plain-list education-list">
         {items.map((item) => (
           <li key={item}>{item}</li>
@@ -162,17 +174,19 @@ export function RelatedImagesStrip({ items }: { items: RelatedImageAsset[] }) {
 }
 
 export function CaseVignetteCard({ vignette }: { vignette: LessonCaseVignette }) {
+  const t = useCourseShellText();
+
   return (
     <article className="education-card education-card--case">
-      <div className="eyebrow">Case vignette</div>
+      <div className="eyebrow">{t('Case vignette')}</div>
       <h3>{vignette.title}</h3>
       <p>{vignette.scenario}</p>
       <div className="education-case">
-        <strong>Question</strong>
+        <strong>{t('Question')}</strong>
         <p>{vignette.prompt}</p>
       </div>
       <div className="education-case education-case--takeaway">
-        <strong>Takeaway</strong>
+        <strong>{t('Takeaway')}</strong>
         <p>{vignette.takeaway}</p>
       </div>
     </article>
@@ -186,9 +200,11 @@ export function ArtifactCard({
   section: LessonSection;
   images: RelatedImageAsset[];
 }) {
+  const t = useCourseShellText();
+
   return (
     <article className="education-card education-card--artifact">
-      <div className="eyebrow">{formatSectionKind(section.kind)}</div>
+      <div className="eyebrow">{t(formatSectionKind(section.kind))}</div>
       <h3>{section.title}</h3>
       <p>{section.body}</p>
       {section.bullets?.length ? (
@@ -214,6 +230,7 @@ export function QuizExplanationPanel({
   selectedOptionIds: string[];
   showDifficulty?: boolean;
 }) {
+  const t = useCourseShellText();
   const correct = isQuizAnswerCorrect(question, selectedOptionIds);
   const showMeta = showDifficulty || question.tags.length > 0;
 
@@ -221,7 +238,7 @@ export function QuizExplanationPanel({
     <div className={`quiz-explanation-panel${correct ? ' quiz-explanation-panel--success' : ''}`}>
       {showMeta ? (
         <div className="quiz-explanation-panel__meta">
-          {showDifficulty ? <span className="tag">Difficulty: {question.difficulty}</span> : null}
+          {showDifficulty ? <span className="tag">{t('Difficulty:')} {t(question.difficulty)}</span> : null}
           {question.tags.map((tag) => (
             <span key={tag} className="tag">
               {tag}
@@ -230,7 +247,7 @@ export function QuizExplanationPanel({
         </div>
       ) : null}
       <div className="quiz-explanation-panel__answer">
-        <strong>Correct answer</strong>
+        <strong>{t('Correct answer')}</strong>
         <p>{formatCorrectAnswer(question)}</p>
       </div>
       <p>{question.explanation}</p>
@@ -257,6 +274,7 @@ export function QuizExplanationPanel({
 }
 
 export function EducationSectionCard({ section }: { section: LessonSection }) {
+  const t = useCourseShellText();
   const images = resolveEducationImages(section.imageIds);
 
   if (section.kind === 'artifact') {
@@ -265,7 +283,7 @@ export function EducationSectionCard({ section }: { section: LessonSection }) {
 
   return (
     <article className={`education-card education-card--${section.kind}`}>
-      <div className="eyebrow">{formatSectionKind(section.kind)}</div>
+      <div className="eyebrow">{t(formatSectionKind(section.kind))}</div>
       <h3>{section.title}</h3>
       <p>{section.body}</p>
       {section.bullets?.length ? (
@@ -291,11 +309,13 @@ export function EducationModuleRenderer({
   module: EducationalModuleContent;
   compact?: boolean;
 }) {
+  const t = useCourseShellText();
+
   return (
     <section className="section-card reference-card">
       <div className="section-card__heading">
         <div>
-          <div className="eyebrow">Handbook</div>
+          <div className="eyebrow">{t('Handbook')}</div>
           <h2>{module.title}</h2>
           <p>{module.summary}</p>
         </div>
@@ -317,11 +337,13 @@ export function StationStagingSummary({
   staging: StationStagingImplication;
   accessProfile: string;
 }) {
+  const t = useCourseShellText();
+
   return (
     <div className="staging-summary">
-      <StagingImplicationBadge label="Access" tone="accent" value={accessProfile} />
-      <StagingImplicationBadge label="Ipsilateral" tone="neutral" value={staging.ipsilateral} />
-      <StagingImplicationBadge label="Contralateral" tone="warning" value={staging.contralateral} />
+      <StagingImplicationBadge label={t('Access')} tone="accent" value={accessProfile} />
+      <StagingImplicationBadge label={t('Ipsilateral')} tone="neutral" value={staging.ipsilateral} />
+      <StagingImplicationBadge label={t('Contralateral')} tone="warning" value={staging.contralateral} />
       <p>{staging.note}</p>
     </div>
   );

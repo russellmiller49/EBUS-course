@@ -3,6 +3,7 @@ import { Link, Navigate, useSearchParams } from 'react-router-dom';
 
 import { SupportContactForm } from '@/components/SupportContactForm';
 import { emptyProfileInput, LearnerProfileFields, validateProfileInput } from '@/features/account/LearnerProfileFields';
+import { useLocalizedPath } from '@/i18n/locale';
 import { useCourseVendorSessionActive } from '@/lib/adminSession';
 import { storeCourseVendorPasscode, validateCourseVendorPasscode } from '@/lib/access';
 import type { LearnerProfileInput } from '@/lib/auth';
@@ -35,6 +36,7 @@ function getInitialMode(candidate: string | null): AuthMode {
 }
 
 export function AuthPage() {
+  const localizePath = useLocalizedPath();
   const {
     completePasswordSetup,
     isLoading,
@@ -247,7 +249,7 @@ export function AuthPage() {
 
   if (mode === 'vendor') {
     if (vendorSessionActive) {
-      return <Navigate replace to={vendorRedirectPath} />;
+      return <Navigate replace to={localizePath(vendorRedirectPath)} />;
     }
 
     return (
@@ -297,7 +299,7 @@ export function AuthPage() {
             `supabase/schema.sql`, and then use the invite script to send learner onboarding emails.
           </p>
           <div className="button-row button-row--wrap">
-            <Link className="button" to="/">
+            <Link className="button" to={localizePath('/')}>
               Continue in local mode
             </Link>
           </div>
@@ -378,7 +380,7 @@ export function AuthPage() {
   }
 
   if (user && !isPasswordForm && !isSupportMode) {
-    return <Navigate replace to={nextPath} />;
+    return <Navigate replace to={localizePath(nextPath)} />;
   }
 
   return (

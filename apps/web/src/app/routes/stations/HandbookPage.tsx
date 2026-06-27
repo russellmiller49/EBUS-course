@@ -1,7 +1,9 @@
 import { EducationModuleRenderer } from '@/components/education/EducationModuleRenderer';
-import { stationEducationModules } from '@/content/education';
+import { useLocalizedStationEducationModules } from '@/i18n/localizedContent';
 
 export function StationsHandbookPage() {
+  const stationEducationModules = useLocalizedStationEducationModules();
+
   return (
     <div className="page-stack">
       {stationEducationModules.map((module) => (

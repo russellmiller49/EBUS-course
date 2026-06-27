@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 
 import { CourseStepGuidance } from '@/components/CourseStepGuidance';
 import type { AppRouteId } from '@/content/types';
+import { useCourseShellText } from '@/i18n/courseShell';
+import { useLocalizedPath } from '@/i18n/locale';
 import { canAccessRoute } from '@/lib/access';
 import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
 import { useAuth } from '@/lib/auth';
@@ -242,6 +244,8 @@ function ProgressMeter({ percent }: { percent: number }) {
 }
 
 export function ProgressPage() {
+  const localizePath = useLocalizedPath();
+  const t = useCourseShellText();
   const { state } = useLearnerProgress();
   const { isSupabaseEnabled, profile } = useAuth();
   const adminSessionActive = useCourseAdminSessionActive();
@@ -279,10 +283,10 @@ export function ProgressPage() {
       <section className="section-card progress-dashboard">
         <div className="section-card__heading">
           <div>
-            <div className="eyebrow">Learner progress</div>
-            <h2>Show my progress</h2>
+            <div className="eyebrow">{t('Learner progress')}</div>
+            <h2>{t('Show my progress')}</h2>
             <p>
-              See what is complete, what is required next, which modules are open now, and which modules remain locked.
+              {t('See what is complete, what is required next, which modules are open now, and which modules remain locked.')}
             </p>
           </div>
           <div className="tag-row">
@@ -295,12 +299,12 @@ export function ProgressPage() {
         </div>
         <div className="progress-dashboard__next">
           <div>
-            <span>Required next</span>
-            <strong>{guidance.currentStep?.title ?? 'All required steps complete'}</strong>
+            <span>{t('Required next')}</span>
+            <strong>{guidance.currentStep ? t(guidance.currentStep.title) : t('All required steps complete')}</strong>
           </div>
           {guidance.currentStep?.unlocked && !guidance.currentStep.completed ? (
-            <Link className="button" to={guidance.currentStep.path}>
-              Open required step
+            <Link className="button" to={localizePath(guidance.currentStep.path)}>
+              {t('Open required step')}
             </Link>
           ) : null}
         </div>
@@ -311,9 +315,9 @@ export function ProgressPage() {
       <section className="section-card">
         <div className="section-card__heading">
           <div>
-            <div className="eyebrow">Module status</div>
-            <h2>Completed, unlocked, and locked modules</h2>
-            <p>These statuses use the same course unlock rules and saved browser progress as the rest of the portal.</p>
+            <div className="eyebrow">{t('Module status')}</div>
+            <h2>{t('Completed, unlocked, and locked modules')}</h2>
+            <p>{t('These statuses use the same course unlock rules and saved browser progress as the rest of the portal.')}</p>
           </div>
         </div>
 
@@ -325,20 +329,20 @@ export function ProgressPage() {
                   {module.icon}
                 </span>
                 <div>
-                  <span>{module.statusLabel}</span>
-                  <h3>{module.title}</h3>
+                  <span>{t(module.statusLabel)}</span>
+                  <h3>{t(module.title)}</h3>
                 </div>
               </div>
-              <p>{module.description}</p>
+              <p>{t(module.description)}</p>
               <div className="progress-module-card__meter">
                 <ProgressMeter percent={module.percent} />
                 <span>{module.percent}%</span>
               </div>
               <div className="progress-module-card__footer">
-                <small>{module.detail}</small>
+                <small>{t(module.detail)}</small>
                 {module.status !== 'locked' ? (
-                  <Link className="button button--ghost" to={module.path}>
-                    Open
+                  <Link className="button button--ghost" to={localizePath(module.path)}>
+                    {t('Open')}
                   </Link>
                 ) : null}
               </div>

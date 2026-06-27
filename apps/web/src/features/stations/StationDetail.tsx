@@ -10,6 +10,7 @@ import {
 import { getStationMediaVariants, getStationPrimaryMedia } from '@/content/media';
 import { getViewLabel, zoneThemes } from '@/content/stations';
 import type { CombinedStation, ExplorerViewId, StationAnnotationSet } from '@/content/types';
+import { useCourseShellText } from '@/i18n/courseShell';
 
 function getAnnotationTone(label: string): 'station' | 'structure' {
   return label.toLowerCase().includes('station') ? 'station' : 'structure';
@@ -76,6 +77,7 @@ function MediaSlot({
   station: CombinedStation;
   viewId: ExplorerViewId;
 }) {
+  const t = useCourseShellText();
   const variants = getStationMediaVariants(station.media, viewId);
   const view = station.views[viewId];
   const firstVariantId = variants[0]?.id ?? '';
@@ -99,14 +101,14 @@ function MediaSlot({
   return (
     <article className="media-slot">
       <div className="media-slot__eyebrow">
-        <span>{getViewLabel(viewId)}</span>
+        <span>{t(getViewLabel(viewId))}</span>
         <span>{view.focusLabel}</span>
       </div>
 
       {variants.length > 1 || revealAvailable ? (
         <div className="media-slot__controls">
           {variants.length > 1 ? (
-            <div className="button-row button-row--wrap" role="tablist" aria-label={`${station.id} ${getViewLabel(viewId)} views`}>
+            <div className="button-row button-row--wrap" role="tablist" aria-label={`${station.id} ${t(getViewLabel(viewId))} ${t('views')}`}>
               {variants.map((variant) => (
                 <button
                   key={variant.id}
@@ -131,14 +133,14 @@ function MediaSlot({
               onClick={() => setIsPinned((current) => !current)}
               type="button"
             >
-              {isPinned ? 'Hide labels' : 'Pin labels'}
+              {isPinned ? t('Hide labels') : t('Pin labels')}
             </button>
           ) : null}
         </div>
       ) : null}
 
       <div
-        aria-label={revealAvailable ? `Click to ${isPinned ? 'hide' : 'show'} labels` : undefined}
+        aria-label={revealAvailable ? `${t('Click to')} ${isPinned ? t('hide') : t('show')} ${t('labels')}` : undefined}
         className={`media-slot__frame media-slot__frame--${view.visualAnchor}${revealAvailable ? ' media-slot__frame--interactive' : ''}`}
         onClick={() => {
           if (revealAvailable) {
@@ -163,7 +165,7 @@ function MediaSlot({
         {frameSource ? (
           <>
             <img
-              alt={`${station.id} ${getViewLabel(viewId)} correlate${selectedVariant?.label ? ` (${selectedVariant.label})` : ''}`}
+              alt={`${station.id} ${t(getViewLabel(viewId))} ${t('correlate')}${selectedVariant?.label ? ` (${selectedVariant.label})` : ''}`}
               className="media-slot__image"
               src={frameSource}
             />
@@ -180,13 +182,13 @@ function MediaSlot({
             ) : null}
             {revealAvailable ? (
               <div className={`media-slot__hint${revealVisible ? ' media-slot__hint--active' : ''}`}>
-                {revealVisible ? 'Labels visible' : 'Hover or tap to reveal labels'}
+                {revealVisible ? t('Labels visible') : t('Hover or tap to reveal labels')}
               </div>
             ) : null}
           </>
         ) : (
           <div className="media-slot__placeholder">
-            <span>{getViewLabel(viewId)}</span>
+            <span>{t(getViewLabel(viewId))}</span>
             <strong>{view.orientation}</strong>
             <p>{station.media.notes?.[0] ?? 'Media manifest is ready for this slot.'}</p>
           </div>
@@ -207,6 +209,7 @@ export function StationDetail({
   isBookmarked: boolean;
   onToggleBookmark: (stationId: string) => void;
 }) {
+  const t = useCourseShellText();
   const theme = zoneThemes[station.zoneKey];
   const relatedImages = (['ct', 'bronchoscopy', 'ultrasound'] as const).flatMap((viewId) => {
     const primary = getStationPrimaryMedia(station.media, viewId);
@@ -218,7 +221,7 @@ export function StationDetail({
     return [
       {
         id: `${station.id}-${viewId}`,
-        label: `${station.id} ${getViewLabel(viewId)}`,
+        label: `${station.id} ${t(getViewLabel(viewId))}`,
         src: primary.src,
       },
     ];
@@ -243,7 +246,7 @@ export function StationDetail({
           onClick={() => onToggleBookmark(station.id)}
           type="button"
         >
-          {isBookmarked ? 'Bookmarked' : 'Bookmark'}
+          {isBookmarked ? t('Bookmarked') : t('Bookmark')}
         </button>
       </div>
 
@@ -255,8 +258,8 @@ export function StationDetail({
         <div className="detail-card__ebus-facts-row">
           <MediaSlot station={station} viewId="ultrasound" />
           <article className="stack-card reference-card detail-card__quick-facts">
-            <div className="eyebrow">Quick facts</div>
-            <h3>{station.id} at a glance</h3>
+            <div className="eyebrow">{t('Quick facts')}</div>
+            <h3>{station.id} {t('at a glance')}</h3>
             <div className="tag-row">
               <span className="tag">{theme.label}</span>
               <span className="tag">{station.laterality}</span>
@@ -268,10 +271,10 @@ export function StationDetail({
               ))}
             </div>
             <p>
-              <strong>Access:</strong> {station.accessProfile}
+              <strong>{t('Access:')}</strong> {station.accessProfile}
             </p>
             <p>
-              <strong>Best EBUS window:</strong> {station.bestEbusWindow}
+              <strong>{t('Best EBUS window:')}</strong> {station.bestEbusWindow}
             </p>
           </article>
         </div>
@@ -279,26 +282,26 @@ export function StationDetail({
       </div>
 
       <Accordion>
-        <AccordionPanel defaultOpen id="glance" title="At a Glance">
+        <AccordionPanel defaultOpen id="glance" title={t('At a Glance')}>
           <div className="detail-card__panel-grid">
             <div className="stack-card reference-card">
-              <div className="eyebrow">Access & EBUS window</div>
+              <div className="eyebrow">{t('Access & EBUS window')}</div>
               <p>
-                <strong>Access:</strong> {station.accessProfile}
+                <strong>{t('Access:')}</strong> {station.accessProfile}
               </p>
               <p>
-                <strong>Best EBUS window:</strong> {station.bestEbusWindow}
+                <strong>{t('Best EBUS window:')}</strong> {station.bestEbusWindow}
               </p>
               <p>{station.accessNotes}</p>
             </div>
           </div>
         </AccordionPanel>
 
-        <AccordionPanel id="boundaries" title="Anatomic Boundaries">
+        <AccordionPanel id="boundaries" title={t('Anatomic Boundaries')}>
           <StationBoundaryCard boundary={station.boundaryDefinition} notes={station.boundaryNotes} />
         </AccordionPanel>
 
-        <AccordionPanel id="what-you-see" title="What You Should See">
+        <AccordionPanel id="what-you-see" title={t('What You Should See')}>
           <div className="detail-card__panel-grid">
             <div className="education-card reference-card">
               <div className="eyebrow">CT</div>
@@ -327,26 +330,26 @@ export function StationDetail({
           </div>
         </AccordionPanel>
 
-        <AccordionPanel id="staging" title="Staging & Clinical Impact">
+        <AccordionPanel id="staging" title={t('Staging & Clinical Impact')}>
           <div className="detail-card__panel-grid">
             <div className="education-card reference-card">
-              <div className="eyebrow">Staging summary</div>
+              <div className="eyebrow">{t('Staging summary')}</div>
               <StationStagingSummary accessProfile={station.accessProfile} staging={station.nStageImplication} />
             </div>
             <div className="education-card reference-card">
-              <div className="eyebrow">Why this station matters</div>
+              <div className="eyebrow">{t('Why this station matters')}</div>
               <p>{station.clinicalImportance}</p>
               <p>
-                <strong>Staging impact:</strong> {station.stagingChangeFinding}
+                <strong>{t('Staging impact:')}</strong> {station.stagingChangeFinding}
               </p>
             </div>
           </div>
         </AccordionPanel>
 
-        <AccordionPanel id="memory-aids" title="Memory Aids">
+        <AccordionPanel id="memory-aids" title={t('Memory Aids')}>
           <div className="detail-card__panel-grid">
             <div className="education-card reference-card">
-              <div className="eyebrow">Memory cues</div>
+              <div className="eyebrow">{t('Memory cues')}</div>
               <ul className="plain-list education-list">
                 {station.memoryCues.map((cue) => (
                   <li key={cue}>{cue}</li>
@@ -354,9 +357,9 @@ export function StationDetail({
               </ul>
             </div>
             <div className="education-card reference-card">
-              <div className="eyebrow">Common confusion pairs</div>
+              <div className="eyebrow">{t('Common confusion pairs')}</div>
               <p>
-                <strong>Most common:</strong> {station.commonConfusionPair}
+                <strong>{t('Most common:')}</strong> {station.commonConfusionPair}
               </p>
               <div className="tag-row">
                 {station.confusionPairs.map((pair) => (
@@ -369,11 +372,11 @@ export function StationDetail({
           </div>
         </AccordionPanel>
 
-        <AccordionPanel id="landmarks-safety" title="Landmarks & Safety">
+        <AccordionPanel id="landmarks-safety" title={t('Landmarks & Safety')}>
           <div className="detail-card__panel-grid">
             <LandmarkChecklist items={station.landmarkChecklist} />
             <div className="education-card reference-card">
-              <div className="eyebrow">Landmark vessels</div>
+              <div className="eyebrow">{t('Landmark vessels')}</div>
               <div className="tag-row">
                 {station.landmarkVessels.map((vessel) => (
                   <span key={vessel} className="tag">
@@ -383,7 +386,7 @@ export function StationDetail({
               </div>
             </div>
             <div className="education-card reference-card">
-              <div className="eyebrow">Safe puncture considerations</div>
+              <div className="eyebrow">{t('Safe puncture considerations')}</div>
               <ul className="plain-list education-list">
                 {station.safePunctureConsiderations.map((item) => (
                   <li key={item}>{item}</li>

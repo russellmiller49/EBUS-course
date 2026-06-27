@@ -4,6 +4,8 @@ import { NavLink } from 'react-router-dom';
 import { BottomNav } from '@/components/BottomNav';
 import { TopHeader } from '@/components/TopHeader';
 import type { NavigationItem } from '@/content/types';
+import { useCourseShellText } from '@/i18n/courseShell';
+import { useLocalizedPath } from '@/i18n/locale';
 
 export function AppShell({
   children,
@@ -17,11 +19,14 @@ export function AppShell({
     title: string;
   };
 }) {
+  const localizePath = useLocalizedPath();
+  const t = useCourseShellText();
+
   return (
     <div className="app-shell">
       <div className="app-shell__frame">
         <TopHeader publicMode={publicMode} />
-        <nav className="top-nav" aria-label="Primary">
+        <nav className="top-nav" aria-label={t('Primary')}>
           {navItems.map((item) => (
             <NavLink
               key={item.id}
@@ -30,7 +35,7 @@ export function AppShell({
                 `top-nav__link${isActive ? ' top-nav__link--active' : ''}${item.locked ? ' top-nav__link--locked' : ''}`
               }
               title={item.locked ? item.lockedReason : undefined}
-              to={item.path}
+              to={localizePath(item.path)}
               end={item.path === '/'}
             >
               <span aria-hidden="true">{item.locked ? '•' : item.icon}</span>

@@ -3,12 +3,12 @@ import { useSearchParams } from 'react-router-dom';
 
 import { CourseStepGuidance } from '@/components/CourseStepGuidance';
 import { getCourseAssessmentById, postLectureCourseAssessments } from '@/content/courseAssessments';
-import { courseInfo } from '@/content/course';
 import { lectureManifest } from '@/content/lectures';
 import type { CourseAssessmentContent } from '@/content/types';
 import { AabipVideoLibrary } from '@/features/lectures/AabipVideoLibrary';
 import { LectureCard } from '@/features/lectures/LectureCard';
 import { QuizCard } from '@/features/quiz/QuizCard';
+import { useCourseShellText, useLocalizedCourseInfo } from '@/i18n/courseShell';
 import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
 import { useCourseNow } from '@/lib/courseClock';
 import {
@@ -138,6 +138,8 @@ function CourseAssessmentSummary({
 }
 
 export function LecturesPage() {
+  const courseInfo = useLocalizedCourseInfo();
+  const t = useCourseShellText();
   const [searchParams, setSearchParams] = useSearchParams();
   const [assessmentModeById, setAssessmentModeById] = useState<Record<string, AssessmentInteractionMode>>({});
   const [assessmentAttemptNonceById, setAssessmentAttemptNonceById] = useState<Record<string, number>>({});
@@ -311,11 +313,12 @@ export function LecturesPage() {
       <section className="section-card">
         <div className="section-card__heading">
           <div>
-            <div className="eyebrow">Lecture module</div>
-            <h2>Course videos and post-lecture quizzes</h2>
+            <div className="eyebrow">{t('Lecture module')}</div>
+            <h2>{t('Course videos and post-lecture quizzes')}</h2>
             <p>
-              Open each lecture to unlock its quiz in place. The next lecture still opens only after the required quiz
-              is submitted.
+              {t(
+                'Open each lecture to unlock its quiz in place. The next lecture still opens only after the required quiz is submitted.',
+              )}
             </p>
           </div>
           <div className="tag-row">
@@ -337,9 +340,9 @@ export function LecturesPage() {
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
                 role="tab"
-                type="button"
-              >
-                {tab.label}
+              type="button"
+            >
+                {t(tab.label)}
               </button>
             );
           })}
@@ -353,8 +356,10 @@ export function LecturesPage() {
           <section className="section-card">
             <div className="section-card__heading">
               <div>
-                <div className="eyebrow">Lecture manifest</div>
-                <h2>Prep window: {courseInfo.prepWindow}</h2>
+                <div className="eyebrow">{t('Lecture manifest')}</div>
+                <h2>
+                  {t('Prep window:')} {courseInfo.prepWindow}
+                </h2>
                 <p>
                   Start with the welcome tab, then complete the pre-course survey and test. Lecture quizzes unlock in
                   sequence; the final post-test, survey, answers, and certificate live in the post-course tab.

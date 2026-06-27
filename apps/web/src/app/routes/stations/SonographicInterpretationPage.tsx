@@ -1,10 +1,8 @@
-import sonographicInterpretationData from '../../../../../../content/modules/sonographic-interpretation.json';
-
 import { EducationModuleRenderer } from '@/components/education/EducationModuleRenderer';
-import type { EducationalModuleContent } from '@/content/types';
-
-const sonographicInterpretation = sonographicInterpretationData as EducationalModuleContent;
+import { useLocalizedSonographicInterpretationContent } from '@/i18n/localizedContent';
 
 export function SonographicInterpretationPage() {
+  const sonographicInterpretation = useLocalizedSonographicInterpretationContent();
+
   return <EducationModuleRenderer module={sonographicInterpretation} />;
 }

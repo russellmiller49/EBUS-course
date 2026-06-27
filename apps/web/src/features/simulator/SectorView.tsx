@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
+import { useCourseShellText } from '@/i18n/courseShell';
+
 import { clamp } from './pose';
 import { formatSimulatorStation } from './stationIds';
 import type { SimulatorCaseManifest, SimulatorPreset, SimulatorSectorItem, SimulatorSectorRasterMask, Vec2 } from './types';
 
 const OPEN_CONTOUR_CLOSEABLE_CHORD_RATIO = 0.7;
+
+function localizeSectorItemLabel(label: string, t: (source: string) => string) {
+  return t(label.replace(/\s+region$/i, ''));
+}
 
 function hexToRgb(color: string) {
   const normalized = color.trim().replace(/^#/, '');
@@ -1024,6 +1030,7 @@ export function SectorView({
   setActiveStructure: (value: string | null) => void;
   source: string;
 }) {
+  const t = useCourseShellText();
   const rasterCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const maxDepth = caseData.render_defaults.max_depth_mm;
   const halfTan = Math.tan(THREE.MathUtils.degToRad(caseData.render_defaults.sector_angle_deg / 2));
@@ -1286,19 +1293,19 @@ export function SectorView({
   }, [activeStructure, halfTan, renderItems, maxDepth]);
 
   return (
-    <section className="simulator-sector-pane" aria-label="Labeled EBUS sector" data-sector-source={source}>
+    <section className="simulator-sector-pane" aria-label={t('Labeled EBUS sector')} data-sector-source={source}>
       <div className="simulator-pane-header">
         <div>
-          <span className="eyebrow">EBUS sector</span>
+          <span className="eyebrow">{t('EBUS sector')}</span>
           <h2>
             {selectedPreset
-              ? `Station ${formatSimulatorStation(selectedPreset.station)} Node ${selectedPreset.node.toUpperCase()}`
-              : 'Live free-drive sector'}
+              ? `${t('Station')} ${formatSimulatorStation(selectedPreset.station)} ${t('Node')} ${selectedPreset.node.toUpperCase()}`
+              : t('Live free-drive sector')}
           </h2>
         </div>
         <div className="simulator-sector-header-actions">
-          <span className="simulator-chip">{selectedPreset?.approach ?? 'Free drive'}</span>
-          <span className="simulator-chip">Realistic</span>
+          <span className="simulator-chip">{selectedPreset?.approach ?? t('Free drive')}</span>
+          <span className="simulator-chip">{t('Realistic')}</span>
         </div>
       </div>
       <div className="simulator-sector-viewport">
@@ -1312,7 +1319,7 @@ export function SectorView({
           className="simulator-sector-svg"
           viewBox="0 0 100 100"
           role="img"
-          aria-label="Synchronized labeled EBUS sector"
+          aria-label={t('Synchronized labeled EBUS sector')}
           pointerEvents="auto"
         >
           <defs>
@@ -1505,10 +1512,10 @@ export function SectorView({
             </g>
           ))}
           <text x="13" y="96" fill="#8d999e" fillOpacity="0.58" fontSize="2.55">
-            caudal
+            {t('caudal')}
           </text>
           <text x="76" y="96" fill="#8d999e" fillOpacity="0.58" fontSize="2.55">
-            cephalic
+            {t('cephalic')}
           </text>
         </svg>
         {activeItem && activeCalloutAnchor ? (
@@ -1521,8 +1528,8 @@ export function SectorView({
           >
             <span className="simulator-sector-callout__swatch" style={{ backgroundColor: activeItem.color }} />
             <span className="simulator-sector-callout__text">
-              <span>{activeItem.label}</span>
-              <span>{activeKindLabel}</span>
+              <span>{localizeSectorItemLabel(activeItem.label, t)}</span>
+              <span>{t(activeKindLabel)}</span>
             </span>
           </div>
         ) : null}
@@ -1539,7 +1546,7 @@ export function SectorView({
             onBlur={() => setActiveStructure(null)}
           >
             <span className="simulator-swatch" style={{ backgroundColor: item.color }} />
-            <span>{item.label}</span>
+            <span>{localizeSectorItemLabel(item.label, t)}</span>
           </button>
         ))}
       </div>

@@ -12,6 +12,7 @@ import {
   simulatorSectorSourceLabel,
 } from './sectorSource';
 import { contourIsCloseable, hasUsableSectorContourGeometry } from './SectorView';
+import { resolveLockedAnatomyCameraView } from './AnatomyScene';
 import {
   buildPlaneIntersectionRasterMask,
   buildPointCloudSectorItems,
@@ -504,6 +505,19 @@ describe('simulator station IDs', () => {
     expect(normalizeSimulatorStationId('11ri')).toBe('11Ri');
     expect(normalizeSimulatorStationId('11RS')).toBe('11Rs');
     expect(normalizeSimulatorStationId('4r')).toBe('4R');
+  });
+});
+
+describe('simulator anatomy scene camera', () => {
+  it('restores the locked orbit camera state for free-drive movement', () => {
+    const previousView = {
+      position: new THREE.Vector3(1, 2, 3),
+      target: new THREE.Vector3(4, 5, 6),
+    };
+
+    expect(resolveLockedAnatomyCameraView(true, previousView)).toBe(previousView);
+    expect(resolveLockedAnatomyCameraView(false, previousView)).toBeNull();
+    expect(resolveLockedAnatomyCameraView(true, null)).toBeNull();
   });
 });
 

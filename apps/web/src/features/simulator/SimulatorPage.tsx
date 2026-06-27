@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import { useCourseShellText } from '@/i18n/courseShell';
 import { useLearnerProgress } from '@/lib/progress';
 
 import { AnatomyScene } from './AnatomyScene';
@@ -164,6 +165,10 @@ export function simulatorSceneStructureVisibilityItems(caseData: SimulatorCaseMa
   }));
 
   return [...nodeItems, ...vesselItems];
+}
+
+function localizeSimulatorStructureLabel(label: string, t: (source: string) => string) {
+  return t(label.replace(/\s+region$/i, ''));
 }
 
 function clampProbeRollDeg(value: number): number {
@@ -1092,6 +1097,7 @@ export function buildPointCloudSectorItems({
 }
 
 export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtualBronchoscopy?: boolean }) {
+  const t = useCourseShellText();
   const { setModuleProgress } = useLearnerProgress();
   const { assets, caseData, error } = useSimulatorCase();
   const publicTrainingMode = useMemo(() => isPublicTrainingSimulatorMode(), []);
@@ -1326,8 +1332,8 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     return (
       <main className="simulator-load-shell">
         <section className="simulator-load-panel">
-          <h1>EBUS Simulator</h1>
-          <p>Loading static case geometry...</p>
+          <h1>{t('EBUS Simulator')}</h1>
+          <p>{t('Loading static case geometry...')}</p>
         </section>
       </main>
     );
@@ -1364,34 +1370,36 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     <div className="simulator-page">
       <section className="simulator-intro">
         <div>
-          <div className="eyebrow">Static training simulator</div>
-          <h1>EBUS Anatomy Correlation Simulator</h1>
+          <div className="eyebrow">{t('Static training simulator')}</div>
+          <h1>{t('EBUS Anatomy Correlation Simulator')}</h1>
           <p>
-            Move along a guided airway centerline, snap to curated nodal targets, and correlate the external anatomy view
-            with a labeled EBUS-style sector.
+            {t(
+              'Move along a guided airway centerline, snap to curated nodal targets, and correlate the external anatomy view with a labeled EBUS-style sector.',
+            )}
           </p>
         </div>
         <aside>
-          Simulated anatomy and EBUS-style views are for orientation training only. They are not clinically validated
-          diagnostic images.
+          {t(
+            'Simulated anatomy and EBUS-style views are for orientation training only. They are not clinically validated diagnostic images.',
+          )}
         </aside>
       </section>
 
       <section className="simulator-topbar">
         <div>
-          <span className="eyebrow">{caseData.case_id}</span>
-          <h2>{selectedPreset ? `Station ${formatSimulatorStation(selectedPreset.station)}` : 'Free airway drive'}</h2>
+          <span className="eyebrow">{t(caseData.case_id)}</span>
+          <h2>{selectedPreset ? `${t('Station')} ${formatSimulatorStation(selectedPreset.station)}` : t('Free airway drive')}</h2>
         </div>
         <div className="simulator-status-strip">
-          <span>{selectedPreset?.approach ?? 'No station selected'}</span>
+          <span>{selectedPreset?.approach ?? t('No station selected')}</span>
           <span>{Math.round(sMm)} mm</span>
-          <span>{simulatorSectorSourceLabel(sectorSource)}</span>
+          <span>{t(simulatorSectorSourceLabel(sectorSource))}</span>
         </div>
       </section>
 
-      <section className="simulator-control-rail" aria-label="Simulator controls">
+      <section className="simulator-control-rail" aria-label={t('Simulator controls')}>
         <label>
-          <span>Station snap</span>
+          <span>{t('Station snap')}</span>
           <select
             value={selectedPreset?.preset_key ?? ''}
             onChange={(event) => {
@@ -1411,7 +1419,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
               }
             }}
           >
-            {publicTrainingMode ? <option value="">Free drive - no station snap</option> : null}
+            {publicTrainingMode ? <option value="">{t('Free drive - no station snap')}</option> : null}
             {caseData.presets.map((preset) => (
               <option key={preset.preset_key} value={preset.preset_key}>
                 {preset.label}
@@ -1420,7 +1428,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
           </select>
         </label>
         <label className="simulator-wide-control">
-          <span>Advance / retract</span>
+          <span>{t('Advance / retract')}</span>
           <input
             max={activePolyline.total_length_mm}
             min={0}
@@ -1434,7 +1442,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
           />
         </label>
         <label>
-          <span>Roll ({Math.round(rollDeg)} deg)</span>
+          <span>{t('Roll')} ({Math.round(rollDeg)} {t('deg')})</span>
           <input
             max={ROLL_MAX_DEG}
             min={ROLL_MIN_DEG}
@@ -1447,42 +1455,42 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
             value={clampProbeRollDeg(rollDeg)}
           />
         </label>
-        <div className="simulator-layer-toggles" aria-label="Anatomy layers">
+        <div className="simulator-layer-toggles" aria-label={t('Anatomy layers')}>
           <label>
             <input checked={teachingView} onChange={() => setTeachingView((current) => !current)} type="checkbox" />
-            <span>teaching</span>
+            <span>{t('teaching')}</span>
           </label>
           <label>
             <input checked={lockSceneView} onChange={() => setLockSceneView((current) => !current)} type="checkbox" />
-            <span>lock view</span>
+            <span>{t('lock view')}</span>
           </label>
           {VIEWABLE_LAYER_KEYS.map((key) => (
             <label key={key}>
               <input checked={layers[key]} onChange={() => updateLayer(key)} type="checkbox" />
-              <span>{SIMULATOR_LAYER_LABELS[key]}</span>
+              <span>{t(SIMULATOR_LAYER_LABELS[key])}</span>
             </label>
           ))}
         </div>
       </section>
 
       <div className={`simulator-workspace${showVirtualBronchoscopyPane ? ' simulator-workspace--virtual' : ''}`}>
-        <section className="simulator-scene-pane" aria-label="External anatomy view">
+        <section className="simulator-scene-pane" aria-label={t('External anatomy view')}>
           <div className="simulator-pane-header">
             <div>
-              <span className="eyebrow">External anatomy</span>
-              <h2>Scope, airway, vessels, lymph nodes, and fan</h2>
+              <span className="eyebrow">{t('External anatomy')}</span>
+              <h2>{t('Scope, airway, vessels, lymph nodes, and fan')}</h2>
             </div>
             <div className="simulator-scene-actions">
               <details className="simulator-structure-dropdown">
                 <summary>
-                  <span>3D structures</span>
+                  <span>{t('3D structures')}</span>
                   <span>{sceneVisibleCount}/{sceneStructureVisibilityItems.length}</span>
                 </summary>
                 <div className="simulator-structure-dropdown__menu">
                   <div className="simulator-structure-dropdown__actions">
-                    <span>Visible in 3D</span>
+                    <span>{t('Visible in 3D')}</span>
                     <button type="button" onClick={showAllSceneStructures}>
-                      Show all
+                      {t('Show all')}
                     </button>
                   </div>
                   {(['node', 'vessel'] as const).map((kind) => {
@@ -1495,7 +1503,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
                     return (
                       <div className="simulator-structure-dropdown__group" key={kind}>
                         <div className="simulator-structure-dropdown__group-label">
-                          {kind === 'node' ? 'Lymph nodes' : 'Vessels'}
+                          {kind === 'node' ? t('Lymph nodes') : t('Vessels')}
                         </div>
                         {groupItems.map((item) => (
                           <label className="simulator-structure-dropdown__row" key={item.id}>
@@ -1505,7 +1513,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
                               type="checkbox"
                             />
                             <span className="simulator-swatch" style={{ backgroundColor: item.color }} />
-                            <span>{item.label}</span>
+                            <span>{localizeSimulatorStructureLabel(item.label, t)}</span>
                           </label>
                         ))}
                       </div>
@@ -1523,7 +1531,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
                 }}
                 type="button"
               >
-                Snap
+                {t('Snap')}
               </button>
             </div>
           </div>
@@ -1543,11 +1551,11 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
         </section>
 
         {showVirtualBronchoscopyPane ? (
-          <section className="simulator-scene-pane" aria-label="Virtual bronchoscopy view">
+          <section className="simulator-scene-pane" aria-label={t('Virtual bronchoscopy view')}>
             <div className="simulator-pane-header">
               <div>
-                <span className="eyebrow">Virtual bronchoscopy</span>
-                <h2>Endoluminal view from the scope tip</h2>
+                <span className="eyebrow">{t('Virtual bronchoscopy')}</span>
+                <h2>{t('Endoluminal view from the scope tip')}</h2>
               </div>
               <div className="simulator-status-strip">
                 <span>{Math.round(sMm)} mm</span>

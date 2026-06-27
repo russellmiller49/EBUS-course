@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom';
 
+import { useLocalizedPath } from '@/i18n/locale';
+
 export function NotFoundPage() {
+  const localizePath = useLocalizedPath();
+
   return (
     <div className="page-stack">
       <section className="section-card">
@@ -11,7 +15,7 @@ export function NotFoundPage() {
           </div>
         </div>
         <p>Use the primary navigation to return to the main learning routes.</p>
-        <Link className="button" to="/">
+        <Link className="button" to={localizePath('/')}>
           Return home
         </Link>
       </section>

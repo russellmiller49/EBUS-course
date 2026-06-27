@@ -24,6 +24,8 @@ import { SimulatorPage } from '@/app/routes/SimulatorPage';
 import { TnmStagingPage } from '@/app/routes/TnmStagingPage';
 import { NotFoundPage } from '@/app/routes/NotFoundPage';
 import { canAccessRoute, getLockedRoutePath, getRouteLockReason, isPublicTrainingRoute } from '@/lib/access';
+import { useCourseShellText } from '@/i18n/courseShell';
+import { useLocalizedPath } from '@/i18n/locale';
 import { useCourseAdminSessionActive, useCourseVendorSessionActive } from '@/lib/adminSession';
 import { useAuth } from '@/lib/auth';
 import { useCourseNow } from '@/lib/courseClock';
@@ -51,11 +53,13 @@ const publicEbusRouteIds = new Set<AppRouteId>(['knobology', 'stations', 'simula
 type PublicTrainingScope = 'ebus' | 'tnm';
 
 function RouteLoadingFallback() {
+  const t = useCourseShellText();
+
   return (
     <div className="page-stack">
       <section className="section-card">
-        <div className="eyebrow">Loading section</div>
-        <h2>Preparing course content...</h2>
+        <div className="eyebrow">{t('Loading section')}</div>
+        <h2>{t('Preparing course content...')}</h2>
       </section>
     </div>
   );
@@ -183,23 +187,23 @@ function isRouteInPublicTrainingScope(routeId: AppRouteId | null, scope: PublicT
   return publicEbusRouteIds.has(routeId);
 }
 
-function getPublicNavItems(scope: PublicTrainingScope) {
+function getPublicNavItems(items: NavigationItem[], scope: PublicTrainingScope) {
   const routeIds = scope === 'tnm' ? new Set<AppRouteId>(['tnm-staging']) : publicEbusRouteIds;
 
-  return navItems.filter((item) => routeIds.has(item.id));
+  return items.filter((item) => routeIds.has(item.id));
 }
 
-function getPublicModeHeader(scope: PublicTrainingScope) {
+function getPublicModeHeader(scope: PublicTrainingScope, t: (source: string) => string) {
   if (scope === 'tnm') {
     return {
-      title: 'TNM-9 Staging',
-      subtitle: 'Standalone lung cancer staging module',
+      title: t('TNM-9 Staging'),
+      subtitle: t('Standalone lung cancer staging module'),
     };
   }
 
   return {
-    title: 'Public EBUS Training',
-    subtitle: 'Open knobology, stations, and simulator modules',
+    title: t('Public EBUS Training'),
+    subtitle: t('Open knobology, stations, and simulator modules'),
   };
 }
 
@@ -281,6 +285,8 @@ function useSiteAdminEntitlement(
 
 export function App() {
   const location = useLocation();
+  const localizePath = useLocalizedPath();
+  const t = useCourseShellText();
   const { hydrated, recordModuleEngagement, state, visitRoute } = useLearnerProgress();
   const { isLoading: authLoading, isPasswordRecoverySession, isSupabaseEnabled, profile, user } = useAuth();
   const nowMs = useCourseNow();
@@ -295,6 +301,14 @@ export function App() {
     () => ({ accountComplete, admin: appAdminSessionActive, nowMs, preview: vendorSessionActive }),
     [accountComplete, appAdminSessionActive, nowMs, vendorSessionActive],
   );
+  const localizedNavItems = useMemo(
+    () => navItems.map((item) => ({ ...item, label: t(item.label) })),
+    [t],
+  );
+  const localizedAdminNavItem = useMemo(
+    () => ({ ...adminNavItem, label: t(adminNavItem.label) }),
+    [t],
+  );
   const sessionRef = useRef<{
     moduleId: ReturnType<typeof getTrackedModuleId>;
     path: string;
@@ -303,7 +317,7 @@ export function App() {
   const routeId = resolveRouteId(location.pathname);
   const publicTrainingScope = getPublicTrainingScope();
   const publicTrainingMode = isRouteInPublicTrainingScope(routeId, publicTrainingScope);
-  const publicModeHeader = publicTrainingMode && publicTrainingScope ? getPublicModeHeader(publicTrainingScope) : undefined;
+  const publicModeHeader = publicTrainingMode && publicTrainingScope ? getPublicModeHeader(publicTrainingScope, t) : undefined;
   const isAuthPath = location.pathname.startsWith('/auth');
   const isAdminPath = location.pathname.startsWith('/admin');
   const isSuppressedCasePath = location.pathname.startsWith('/cases/case-001');
@@ -321,11 +335,11 @@ export function App() {
 
   const activeNavItems = useMemo(() => {
     if (publicTrainingMode && publicTrainingScope) {
-      return getPublicNavItems(publicTrainingScope);
+      return getPublicNavItems(localizedNavItems, publicTrainingScope);
     }
 
-    return appAdminSessionActive ? [...navItems, adminNavItem] : navItems;
-  }, [appAdminSessionActive, publicTrainingMode, publicTrainingScope]);
+    return appAdminSessionActive ? [...localizedNavItems, localizedAdminNavItem] : localizedNavItems;
+  }, [appAdminSessionActive, localizedAdminNavItem, localizedNavItems, publicTrainingMode, publicTrainingScope]);
 
   const gatedNavItems = useMemo(() => {
     return activeNavItems.map((item) => ({
@@ -435,8 +449,8 @@ export function App() {
       <AppShell navItems={gatedNavItems} publicMode={publicModeHeader}>
         <div className="page-stack">
           <section className="section-card">
-            <div className="eyebrow">Loading workspace</div>
-            <h2>Preparing learner access…</h2>
+            <div className="eyebrow">{t('Loading workspace')}</div>
+            <h2>{t('Preparing learner access...')}</h2>
           </section>
         </div>
       </AppShell>
@@ -446,17 +460,17 @@ export function App() {
   if (isSupabaseEnabled && !user && !previewSessionActive && !isAuthPath && !isAdminPath && !isPublicOnboardingPath) {
     const next = `${location.pathname}${location.search}`;
 
-    return <Navigate replace to={`/auth?next=${encodeURIComponent(next)}`} />;
+    return <Navigate replace to={localizePath(`/auth?next=${encodeURIComponent(next)}`)} />;
   }
 
   if (isSupabaseEnabled && user && isPasswordRecoverySession && !previewSessionActive && !isAuthPath && !isAdminPath) {
-    return <Navigate replace to="/auth?mode=reset-password" />;
+    return <Navigate replace to={localizePath('/auth?mode=reset-password')} />;
   }
 
   if (isSupabaseEnabled && user && profile?.mustSetPassword && !previewSessionActive && !isAuthPath && !isAdminPath) {
     const next = `${location.pathname}${location.search}`;
 
-    return <Navigate replace to={`/auth?next=${encodeURIComponent(next)}`} />;
+    return <Navigate replace to={localizePath(`/auth?next=${encodeURIComponent(next)}`)} />;
   }
 
   if (
@@ -470,11 +484,11 @@ export function App() {
   ) {
     const next = `${location.pathname}${location.search}`;
 
-    return <Navigate replace to={`/auth?next=${encodeURIComponent(next)}`} />;
+    return <Navigate replace to={localizePath(`/auth?next=${encodeURIComponent(next)}`)} />;
   }
 
   if (routeId && !canAccessRoute(routeId, state, accessOptions)) {
-    return <Navigate replace to={getLockedRoutePath(routeId, location.pathname, state, accessOptions)} />;
+    return <Navigate replace to={localizePath(getLockedRoutePath(routeId, location.pathname, state, accessOptions))} />;
   }
 
   return (
@@ -484,8 +498,8 @@ export function App() {
           <Route element={<HomePage />} path="/" />
           <Route element={<ProgressPage />} path="/progress" />
           <Route element={<WelcomePage />} path="/welcome" />
-          <Route element={<Navigate replace to="/" />} path="/course-info" />
-          <Route element={<Navigate replace to="/" />} path="/home" />
+          <Route element={<Navigate replace to={localizePath('/')} />} path="/course-info" />
+          <Route element={<Navigate replace to={localizePath('/')} />} path="/home" />
           <Route element={<SponsorsPage />} path="/sponsors" />
           <Route element={<AuthPage />} path="/auth" />
           <Route element={<AdminPage />} path="/admin" />
@@ -493,7 +507,7 @@ export function App() {
           <Route element={<PretestPage />} path="/pretest" />
           <Route element={<PostCoursePage />} path="/post-course" />
           <Route element={<StationsPage />} path="/stations">
-            <Route element={<Navigate replace to="explore" />} index />
+            <Route element={<Navigate replace to={localizePath('explore')} />} index />
             <Route element={<StationsExplorePage />} path="explore" />
             <Route element={<SonographicInterpretationPage />} path="sonographic-interpretation" />
             <Route element={<StationsFlashcardsPage />} path="flashcards" />
@@ -503,7 +517,7 @@ export function App() {
           <Route element={<KnobologyPage />} path="/knobology" />
           <Route element={<TnmStagingPage />} path="/tnm-staging" />
           <Route element={<LecturesPage />} path="/lectures" />
-          <Route element={<Navigate replace to="/lectures" />} path="/quiz" />
+          <Route element={<Navigate replace to={localizePath('/lectures')} />} path="/quiz" />
           <Route element={<NotFoundPage />} path="/cases/case-001" />
           <Route element={<SimulatorPage showVirtualBronchoscopy={appAdminSessionActive} />} path="/simulator" />
           <Route element={<NotFoundPage />} path="*" />

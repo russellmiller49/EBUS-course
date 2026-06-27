@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { QuizExplanationPanel } from '@/components/education/EducationModuleRenderer';
 import type { QuizQuestionContent } from '@/content/types';
+import { useCourseShellText } from '@/i18n/courseShell';
 import { calculateQuizResult, isQuizAnswerCorrect } from '@/lib/quiz';
 
 function canSubmitQuestion(question: QuizQuestionContent, selectedOptionIds: string[]): boolean {
@@ -51,6 +52,7 @@ export function QuizCard({
   showDifficultyLabel?: boolean;
   largeQuestionStem?: boolean;
 }) {
+  const t = useCourseShellText();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string[] | undefined>>(() => ({ ...initialAnswers }));
   const [draftSelections, setDraftSelections] = useState<Record<string, string[] | undefined>>({});
@@ -134,14 +136,14 @@ export function QuizCard({
         <span className="quiz-card__score">
           {showRunningScore
             ? `${result.correctCount}/${result.answeredCount || questions.length}`
-            : `${result.answeredCount}/${questions.length} answered`}
+            : `${result.answeredCount}/${questions.length} ${t('answered')}`}
         </span>
       </div>
 
       {completionRecorded ? (
         <div className="feedback-banner feedback-banner--success quiz-card__completion" role="status">
-          <strong>✓ Score recorded.</strong>
-          <p>{completionMessage}</p>
+          <strong>✓ {t('Score recorded.')}</strong>
+          <p>{t(completionMessage)}</p>
         </div>
       ) : null}
 
@@ -170,15 +172,15 @@ export function QuizCard({
       </div>
 
       <div className="quiz-card__question-meta">
-        <span>{currentQuestion.type.replace(/-/g, ' ')}</span>
+        <span>{t(currentQuestion.type.replace(/-/g, ' '))}</span>
         <span>
-          Question {currentIndex + 1} of {questions.length}
+          {t('Question')} {currentIndex + 1} {t('of')} {questions.length}
         </span>
       </div>
 
       {currentQuestion.caseTitle ? (
         <div className="education-card education-card--case">
-          <div className="eyebrow">Case stem</div>
+          <div className="eyebrow">{t('Case stem')}</div>
           <strong>{currentQuestion.caseTitle}</strong>
           {currentQuestion.caseSummary ? <p>{currentQuestion.caseSummary}</p> : null}
         </div>
@@ -193,7 +195,7 @@ export function QuizCard({
 
       {currentQuestion.type === 'ordering' ? (
         <div className="education-card education-card--checklist">
-          <div className="eyebrow">Current order</div>
+          <div className="eyebrow">{t('Current order')}</div>
           <p>
             {currentSelection.length > 0
               ? currentSelection
@@ -202,7 +204,7 @@ export function QuizCard({
                     return `${index + 1}. ${option?.label ?? optionId}`;
                   })
                   .join('  ')
-              : 'Tap the steps in order. Tap a selected step again to remove it.'}
+              : t('Tap the steps in order. Tap a selected step again to remove it.')}
           </p>
         </div>
       ) : null}
@@ -259,7 +261,7 @@ export function QuizCard({
           onClick={() => setCurrentIndex((index) => index - 1)}
           type="button"
         >
-          Previous
+          {t('Previous')}
         </button>
         {completionRecorded ? (
           <>
@@ -269,15 +271,15 @@ export function QuizCard({
                 onClick={() => setCurrentIndex((index) => index + 1)}
                 type="button"
               >
-                Next
+                {t('Next')}
               </button>
             ) : null}
             <button className="button button--ghost" onClick={() => setCurrentIndex(0)} type="button">
-              Review quiz
+              {t('Review quiz')}
             </button>
             {allowRetake ? (
               <button className="button button--ghost" onClick={startRetake} type="button">
-                Retake quiz
+                {t('Retake quiz')}
               </button>
             ) : null}
           </>
@@ -290,7 +292,7 @@ export function QuizCard({
                 onClick={() => updateDraft([])}
                 type="button"
               >
-                Reset order
+                {t('Reset order')}
               </button>
             ) : null}
             <button
@@ -299,7 +301,7 @@ export function QuizCard({
               onClick={submitCurrentQuestion}
               type="button"
             >
-              {showRunningScore ? 'Check answer' : 'Lock answer'}
+              {showRunningScore ? t('Check answer') : t('Lock answer')}
             </button>
           </>
         ) : currentIndex < questions.length - 1 ? (
@@ -308,7 +310,7 @@ export function QuizCard({
             onClick={() => setCurrentIndex((index) => index + 1)}
             type="button"
           >
-            Next
+            {t('Next')}
           </button>
         ) : (
           <button
@@ -317,7 +319,7 @@ export function QuizCard({
             onClick={recordCompletion}
             type="button"
           >
-            {showRunningScore ? `Save ${result.percent}% score` : 'Submit attempt'}
+            {showRunningScore ? `${t('Save')} ${result.percent}% ${t('score')}` : t('Submit attempt')}
           </button>
         )}
       </div>

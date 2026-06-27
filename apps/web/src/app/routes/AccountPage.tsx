@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { emptyProfileInput, LearnerProfileFields, validateProfileInput } from '@/features/account/LearnerProfileFields';
+import { useLocalizedPath } from '@/i18n/locale';
 import type { LearnerProfile, LearnerProfileInput } from '@/lib/auth';
 import { useAuth } from '@/lib/auth';
 
@@ -19,6 +20,7 @@ function profileToInput(profile: LearnerProfile | null): LearnerProfileInput {
 }
 
 export function AccountPage() {
+  const localizePath = useLocalizedPath();
   const { isLoading, isSupabaseEnabled, profile, updateLearnerProfile, user } = useAuth();
   const [formValues, setFormValues] = useState<LearnerProfileInput>(emptyProfileInput);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,7 +62,7 @@ export function AccountPage() {
           <div className="eyebrow">Account</div>
           <h2>Account profiles are available when Supabase auth is configured.</h2>
           <div className="button-row button-row--wrap">
-            <Link className="button" to="/">
+            <Link className="button" to={localizePath('/')}>
               Back to home
             </Link>
           </div>
@@ -97,7 +99,7 @@ export function AccountPage() {
             <button className="button" disabled={isSubmitting} type="submit">
               {isSubmitting ? 'Saving...' : 'Update profile'}
             </button>
-            <Link className="button button--ghost" to="/">
+            <Link className="button button--ghost" to={localizePath('/')}>
               Back to workspace
             </Link>
           </div>
