@@ -6,6 +6,13 @@ import { describe, expect, it } from 'vitest';
 
 import { simulatorCaseAssetUrl, simulatorManifestUrl } from './paths';
 import {
+  airwayRegionAtPose,
+  freeDrivePresetForLine,
+  projectToAirway,
+  resolveAirwayNavigationModel,
+  standardAirwayRollDeg,
+} from './airwayNavigation';
+import {
   APERTURE_FEATHER,
   APERTURE_RADIUS,
   apertureMaskAlpha,
@@ -23,6 +30,7 @@ import {
   computeSimulatorPose,
   DEFAULT_ENDOSCOPE_CAMERA,
   pointAtS,
+  projectToSector,
   resolveCalibratedOpticalAxis,
   resolveEndoscopeCameraCalibration,
   resolveForwardObliqueOpticalAxis,
@@ -52,7 +60,6 @@ import { resolveLockedAnatomyCameraView } from './AnatomyScene';
 import {
   buildPlaneIntersectionRasterMask,
   buildPointCloudSectorItems,
-  freeDrivePresetForLine,
   normalizeSimulatorPaneLayout,
   shouldShowVirtualBronchoscopyPane,
   simulatorBronchOverlayStructures,
@@ -861,6 +868,99 @@ describe('simulator channel drivable extent', () => {
     // From the branch, steering back left returns to the straight line.
     const back = steerToAdjacentLine([centerline, branch], branch, 20, pose, -1);
     expect(back?.lineIndex).toBe(1);
+  });
+});
+
+describe('simulator anatomical airway navigation', () => {
+  const manifest = readCaseAsset<SimulatorCaseManifest>('case_manifest.simplified.web.json');
+  const centerlines = readCaseAsset<{ polylines: SimulatorCenterlinePolyline[] }>(
+    manifest.assets.centerlines,
+  ).polylines;
+  const model = resolveAirwayNavigationModel(manifest, centerlines);
+  const line = (lineIndex: number) => {
+    const resolved = centerlines.find((candidate) => candidate.line_index === lineIndex);
+    expect(resolved).toBeDefined();
+    if (!resolved) {
+      throw new Error(`Missing centerline ${lineIndex}`);
+    }
+    return resolved;
+  };
+
+  it('reduces the case to explicit left and right mainstem choices at the carina', () => {
+    expect(model.leftLineIndex).toBe(1);
+    expect(model.rightLineIndex).toBe(8);
+    expect(model.carinaSMm).toBeGreaterThan(108);
+    expect(model.carinaSMm).toBeLessThan(114);
+  });
+
+  it.each([
+    { label: 'distal trachea', lineIndex: 1, sMm: 99, expectedRollDeg: 105 },
+    { label: 'right mainstem', lineIndex: 8, sMm: 120, expectedRollDeg: 62 },
+    { label: 'distal left mainstem', lineIndex: 1, sMm: 160, expectedRollDeg: -149 },
+  ])('matches the supplied $label standard view', ({ lineIndex, sMm, expectedRollDeg }) => {
+    const polyline = line(lineIndex);
+    const preset = freeDrivePresetForLine(polyline);
+    const unrolled = computeSimulatorPose(polyline, sMm, 0, preset);
+    const rollDeg = standardAirwayRollDeg(model, polyline, sMm, unrolled);
+
+    expect(rollDeg).toBeCloseTo(expectedRollDeg, 0);
+  });
+
+  it('keeps patient anterior at the top of the distal tracheal view', () => {
+    const polyline = line(model.leftLineIndex);
+    const preset = freeDrivePresetForLine(polyline);
+    const sMm = 99;
+    const unrolled = computeSimulatorPose(polyline, sMm, 0, preset);
+    const oriented = computeSimulatorPose(
+      polyline,
+      sMm,
+      standardAirwayRollDeg(model, polyline, sMm, unrolled),
+      preset,
+    );
+    const anterior = new THREE.Vector3(0, 0, 1);
+    anterior.addScaledVector(oriented.tangent, -anterior.dot(oriented.tangent)).normalize();
+
+    expect(oriented.depthAxis.dot(anterior)).toBeGreaterThan(0.99);
+  });
+
+  it('uses manual scope roll to steer the ultrasound sector away from its standard angle', () => {
+    const polyline = line(model.rightLineIndex);
+    const preset = freeDrivePresetForLine(polyline);
+    const sMm = 120;
+    const unrolled = computeSimulatorPose(polyline, sMm, 0, preset);
+    const standardRollDeg = standardAirwayRollDeg(model, polyline, sMm, unrolled);
+    const standardPose = computeSimulatorPose(polyline, sMm, standardRollDeg, preset);
+    const rolledPose = computeSimulatorPose(polyline, sMm, standardRollDeg + 20, preset);
+    const pointInStandardFan = standardPose.position
+      .clone()
+      .addScaledVector(standardPose.depthAxis, 20)
+      .toArray() as Vec3;
+    const standardProjection = projectToSector(pointInStandardFan, standardPose, 40, 120);
+    const rolledProjection = projectToSector(pointInStandardFan, rolledPose, 40, 120);
+
+    expect(standardPose.depthAxis.angleTo(rolledPose.depthAxis)).toBeCloseTo(
+      THREE.MathUtils.degToRad(20),
+      5,
+    );
+    expect(standardPose.tangent.angleTo(rolledPose.tangent)).toBeCloseTo(0, 5);
+    expect(standardProjection.outOfPlaneMm).toBeCloseTo(0, 5);
+    expect(Math.abs(rolledProjection.outOfPlaneMm)).toBeGreaterThan(5);
+  });
+
+  it('changes airway by anatomy while preserving the shared carinal world position', () => {
+    const left = line(model.leftLineIndex);
+    const right = line(model.rightLineIndex);
+    const selection = projectToAirway(centerlines, left, 99, model.rightLineIndex);
+
+    expect(selection?.lineIndex).toBe(model.rightLineIndex);
+    expect(selection).not.toBeNull();
+    if (!selection) {
+      return;
+    }
+    expect(pointAtS(right, selection.sMm).distanceTo(pointAtS(left, 99))).toBeLessThan(0.6);
+    expect(airwayRegionAtPose(model, right, selection.sMm)).toBe('trachea');
+    expect(airwayRegionAtPose(model, right, 120)).toBe('right-mainstem');
+    expect(airwayRegionAtPose(model, left, 160)).toBe('left-mainstem');
   });
 });
 

@@ -4,13 +4,22 @@ import { useCourseShellText } from '@/i18n/courseShell';
 import { useLearnerProgress } from '@/lib/progress';
 
 import { AnatomyScene } from './AnatomyScene';
+import {
+  airwayRegionAtPose,
+  airwaySideForLine,
+  freeDrivePresetForLine,
+  normalizeAirwayRollDeg,
+  projectToAirway,
+  resolveAirwayNavigationModel,
+  standardAirwayRollDeg,
+  type SimulatorAirwaySide,
+} from './airwayNavigation';
 import { BronchoscopyView, type SimulatorBronchOverlayStructure } from './BronchoscopyView';
 import {
   buildChannelRaycastMesh,
   clampPosePositionInsideChannel,
   contactQualityForPose,
   maxDrivableSMm,
-  steerToAdjacentLine,
 } from './channelExtent';
 import { clamp, computeSimulatorPose, projectToSector, type SimulatorProbePose } from './pose';
 import { QuestHud } from './QuestHud';
@@ -32,7 +41,6 @@ import { formatSimulatorStation } from './stationIds';
 import './simulator.css';
 import type {
   SimulatorCaseManifest,
-  SimulatorCenterlinePolyline,
   SimulatorLayerState,
   SimulatorLoadedAssets,
   SimulatorPreset,
@@ -50,8 +58,6 @@ const HARDWARE_SCOPE_STORAGE_KEY = 'socal-ebus-prep:hardware-scope:v1';
 // Physical lever -1..1 maps onto the EBUS scope's asymmetric articulation range.
 const HARDWARE_FLEX_UP_MAX_DEG = 90;
 const HARDWARE_FLEX_DOWN_MAX_DEG = 30;
-// Degenerate stub centerlines (a few mm long) are not offered as free-drive branches.
-const FREE_DRIVE_MIN_BRANCH_LENGTH_MM = 20;
 const SNAP_TARGET_SLAB_HALF_THICKNESS_MM = 18;
 const LIVE_KNN_NEIGHBORS = 10;
 const LIVE_MINIMUM_CROSSING_POINTS = {
@@ -150,6 +156,9 @@ interface PersistedSimulatorState {
   lockSceneView?: boolean;
   paneLayout?: string;
   primaryPane?: string;
+  /** Manual adjustment around the automatically stabilized airway view. */
+  rollTrimDeg?: number;
+  /** Legacy v2 field; intentionally ignored so old raw-roll state cannot mask the new default. */
   rollDeg?: number;
   sMm?: number;
   selectedKey?: string;
@@ -1198,34 +1207,6 @@ export function buildPointCloudSectorItems({
 }
 
 /**
- * Synthetic navigation preset for free drive on a centerline: the contact point sits ON the
- * centerline origin, so `computeSimulatorPose` applies no wall-contact radial offset and the
- * scope travels centered in the lumen. The distal centerline end serves as a nominal target so
- * the scan-side depth axis stays stable while driving.
- */
-export function freeDrivePresetForLine(polyline: SimulatorCenterlinePolyline): SimulatorPreset {
-  const origin = polyline.points[0] ?? [0, 0, 0];
-  const distalEnd = polyline.points[polyline.points.length - 1] ?? origin;
-
-  return {
-    approach: 'free_drive',
-    centerline_s_mm: 0,
-    contact: origin,
-    contact_to_target_distance_mm: 0,
-    label: 'Free drive',
-    line_index: polyline.line_index,
-    node: '',
-    preset_id: 'free_drive',
-    preset_key: `free_drive::${polyline.line_index}`,
-    station: '',
-    station_key: '',
-    target: distalEnd,
-    target_lps: [0, 0, 0],
-    vessel_overlays: [],
-  };
-}
-
-/**
  * Structures shown behind the semi-transparent channel wall in the optical pane's see-through
  * mode: every station region and flow channel with loaded points, carrying the same colors the
  * external anatomy view uses so the two panes read consistently.
@@ -1261,7 +1242,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
   const [selectedKey, setSelectedKey] = useState('');
   const [lineIndex, setLineIndex] = useState<number | null>(null);
   const [sMm, setSMm] = useState(0);
-  const [rollDeg, setRollDeg] = useState(0);
+  const [rollTrimDeg, setRollTrimDeg] = useState(0);
   const [flexionDeg, setFlexionDeg] = useState(0);
   const [layers, setLayers] = useState<SimulatorLayerState>(DEFAULT_LAYERS);
   const [teachingView, setTeachingView] = useState(true);
@@ -1369,7 +1350,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
       setSelectedKey('');
       setLineIndex(publicStartLineIndex);
       setSMm(0);
-      setRollDeg(clampProbeRollDeg(caseData.render_defaults.roll_deg));
+      setRollTrimDeg(0);
       setFlexionDeg(0);
       setLayers(normalizeSimulatorLayers(undefined));
       setTeachingView(true);
@@ -1397,10 +1378,10 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     setSMm(
       typeof persisted?.sMm === 'number' ? persisted.sMm : persistedFreeDrive ? 0 : firstPreset.centerline_s_mm,
     );
-    setRollDeg(
-      typeof persisted?.rollDeg === 'number'
-        ? clampProbeRollDeg(persisted.rollDeg)
-        : clampProbeRollDeg(caseData.render_defaults.roll_deg),
+    setRollTrimDeg(
+      typeof persisted?.rollTrimDeg === 'number'
+        ? clampProbeRollDeg(persisted.rollTrimDeg)
+        : 0,
     );
     setFlexionDeg(typeof persisted?.flexionDeg === 'number' ? clamp(persisted.flexionDeg, -30, 90) : 0);
     setLayers(normalizeSimulatorLayers(persisted?.layers));
@@ -1431,7 +1412,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
       lockSceneView,
       paneLayout,
       primaryPane,
-      rollDeg,
+      rollTrimDeg,
       sMm,
       selectedKey: selectedPreset?.preset_key ?? '',
       teachingView,
@@ -1447,7 +1428,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     paneLayout,
     primaryPane,
     publicTrainingMode,
-    rollDeg,
+    rollTrimDeg,
     sMm,
     selectedPreset,
     simulatorStateInitialized,
@@ -1475,6 +1456,14 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
       assets.centerlines.polylines[0]
     );
   }, [assets, fallbackPreset, lineIndex, selectedPreset]);
+
+  const airwayNavigationModel = useMemo(
+    () =>
+      caseData && assets
+        ? resolveAirwayNavigationModel(caseData, assets.centerlines.polylines)
+        : null,
+    [assets, caseData],
+  );
 
   // With a station selected, its preset drives the pose (wall contact + target aim). In free
   // drive a synthetic centered preset keeps the scope on the centerline of the active branch.
@@ -1555,6 +1544,35 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     return labels;
   }, [caseData]);
 
+  // Build an unrolled reference frame first. Free drive uses it to calculate an anatomically
+  // stabilized camera/probe roll; station snaps retain their calibrated snapshot roll.
+  const cameraPose = useMemo(() => {
+    if (!activePolyline || !navigationPreset) {
+      return null;
+    }
+
+    return computeSimulatorPose(activePolyline, sMm, 0, navigationPreset);
+  }, [activePolyline, navigationPreset, sMm]);
+
+  const standardRollDeg = useMemo(() => {
+    if (selectedPreset) {
+      return caseData?.render_defaults.roll_deg ?? 0;
+    }
+
+    if (!airwayNavigationModel || !activePolyline || !cameraPose) {
+      return 0;
+    }
+
+    return standardAirwayRollDeg(
+      airwayNavigationModel,
+      activePolyline,
+      sMm,
+      cameraPose,
+    );
+  }, [activePolyline, airwayNavigationModel, cameraPose, caseData, sMm, selectedPreset]);
+
+  const rollDeg = normalizeAirwayRollDeg(standardRollDeg + rollTrimDeg);
+
   const pose = useMemo(() => {
     if (!activePolyline || !navigationPreset) {
       return null;
@@ -1566,14 +1584,6 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     // Un-flexed poses (calibrated station contacts) pass through untouched.
     return flexionDeg && channelRaycastMesh ? clampPosePositionInsideChannel(raw, channelRaycastMesh) : raw;
   }, [activePolyline, channelRaycastMesh, flexionDeg, navigationPreset, rollDeg, sMm]);
-
-  const cameraPose = useMemo(() => {
-    if (!activePolyline || !navigationPreset) {
-      return null;
-    }
-
-    return computeSimulatorPose(activePolyline, sMm, 0, navigationPreset);
-  }, [activePolyline, navigationPreset, sMm]);
 
   // Acoustic coupling of the transducer face: pressed against the wall (station poses, flexed
   // free drive) reads 1; centered in the lumen with an air gap reads 0 and veils the sector.
@@ -1807,7 +1817,15 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     );
   }
 
-  if (!caseData || !assets || !navigationPreset || !activePolyline || !pose || !cameraPose) {
+  if (
+    !caseData ||
+    !assets ||
+    !navigationPreset ||
+    !activePolyline ||
+    !airwayNavigationModel ||
+    !pose ||
+    !cameraPose
+  ) {
     return (
       <main className="simulator-load-shell">
         <section className="simulator-load-panel">
@@ -1818,11 +1836,21 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     );
   }
 
+  const airwayRegion = airwayRegionAtPose(airwayNavigationModel, activePolyline, sMm);
+  const airwaySide = airwaySideForLine(airwayNavigationModel, activePolyline);
+  const airwayRegionLabel =
+    airwayRegion === 'trachea'
+      ? t('Trachea')
+      : airwayRegion === 'right-mainstem'
+        ? t('Right mainstem')
+        : t('Left mainstem');
+  const standardViewActive = Math.abs(rollTrimDeg) < 0.5;
+
   const snapToPreset = (preset: SimulatorPreset) => {
     setSelectedKey(preset.preset_key);
     setLineIndex(preset.line_index);
     setSMm(preset.centerline_s_mm);
-    setRollDeg(clampProbeRollDeg(caseData.render_defaults.roll_deg));
+    setRollTrimDeg(0);
     // Station presets are calibrated contact poses; the tip arrives there un-flexed.
     setFlexionDeg(0);
     setActiveStructure(preset.station_key);
@@ -1840,6 +1868,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
 
     setSelectedKey('');
     setLineIndex(activePolyline.line_index);
+    setRollTrimDeg(0);
     setActiveStructure(null);
     setQuestBestScore(readQuestBestScore(caseData.case_id));
     questBestRecordedRef.current = false;
@@ -1872,23 +1901,33 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     );
   };
 
-  const steerBranch = (steerSign: 1 | -1) => {
-    if (!assets || !activePolyline || !pose) {
-      return;
-    }
+  const selectAirway = (side: SimulatorAirwaySide) => {
+    const targetLineIndex =
+      side === 'right'
+        ? airwayNavigationModel.rightLineIndex
+        : airwayNavigationModel.leftLineIndex;
+    const result = projectToAirway(
+      assets.centerlines.polylines,
+      activePolyline,
+      sMm,
+      targetLineIndex,
+    );
 
-    const result = steerToAdjacentLine(assets.centerlines.polylines, activePolyline, sMm, pose, steerSign);
     if (result) {
+      setSelectedKey('');
       setLineIndex(result.lineIndex);
       setSMm(result.sMm);
+      setRollTrimDeg(0);
+      setActiveStructure(null);
       setModuleProgress('simulator', 45);
     }
   };
 
   // Drive-pad advance keys: a tap nudges once; holding glides — an animation-frame loop advances
   // by speed·dt with a gentle ramp, so motion is continuous and frame-rate independent. Pointer
-  // events only, so a tap does not double-fire through click. (The ref and cleanup effect live
-  // with the other hooks, above the loading early-return.)
+  // events only, so a tap does not double-fire through click. Keyboard handlers mirror the same
+  // press/hold behavior for Enter and Space. (The ref and cleanup effect live with the other
+  // hooks, above the loading early-return.)
   const stopAdvanceHold = () => {
     if (advanceHoldRef.current !== null) {
       window.cancelAnimationFrame(advanceHoldRef.current);
@@ -1916,6 +1955,19 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     onPointerUp: stopAdvanceHold,
     onPointerLeave: stopAdvanceHold,
     onPointerCancel: stopAdvanceHold,
+    onKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (!event.repeat && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault();
+        startAdvanceHold(direction);
+      }
+    },
+    onKeyUp: (event: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        stopAdvanceHold();
+      }
+    },
+    onBlur: stopAdvanceHold,
   });
 
   // Drive-pad dragging: presses on the pad's own controls never start a drag; everywhere else
@@ -1925,7 +1977,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     // rather than via state so a missed media-change event can never strand the feature.
     if (
       !window.matchMedia('(min-width: 1081px)').matches ||
-      (event.target as HTMLElement).closest('button, input, label')
+      (event.target as HTMLElement).closest('button, input, label, details, summary, select')
     ) {
       return;
     }
@@ -2013,7 +2065,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
 
       const dRollDeg = (deltas.dRollRad * 180) / Math.PI;
       if (Math.abs(dRollDeg) > 0.02) {
-        setRollDeg((current) => {
+        setRollTrimDeg((current) => {
           const next = clampProbeRollDeg(current + dRollDeg);
           return Math.abs(next - current) < 0.02 ? current : next;
         });
@@ -2032,13 +2084,11 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
       if (frame.pressed.b) {
         setBronchSeeThrough((value) => !value);
       }
-      if (!selectedPreset) {
-        if (frame.pressed.c) {
-          steerBranch(-1);
-        }
-        if (frame.pressed.d) {
-          steerBranch(1);
-        }
+      if (frame.pressed.c) {
+        selectAirway('left');
+      }
+      if (frame.pressed.d) {
+        selectAirway('right');
       }
     },
     onDisconnect: () => {
@@ -2115,7 +2165,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
               <span aria-hidden="true">🎯</span> {t('Station quest')}
             </button>
           ) : null}
-          <span>{selectedPreset?.approach ?? t('No station selected')}</span>
+          <span>{selectedPreset?.approach ?? airwayRegionLabel}</span>
           <span>{Math.round(sMm)} mm</span>
           <span>{t(simulatorSectorSourceLabel(sectorSource))}</span>
         </div>
@@ -2134,6 +2184,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
                 // continues from the current position on the current branch.
                 setSelectedKey('');
                 setLineIndex(activePolyline.line_index);
+                setRollTrimDeg(0);
                 setActiveStructure(null);
                 setModuleProgress('simulator', 45);
                 return;
@@ -2153,30 +2204,6 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
             ))}
           </select>
         </label>
-        {!selectedPreset ? (
-          <label>
-            <span>{t('Branch')}</span>
-            <select
-              value={String(activePolyline.line_index)}
-              onChange={(event) => {
-                setLineIndex(Number(event.target.value));
-                setModuleProgress('simulator', 45);
-              }}
-            >
-              {assets.centerlines.polylines
-                .filter(
-                  (polyline) =>
-                    polyline.total_length_mm >= FREE_DRIVE_MIN_BRANCH_LENGTH_MM ||
-                    polyline.line_index === activePolyline.line_index,
-                )
-                .map((polyline) => (
-                  <option key={polyline.line_index} value={polyline.line_index}>
-                    {branchLabels.get(polyline.line_index) ?? `${t('Branch')} ${polyline.line_index}`}
-                  </option>
-                ))}
-            </select>
-          </label>
-        ) : null}
         <label className="simulator-hardware-control">
           <span>{t('Hardware scope')}</span>
           <span className="simulator-hardware-control__row">
@@ -2205,34 +2232,6 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
                 : t('Off')}
             </span>
           </span>
-        </label>
-        <label className="simulator-wide-control">
-          <span>{t('Advance / retract')}</span>
-          <input
-            max={maxAdvanceMm}
-            min={0}
-            onChange={(event) => {
-              setSMm(Number(event.target.value));
-              setModuleProgress('simulator', 45);
-            }}
-            step={0.5}
-            type="range"
-            value={Math.min(Math.max(sMm, 0), maxAdvanceMm)}
-          />
-        </label>
-        <label>
-          <span>{t('Roll')} ({Math.round(rollDeg)} {t('deg')})</span>
-          <input
-            max={ROLL_MAX_DEG}
-            min={ROLL_MIN_DEG}
-            onChange={(event) => {
-              setRollDeg(clampProbeRollDeg(Number(event.target.value)));
-              setModuleProgress('simulator', 45);
-            }}
-            step={1}
-            type="range"
-            value={clampProbeRollDeg(rollDeg)}
-          />
         </label>
         <div className="simulator-layer-toggles" aria-label={t('Anatomy layers')}>
           <label>
@@ -2416,8 +2415,14 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
         />
         <div
           className="simulator-drive-pad"
+          data-airway-region={airwayRegion}
+          data-effective-roll-deg={rollDeg.toFixed(2)}
+          data-line-index={activePolyline.line_index}
+          data-roll-trim-deg={rollTrimDeg.toFixed(2)}
+          data-s-mm={sMm.toFixed(2)}
+          data-standard-roll-deg={standardRollDeg.toFixed(2)}
           role="group"
-          aria-label={t('Drive controls')}
+          aria-label={t('Airway navigation')}
           onPointerCancel={onDrivePadPointerEnd}
           onPointerDown={onDrivePadPointerDown}
           onPointerMove={onDrivePadPointerMove}
@@ -2430,53 +2435,60 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
           }
           title={t('Drag to move the drive pad')}
         >
-          <span className="simulator-drive-pad__readout">
+          <div className="simulator-drive-pad__readout">
             <span aria-hidden="true" className="simulator-drive-pad__grip">
               ⠿
             </span>
-            {Math.round(sMm)} mm · {t('flex')} {Math.round(flexionDeg)}°
-          </span>
-          <div className="simulator-drive-pad__grid">
+            <span className="simulator-drive-pad__status">
+              <strong>{t('Airway navigation')}</strong>
+              <span>
+                {airwayRegionLabel} · {Math.round(sMm)} mm ·{' '}
+                {standardViewActive
+                  ? t('Standard orientation')
+                  : `${t('View rotated')} ${rollTrimDeg > 0 ? '+' : ''}${Math.round(rollTrimDeg)}°`}
+              </span>
+            </span>
+          </div>
+          <div className="simulator-drive-pad__airways" aria-label={t('Choose airway')}>
             <button
-              className="simulator-drive-pad__key"
-              disabled={Boolean(selectedPreset)}
-              onClick={() => steerBranch(-1)}
-              title={selectedPreset ? t('Steering needs free drive') : t('Steer left at the next branch')}
+              aria-pressed={!selectedPreset && airwaySide === 'left'}
+              className="simulator-drive-pad__airway"
+              onClick={() => selectAirway('left')}
               type="button"
             >
-              ◀
+              <span aria-hidden="true">L</span>
+              {t('Left mainstem')}
             </button>
-            <div className="simulator-drive-pad__advance">
-              <button
-                className="simulator-drive-pad__key"
-                title={t('Advance')}
-                type="button"
-                {...advanceHoldProps(1)}
-              >
-                ▲
-              </button>
-              <button
-                className="simulator-drive-pad__key"
-                title={t('Retract')}
-                type="button"
-                {...advanceHoldProps(-1)}
-              >
-                ▼
-              </button>
-            </div>
             <button
-              className="simulator-drive-pad__key"
-              disabled={Boolean(selectedPreset)}
-              onClick={() => steerBranch(1)}
-              title={selectedPreset ? t('Steering needs free drive') : t('Steer right at the next branch')}
+              aria-pressed={!selectedPreset && airwaySide === 'right'}
+              className="simulator-drive-pad__airway"
+              onClick={() => selectAirway('right')}
               type="button"
             >
-              ▶
+              <span aria-hidden="true">R</span>
+              {t('Right mainstem')}
+            </button>
+          </div>
+          <div className="simulator-drive-pad__motion">
+            <button
+              className="simulator-drive-pad__key"
+              type="button"
+              {...advanceHoldProps(-1)}
+            >
+              {t('Withdraw')}
+            </button>
+            <button
+              className="simulator-drive-pad__key simulator-drive-pad__key--primary"
+              type="button"
+              {...advanceHoldProps(1)}
+            >
+              {t('Advance')}
             </button>
           </div>
           <label className="simulator-drive-pad__flex">
-            <span>{t('Flex')}</span>
+            <span>{t('Flex tip')}</span>
             <input
+              aria-label={t('Flex tip')}
               max={90}
               min={-30}
               onChange={(event) => {
@@ -2488,6 +2500,75 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
               value={flexionDeg}
             />
           </label>
+          <div className="simulator-drive-pad__roll">
+            <div className="simulator-drive-pad__roll-heading">
+              <span>
+                <strong>{t('EBUS scope roll')}</strong>
+                <small id="simulator-scope-roll-help">
+                  {t('Rotates the ultrasound scan plane around the airway')}
+                </small>
+              </span>
+              <output>
+                {standardViewActive
+                  ? t('Standard')
+                  : `${rollTrimDeg > 0 ? '+' : ''}${Math.round(rollTrimDeg)}°`}
+              </output>
+            </div>
+            <div className="simulator-drive-pad__roll-controls">
+              <button
+                aria-label={t('Roll counterclockwise')}
+                className="simulator-drive-pad__roll-step"
+                onClick={() => {
+                  setRollTrimDeg((current) => clampProbeRollDeg(current - 10));
+                  setModuleProgress('simulator', 45);
+                }}
+                title={t('Roll counterclockwise')}
+                type="button"
+              >
+                ↶
+              </button>
+              <input
+                aria-describedby="simulator-scope-roll-help"
+                aria-label={t('EBUS scope roll')}
+                aria-valuetext={
+                  standardViewActive
+                    ? t('Standard')
+                    : `${rollTrimDeg > 0 ? '+' : ''}${Math.round(rollTrimDeg)}°`
+                }
+                max={ROLL_MAX_DEG}
+                min={ROLL_MIN_DEG}
+                onChange={(event) => {
+                  setRollTrimDeg(clampProbeRollDeg(Number(event.target.value)));
+                  setModuleProgress('simulator', 45);
+                }}
+                step={1}
+                type="range"
+                value={clampProbeRollDeg(rollTrimDeg)}
+              />
+              <button
+                aria-label={t('Roll clockwise')}
+                className="simulator-drive-pad__roll-step"
+                onClick={() => {
+                  setRollTrimDeg((current) => clampProbeRollDeg(current + 10));
+                  setModuleProgress('simulator', 45);
+                }}
+                title={t('Roll clockwise')}
+                type="button"
+              >
+                ↷
+              </button>
+              <button
+                aria-label={t('Reset standard view')}
+                className="simulator-drive-pad__reset"
+                disabled={standardViewActive}
+                onClick={() => setRollTrimDeg(0)}
+                title={t('Reset standard view')}
+                type="button"
+              >
+                ↺ {t('Standard')}
+              </button>
+            </div>
+          </div>
         </div>
         {quest ? (
           <QuestHud
