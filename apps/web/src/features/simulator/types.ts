@@ -98,13 +98,57 @@ export interface SimulatorNodeMarker {
   color: string;
 }
 
+/**
+ * Which scope-frame axis the optical axis tilts toward: the forward-oblique view direction is the
+ * shaft axis rotated `optical_axis_offset_deg` toward this axis. Kept as a named axis (not a raw
+ * sign) so the calibration record stays readable and the scan side can be flipped without touching
+ * code.
+ */
+export type SimulatorObliquityAxis =
+  | 'depth_axis'
+  | 'negative_depth_axis'
+  | 'lateral_axis'
+  | 'negative_lateral_axis';
+
+/**
+ * Device-calibration record for the endoscopic optical camera. Optional and additive: manifests
+ * without it fall back to the built-in default profile, so existing cases keep loading.
+ */
+export interface SimulatorEndoscopeCamera {
+  model: string;
+  optical_axis_offset_deg: number;
+  obliquity_axis: SimulatorObliquityAxis;
+  fov_deg: number;
+  near_mm: number;
+  far_mm: number;
+  eye_offset_mm: {
+    shaft: number;
+    depth: number;
+    lateral: number;
+  };
+  circular_aperture?: boolean;
+  lens_distortion?: boolean;
+  scope_tip_occlusion?: boolean;
+  contact_cap?: boolean;
+  headlight_falloff?: boolean;
+  /** Minimum camera-to-wall clearance along the optical axis; omitted or 0 disables the clamp. */
+  contact_min_distance_mm?: number;
+}
+
+/** Device-calibration record for the sector-image probe. Optional and additive. */
+export interface SimulatorUltrasoundProbe {
+  sector_angle_deg: number;
+  displayed_range_mm: number;
+  optical_axis_offset_deg?: number;
+}
+
 export interface SimulatorCaseManifest {
   case_id: string;
   render_defaults: {
     sector_angle_deg: number;
     max_depth_mm: number;
     roll_deg: number;
-    sector_realism?: 'realistic';
+    sector_realism?: 'classic' | 'realistic' | 'physics';
   };
   bounds: {
     min: Vec3;
@@ -129,7 +173,10 @@ export interface SimulatorCaseManifest {
     nodes: SimulatorNodeMarker[];
   };
   color_map: Record<string, string>;
+  endoscope_camera?: SimulatorEndoscopeCamera;
+  ultrasound_probe?: SimulatorUltrasoundProbe;
   sector_snapshots?: Record<string, string>;
+  physics_snapshots?: Record<string, string>;
   notes?: Record<string, string>;
 }
 
@@ -143,7 +190,9 @@ export interface SimulatorLoadedAssets {
 export interface SimulatorSectorRasterMask {
   width: number;
   height: number;
-  alpha: number[];
+  /** Row-major alpha samples (0-255). Manifest masks arrive as plain JSON arrays; live browser
+   * masks stay as Uint8Array to avoid copying ~100k elements per structure per pose update. */
+  alpha: number[] | Uint8Array;
   source?: string;
   depth_samples?: number;
   lateral_samples?: number;
@@ -183,6 +232,38 @@ export interface SimulatorVolumeSectorResponse {
   sector: {
     labels: SimulatorVolumeSectorLabel[];
   };
+}
+
+/**
+ * Sidecar JSON written next to each station-anchored physics sector PNG by
+ * tools/ebus-simulator/src/ebus_simulator/physics_snapshot_export.py. `image` is a
+ * case-relative path to the grayscale PNG; points/axes are in the web frame.
+ */
+export interface SimulatorPhysicsSnapshotMetadata {
+  engine: 'physics';
+  engine_version: string;
+  model: string;
+  video_axis_offset_deg: number;
+  sector_angle_deg: number;
+  max_depth_mm: number;
+  roll_deg: number;
+  contact: Vec3;
+  contact_lps?: Vec3;
+  shaft_axis: Vec3;
+  shaft_axis_lps?: Vec3;
+  depth_axis: Vec3;
+  depth_axis_lps?: Vec3;
+  lateral_axis: Vec3 | null;
+  lateral_axis_lps?: Vec3 | null;
+}
+
+export interface SimulatorPhysicsSnapshot {
+  schema_version: 1;
+  preset_key: string;
+  image: string;
+  metadata: SimulatorPhysicsSnapshotMetadata;
+  labels: SimulatorVolumeSectorLabel[];
+  masks?: Record<string, unknown>;
 }
 
 export interface SimulatorSectorSnapshot {

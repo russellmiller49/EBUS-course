@@ -1,17 +1,38 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useCourseShellText } from '@/i18n/courseShell';
 import { useLearnerProgress } from '@/lib/progress';
 
 import { AnatomyScene } from './AnatomyScene';
-import { BronchoscopyView } from './BronchoscopyView';
+import { BronchoscopyView, type SimulatorBronchOverlayStructure } from './BronchoscopyView';
+import {
+  buildChannelRaycastMesh,
+  clampPosePositionInsideChannel,
+  contactQualityForPose,
+  maxDrivableSMm,
+  steerToAdjacentLine,
+} from './channelExtent';
 import { clamp, computeSimulatorPose, projectToSector, type SimulatorProbePose } from './pose';
+import { QuestHud } from './QuestHud';
+import {
+  beginQuest,
+  buildQuestTargets,
+  completeQuestTarget,
+  markQuestHintUsed,
+  QUEST_HOLD_MS,
+  questTargetImaged,
+  readQuestBestScore,
+  skipQuestTarget,
+  writeQuestBestScore,
+  type QuestState,
+} from './questMode';
 import { SectorView } from './SectorView';
 import { resolveSimulatorSectorSource, shouldUseSnapshotSectorItems, simulatorSectorSourceLabel } from './sectorSource';
 import { formatSimulatorStation } from './stationIds';
 import './simulator.css';
 import type {
   SimulatorCaseManifest,
+  SimulatorCenterlinePolyline,
   SimulatorLayerState,
   SimulatorLoadedAssets,
   SimulatorPreset,
@@ -21,9 +42,16 @@ import type {
   Vec2,
   Vec3,
 } from './types';
+import { useScopeTrackerInput, type ScopeTrackerFrameHandlers } from './useScopeTrackerInput';
 import { useSimulatorCase, useSimulatorSectorSnapshot } from './useSimulatorCase';
 
 const SIMULATOR_STATE_STORAGE_KEY = 'socal-ebus-prep:simulator-state:v2';
+const HARDWARE_SCOPE_STORAGE_KEY = 'socal-ebus-prep:hardware-scope:v1';
+// Physical lever -1..1 maps onto the EBUS scope's asymmetric articulation range.
+const HARDWARE_FLEX_UP_MAX_DEG = 90;
+const HARDWARE_FLEX_DOWN_MAX_DEG = 30;
+// Degenerate stub centerlines (a few mm long) are not offered as free-drive branches.
+const FREE_DRIVE_MIN_BRANCH_LENGTH_MM = 20;
 const SNAP_TARGET_SLAB_HALF_THICKNESS_MM = 18;
 const LIVE_KNN_NEIGHBORS = 10;
 const LIVE_MINIMUM_CROSSING_POINTS = {
@@ -54,6 +82,14 @@ const LIVE_RASTER_MASK_SIZE = 320;
 const LIVE_DEBUG_POINT_LIMIT = 650;
 const ROLL_MIN_DEG = -180;
 const ROLL_MAX_DEG = 180;
+// Hold-to-advance glide: frame-time-based speed with a gentle ramp, so driving reads as
+// continuous motion instead of fixed millimeter pops.
+const ADVANCE_TAP_STEP_MM = 0.8;
+const ADVANCE_START_SPEED_MM_PER_S = 10;
+const ADVANCE_MAX_SPEED_MM_PER_S = 30;
+const ADVANCE_RAMP_MM_PER_S2 = 24;
+// Keep a dragged drive pad at least this far inside the workspace edges.
+const DRIVE_PAD_EDGE_MARGIN_PX = 6;
 
 const DEFAULT_LAYERS: SimulatorLayerState = {
   airway: true,
@@ -89,11 +125,31 @@ const VIEWABLE_LAYER_KEYS: Array<keyof SimulatorLayerState> = [
   'cutPlane',
 ];
 
+type SimulatorPrimaryPane = 'anatomy' | 'bronch' | 'sector';
+
+const SIMULATOR_PRIMARY_PANES: readonly SimulatorPrimaryPane[] = ['anatomy', 'bronch', 'sector'];
+
+/** 'grid' shows all three renditions side by side at equal size; 'focus' gives one pane the
+ * large slot with the other two stacked beside it. */
+export type SimulatorPaneLayout = 'grid' | 'focus';
+
+const SIMULATOR_PANE_LAYOUTS: readonly SimulatorPaneLayout[] = ['grid', 'focus'];
+
+export function normalizeSimulatorPaneLayout(value: unknown): SimulatorPaneLayout {
+  return SIMULATOR_PANE_LAYOUTS.includes(value as SimulatorPaneLayout)
+    ? (value as SimulatorPaneLayout)
+    : 'grid';
+}
+
 interface PersistedSimulatorState {
+  flexionDeg?: number;
   hiddenSceneStructureIds?: string[];
   layers?: Partial<SimulatorLayerState>;
+  drivePadPosition?: { x: number; y: number };
   lineIndex?: number;
   lockSceneView?: boolean;
+  paneLayout?: string;
+  primaryPane?: string;
   rollDeg?: number;
   sMm?: number;
   selectedKey?: string;
@@ -133,6 +189,14 @@ function isPublicTrainingSimulatorMode() {
   return params.get('publicTraining') === '1' && params.get('publicScope') !== 'tnm';
 }
 
+export function shouldShowVirtualBronchoscopyPane({
+  showVirtualBronchoscopy,
+}: {
+  showVirtualBronchoscopy: boolean;
+}) {
+  return showVirtualBronchoscopy;
+}
+
 function normalizeSimulatorLayers(layers: Partial<SimulatorLayerState> | null | undefined): SimulatorLayerState {
   return {
     ...DEFAULT_LAYERS,
@@ -140,6 +204,17 @@ function normalizeSimulatorLayers(layers: Partial<SimulatorLayerState> | null | 
     nodes: false,
     centerline: false,
   };
+}
+
+function normalizeDrivePadPosition(value: unknown): { x: number; y: number } | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const { x, y } = value as { x?: unknown; y?: unknown };
+  return typeof x === 'number' && Number.isFinite(x) && typeof y === 'number' && Number.isFinite(y)
+    ? { x: Math.max(0, x), y: Math.max(0, y) }
+    : null;
 }
 
 function normalizeHiddenSceneStructureIds(value: unknown): string[] {
@@ -404,7 +479,24 @@ function sampleDebugPoints(points: Vec2[], limit = LIVE_DEBUG_POINT_LIMIT) {
   return sampled;
 }
 
-function buildKnnGraph(points: Vec3[], kind: 'node' | 'vessel'): PointCloudGraphEdge[] {
+interface KnnGraphBase {
+  edges: PointCloudGraphEdge[];
+  medianNearestDistanceMm: number;
+}
+
+/**
+ * The neighbor search is O(n²) over a point cloud but depends only on the points, not the probe
+ * pose — cache it per cloud so scrubbing the scope only pays the cheap per-kind edge filter.
+ */
+const knnGraphBaseCache = new WeakMap<Vec3[], KnnGraphBase>();
+
+function knnGraphBase(points: Vec3[]): KnnGraphBase {
+  const cached = knnGraphBaseCache.get(points);
+
+  if (cached) {
+    return cached;
+  }
+
   const edgeMap = new Map<string, PointCloudGraphEdge>();
   const nearestDistances: number[] = [];
 
@@ -449,7 +541,16 @@ function buildKnnGraph(points: Vec3[], kind: 'node' | 'vessel'): PointCloudGraph
     }
   }
 
-  const medianNearestDistanceMm = median(nearestDistances);
+  const base: KnnGraphBase = {
+    edges: Array.from(edgeMap.values()),
+    medianNearestDistanceMm: median(nearestDistances),
+  };
+  knnGraphBaseCache.set(points, base);
+  return base;
+}
+
+function buildKnnGraph(points: Vec3[], kind: 'node' | 'vessel'): PointCloudGraphEdge[] {
+  const { edges, medianNearestDistanceMm } = knnGraphBase(points);
   const adaptiveMaxEdgeMm = clamp(
     medianNearestDistanceMm * 4.5,
     LIVE_MIN_GRAPH_EDGE_MM[kind],
@@ -457,7 +558,7 @@ function buildKnnGraph(points: Vec3[], kind: 'node' | 'vessel'): PointCloudGraph
   );
   const maxDistanceSq = adaptiveMaxEdgeMm * adaptiveMaxEdgeMm;
 
-  return Array.from(edgeMap.values()).filter((edge) => edge.distanceSq <= maxDistanceSq);
+  return edges.filter((edge) => edge.distanceSq <= maxDistanceSq);
 }
 
 function clusterCrossingPoints(points: PlaneCrossingPoint[], kind: 'node' | 'vessel') {
@@ -874,7 +975,7 @@ export function buildPlaneIntersectionRasterMask({
   }
 
   const rasterized = rasterizeContours(contoursMm, { maxDepthMm, sectorAngleDeg });
-  const alpha = Array.from(rasterized.alpha);
+  const alpha = rasterized.alpha;
 
   if (!alpha.some((value) => value > 0)) {
     return null;
@@ -1096,22 +1197,153 @@ export function buildPointCloudSectorItems({
   });
 }
 
+/**
+ * Synthetic navigation preset for free drive on a centerline: the contact point sits ON the
+ * centerline origin, so `computeSimulatorPose` applies no wall-contact radial offset and the
+ * scope travels centered in the lumen. The distal centerline end serves as a nominal target so
+ * the scan-side depth axis stays stable while driving.
+ */
+export function freeDrivePresetForLine(polyline: SimulatorCenterlinePolyline): SimulatorPreset {
+  const origin = polyline.points[0] ?? [0, 0, 0];
+  const distalEnd = polyline.points[polyline.points.length - 1] ?? origin;
+
+  return {
+    approach: 'free_drive',
+    centerline_s_mm: 0,
+    contact: origin,
+    contact_to_target_distance_mm: 0,
+    label: 'Free drive',
+    line_index: polyline.line_index,
+    node: '',
+    preset_id: 'free_drive',
+    preset_key: `free_drive::${polyline.line_index}`,
+    station: '',
+    station_key: '',
+    target: distalEnd,
+    target_lps: [0, 0, 0],
+    vessel_overlays: [],
+  };
+}
+
+/**
+ * Structures shown behind the semi-transparent channel wall in the optical pane's see-through
+ * mode: every station region and flow channel with loaded points, carrying the same colors the
+ * external anatomy view uses so the two panes read consistently.
+ */
+export function simulatorBronchOverlayStructures(
+  caseData: SimulatorCaseManifest,
+  assets: SimulatorLoadedAssets,
+): SimulatorBronchOverlayStructure[] {
+  const stations = caseData.assets.stations.map((station) => ({
+    key: station.key,
+    kind: 'station' as const,
+    color: station.color,
+    points: assets.stations[station.key]?.points ?? [],
+  }));
+  const vessels = caseData.assets.vessels.map((vessel) => ({
+    key: vessel.key,
+    kind: 'vessel' as const,
+    color: vessel.color,
+    points: assets.vessels[vessel.key]?.points ?? [],
+  }));
+
+  return [...stations, ...vessels].filter((structure) => structure.points.length > 0);
+}
+
 export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtualBronchoscopy?: boolean }) {
   const t = useCourseShellText();
   const { setModuleProgress } = useLearnerProgress();
   const { assets, caseData, error } = useSimulatorCase();
   const publicTrainingMode = useMemo(() => isPublicTrainingSimulatorMode(), []);
-  const showVirtualBronchoscopyPane = showVirtualBronchoscopy && !publicTrainingMode;
+  const showVirtualBronchoscopyPane = shouldShowVirtualBronchoscopyPane({
+    showVirtualBronchoscopy,
+  });
   const [selectedKey, setSelectedKey] = useState('');
   const [lineIndex, setLineIndex] = useState<number | null>(null);
   const [sMm, setSMm] = useState(0);
   const [rollDeg, setRollDeg] = useState(0);
+  const [flexionDeg, setFlexionDeg] = useState(0);
   const [layers, setLayers] = useState<SimulatorLayerState>(DEFAULT_LAYERS);
   const [teachingView, setTeachingView] = useState(true);
   const [activeStructure, setActiveStructure] = useState<string | null>(null);
   const [hiddenSceneStructureIds, setHiddenSceneStructureIds] = useState<string[]>([]);
   const [lockSceneView, setLockSceneView] = useState(false);
   const [simulatorStateInitialized, setSimulatorStateInitialized] = useState(false);
+  const [bronchSeeThrough, setBronchSeeThrough] = useState(false);
+  const [bronchBalloonInflated, setBronchBalloonInflated] = useState(false);
+  // Which pane occupies the large slot of the focus layout; the other two stack beside it.
+  const [primaryPane, setPrimaryPane] = useState<SimulatorPrimaryPane>('bronch');
+  // Tri-view grid (all renditions full-frame at once) vs. the one-large-slot focus layout.
+  const [paneLayout, setPaneLayout] = useState<SimulatorPaneLayout>('grid');
+  // Animation-frame id for the drive pad's hold-to-advance glide.
+  const advanceHoldRef = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (advanceHoldRef.current !== null) {
+        window.cancelAnimationFrame(advanceHoldRef.current);
+      }
+    },
+    [],
+  );
+
+  // Draggable drive pad: the pad can be moved anywhere over the workspace (wide layouts only —
+  // the stacked layout keeps it sticky). Drags mutate the style directly and commit to state
+  // (and persistence) on release, so the page never re-renders per pointer move.
+  const workspaceRef = useRef<HTMLDivElement | null>(null);
+  const drivePadRef = useRef<HTMLDivElement | null>(null);
+  const drivePadDragRef = useRef<{ pointerId: number; offsetX: number; offsetY: number; lastX?: number; lastY?: number } | null>(null);
+  const [drivePadPosition, setDrivePadPosition] = useState<{ x: number; y: number } | null>(null);
+  // Layout switches can shrink the workspace; keep a custom pad position inside it.
+  useEffect(() => {
+    const workspace = workspaceRef.current;
+
+    if (!workspace || !drivePadPosition) {
+      return;
+    }
+
+    const clampPadIntoWorkspace = () => {
+      const pad = drivePadRef.current;
+
+      if (!pad) {
+        return;
+      }
+
+      const workspaceRect = workspace.getBoundingClientRect();
+      const padRect = pad.getBoundingClientRect();
+      setDrivePadPosition((current) => {
+        if (!current) {
+          return current;
+        }
+
+        const x = clamp(
+          current.x,
+          DRIVE_PAD_EDGE_MARGIN_PX,
+          Math.max(DRIVE_PAD_EDGE_MARGIN_PX, workspaceRect.width - padRect.width - DRIVE_PAD_EDGE_MARGIN_PX),
+        );
+        const y = clamp(
+          current.y,
+          DRIVE_PAD_EDGE_MARGIN_PX,
+          Math.max(DRIVE_PAD_EDGE_MARGIN_PX, workspaceRect.height - padRect.height - DRIVE_PAD_EDGE_MARGIN_PX),
+        );
+        return x === current.x && y === current.y ? current : { x, y };
+      });
+    };
+    const observer = new ResizeObserver(clampPadIntoWorkspace);
+    observer.observe(workspace);
+    return () => observer.disconnect();
+  }, [drivePadPosition]);
+
+  // Physical scope tracker (USB HID). Handlers are assigned below, after the drive
+  // helpers they reuse are defined; the hook reads them through the ref per frame.
+  const [hardwareScopeEnabled, setHardwareScopeEnabled] = useState(
+    () => window.localStorage.getItem(HARDWARE_SCOPE_STORAGE_KEY) !== 'off',
+  );
+  const scopeHandlersRef = useRef<ScopeTrackerFrameHandlers | null>(null);
+  const scopeProgressMarkedRef = useRef(false);
+  const scopeTracker = useScopeTrackerInput(hardwareScopeEnabled, scopeHandlersRef);
+  useEffect(() => {
+    window.localStorage.setItem(HARDWARE_SCOPE_STORAGE_KEY, hardwareScopeEnabled ? 'on' : 'off');
+  }, [hardwareScopeEnabled]);
 
   const selectedPreset = useMemo(() => {
     if (!caseData?.presets.length) {
@@ -1121,7 +1353,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     return caseData.presets.find((preset) => preset.preset_key === selectedKey) ?? null;
   }, [caseData, selectedKey]);
 
-  const navigationPreset = useMemo(() => selectedPreset ?? caseData?.presets[0] ?? null, [caseData, selectedPreset]);
+  const fallbackPreset = useMemo(() => caseData?.presets[0] ?? null, [caseData]);
 
   const { snapshot, status: snapshotStatus } = useSimulatorSectorSnapshot(caseData, selectedPreset?.preset_key ?? null);
 
@@ -1138,6 +1370,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
       setLineIndex(publicStartLineIndex);
       setSMm(0);
       setRollDeg(clampProbeRollDeg(caseData.render_defaults.roll_deg));
+      setFlexionDeg(0);
       setLayers(normalizeSimulatorLayers(undefined));
       setTeachingView(true);
       setHiddenSceneStructureIds([]);
@@ -1148,43 +1381,71 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     }
 
     const persisted = readPersistedState();
+    // An empty persisted key means the session ended in free drive; restore it rather than
+    // falling back to a station.
+    const persistedFreeDrive = persisted?.selectedKey === '';
     const persistedPreset = caseData.presets.find((preset) => preset.preset_key === persisted?.selectedKey);
     const firstPreset = persistedPreset ?? first;
-    setSelectedKey(firstPreset.preset_key);
-    setLineIndex(typeof persisted?.lineIndex === 'number' ? persisted.lineIndex : firstPreset.line_index);
-    setSMm(typeof persisted?.sMm === 'number' ? persisted.sMm : firstPreset.centerline_s_mm);
+    setSelectedKey(persistedFreeDrive ? '' : firstPreset.preset_key);
+    setLineIndex(
+      typeof persisted?.lineIndex === 'number'
+        ? persisted.lineIndex
+        : persistedFreeDrive
+          ? publicStartLineIndex
+          : firstPreset.line_index,
+    );
+    setSMm(
+      typeof persisted?.sMm === 'number' ? persisted.sMm : persistedFreeDrive ? 0 : firstPreset.centerline_s_mm,
+    );
     setRollDeg(
       typeof persisted?.rollDeg === 'number'
         ? clampProbeRollDeg(persisted.rollDeg)
         : clampProbeRollDeg(caseData.render_defaults.roll_deg),
     );
+    setFlexionDeg(typeof persisted?.flexionDeg === 'number' ? clamp(persisted.flexionDeg, -30, 90) : 0);
     setLayers(normalizeSimulatorLayers(persisted?.layers));
     setTeachingView(typeof persisted?.teachingView === 'boolean' ? persisted.teachingView : true);
     setHiddenSceneStructureIds(normalizeHiddenSceneStructureIds(persisted?.hiddenSceneStructureIds));
     setLockSceneView(typeof persisted?.lockSceneView === 'boolean' ? persisted.lockSceneView : false);
+    if (SIMULATOR_PRIMARY_PANES.includes(persisted?.primaryPane as SimulatorPrimaryPane)) {
+      setPrimaryPane(persisted?.primaryPane as SimulatorPrimaryPane);
+    }
+    setPaneLayout(normalizeSimulatorPaneLayout(persisted?.paneLayout));
+    setDrivePadPosition(normalizeDrivePadPosition(persisted?.drivePadPosition));
     setSimulatorStateInitialized(true);
   }, [caseData, publicTrainingMode, simulatorStateInitialized]);
 
   useEffect(() => {
-    if (publicTrainingMode || !simulatorStateInitialized || !selectedPreset) {
+    if (publicTrainingMode || !simulatorStateInitialized) {
       return;
     }
 
+    // An empty selectedKey persists free drive; lineIndex keeps the driven branch across reloads.
+    const persistedLineIndex = lineIndex ?? selectedPreset?.line_index ?? fallbackPreset?.line_index;
     writePersistedState({
+      ...(drivePadPosition ? { drivePadPosition } : {}),
+      flexionDeg,
       hiddenSceneStructureIds,
       layers,
-      lineIndex: lineIndex ?? selectedPreset.line_index,
+      ...(typeof persistedLineIndex === 'number' ? { lineIndex: persistedLineIndex } : {}),
       lockSceneView,
+      paneLayout,
+      primaryPane,
       rollDeg,
       sMm,
-      selectedKey: selectedPreset.preset_key,
+      selectedKey: selectedPreset?.preset_key ?? '',
       teachingView,
     });
   }, [
+    drivePadPosition,
+    fallbackPreset,
+    flexionDeg,
     hiddenSceneStructureIds,
     layers,
     lineIndex,
     lockSceneView,
+    paneLayout,
+    primaryPane,
     publicTrainingMode,
     rollDeg,
     sMm,
@@ -1200,26 +1461,111 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
   }, [caseData, setModuleProgress]);
 
   const activePolyline = useMemo(() => {
-    if (!assets?.centerlines.polylines.length || !navigationPreset) {
+    const anchorPreset = selectedPreset ?? fallbackPreset;
+
+    if (!assets?.centerlines.polylines.length || !anchorPreset) {
       return null;
     }
 
-    const resolvedLineIndex = lineIndex ?? navigationPreset.line_index;
+    const resolvedLineIndex = lineIndex ?? anchorPreset.line_index;
 
     return (
       assets.centerlines.polylines.find((polyline) => polyline.line_index === resolvedLineIndex) ??
-      assets.centerlines.polylines.find((polyline) => polyline.line_index === navigationPreset.line_index) ??
+      assets.centerlines.polylines.find((polyline) => polyline.line_index === anchorPreset.line_index) ??
       assets.centerlines.polylines[0]
     );
-  }, [assets, lineIndex, navigationPreset]);
+  }, [assets, fallbackPreset, lineIndex, selectedPreset]);
+
+  // With a station selected, its preset drives the pose (wall contact + target aim). In free
+  // drive a synthetic centered preset keeps the scope on the centerline of the active branch.
+  const navigationPreset = useMemo(() => {
+    if (selectedPreset) {
+      return selectedPreset;
+    }
+
+    return activePolyline ? freeDrivePresetForLine(activePolyline) : fallbackPreset;
+  }, [activePolyline, fallbackPreset, selectedPreset]);
+
+  // The asset centerlines can overrun the channel surface's distal end by a few millimeters;
+  // driving there puts the scope outside the model, so the advance rail stops at the surface.
+  const channelRaycastMesh = useMemo(
+    () => (assets ? buildChannelRaycastMesh(assets.airway) : null),
+    [assets],
+  );
+  const maxAdvanceMm = useMemo(() => {
+    if (!activePolyline) {
+      return 0;
+    }
+
+    return channelRaycastMesh
+      ? maxDrivableSMm(activePolyline, channelRaycastMesh)
+      : activePolyline.total_length_mm;
+  }, [activePolyline, channelRaycastMesh]);
+
+  useEffect(() => {
+    if (sMm > maxAdvanceMm) {
+      setSMm(maxAdvanceMm);
+    }
+  }, [maxAdvanceMm, sMm]);
+
+  const bronchOverlayStructures = useMemo(
+    () => (caseData && assets ? simulatorBronchOverlayStructures(caseData, assets) : []),
+    [assets, caseData],
+  );
+
+  // Free-drive branch labels: the primary line reads as the main airway; other centerlines are
+  // named by the approach and stations of the presets that use them (e.g. "RMS — 11Ri, 11Rs, 7"),
+  // so trainees pick branches by anatomy rather than line numbers.
+  const branchLabels = useMemo(() => {
+    const labels = new Map<number, string>();
+
+    if (!caseData) {
+      return labels;
+    }
+
+    const presetsByLine = new Map<number, SimulatorPreset[]>();
+    for (const preset of caseData.presets) {
+      const group = presetsByLine.get(preset.line_index) ?? [];
+      group.push(preset);
+      presetsByLine.set(preset.line_index, group);
+    }
+
+    for (const [index, group] of presetsByLine) {
+      const approaches = [...new Set(group.map((preset) => preset.approach))].filter(
+        (approach) => approach !== 'default',
+      );
+      const stations = [...new Set(group.map((preset) => formatSimulatorStation(preset.station)))].sort();
+      const stationText = `${stations.slice(0, 4).join(', ')}${stations.length > 4 ? '…' : ''}`;
+
+      if (index === caseData.navigation.primary_line_index) {
+        labels.set(index, 'Main airway');
+      } else if (approaches.length) {
+        labels.set(index, `${approaches.map((approach) => approach.toUpperCase()).join('/')} — ${stationText}`);
+      } else {
+        labels.set(index, stationText);
+      }
+    }
+
+    // The primary line is the main airway even when no preset references it.
+    const primaryLineIndex = caseData.navigation.primary_line_index;
+    if (typeof primaryLineIndex === 'number' && !labels.has(primaryLineIndex)) {
+      labels.set(primaryLineIndex, 'Main airway');
+    }
+
+    return labels;
+  }, [caseData]);
 
   const pose = useMemo(() => {
     if (!activePolyline || !navigationPreset) {
       return null;
     }
 
-    return computeSimulatorPose(activePolyline, sMm, rollDeg, navigationPreset);
-  }, [activePolyline, navigationPreset, rollDeg, sMm]);
+    const raw = computeSimulatorPose(activePolyline, sMm, rollDeg, navigationPreset, flexionDeg);
+
+    // The flexion tip shift is unconstrained in the pose model; the channel wall stops it here.
+    // Un-flexed poses (calibrated station contacts) pass through untouched.
+    return flexionDeg && channelRaycastMesh ? clampPosePositionInsideChannel(raw, channelRaycastMesh) : raw;
+  }, [activePolyline, channelRaycastMesh, flexionDeg, navigationPreset, rollDeg, sMm]);
 
   const cameraPose = useMemo(() => {
     if (!activePolyline || !navigationPreset) {
@@ -1229,12 +1575,24 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     return computeSimulatorPose(activePolyline, sMm, 0, navigationPreset);
   }, [activePolyline, navigationPreset, sMm]);
 
+  // Acoustic coupling of the transducer face: pressed against the wall (station poses, flexed
+  // free drive) reads 1; centered in the lumen with an air gap reads 0 and veils the sector.
+  const sectorContactQuality = useMemo(() => {
+    if (!pose || !channelRaycastMesh) {
+      return 1;
+    }
+
+    return contactQualityForPose(pose, channelRaycastMesh);
+  }, [channelRaycastMesh, pose]);
+
   const hasCurrentSnapshot = Boolean(selectedPreset && snapshot?.preset_key === selectedPreset.preset_key);
   const atSnapshotPose = Boolean(
     caseData &&
       selectedPreset &&
       activePolyline &&
       hasCurrentSnapshot &&
+      // Snapshots are captured un-flexed; any flexion moves the live pose off the snapshot.
+      flexionDeg === 0 &&
       isAtSnapshotPose(selectedPreset, activePolyline.line_index, sMm, rollDeg, caseData),
   );
   const sectorSource = resolveSimulatorSectorSource({
@@ -1317,6 +1675,127 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     setHiddenSceneStructureIds((current) => current.filter((id) => validIds.has(id)));
   }, [sceneStructureVisibilityItems]);
 
+  // --- Station Quest: the optional gamified drill. Pure rules live in questMode.ts; these hooks
+  // run the clocks, the capture hold, and the celebration/beacon props for the anatomy scene.
+  const [quest, setQuest] = useState<QuestState | null>(null);
+  const [questCountdown, setQuestCountdown] = useState<number | null>(null);
+  const [questHintActive, setQuestHintActive] = useState(false);
+  const [questHoldProgress, setQuestHoldProgress] = useState(0);
+  const [questElapsedMs, setQuestElapsedMs] = useState(0);
+  const [questCelebration, setQuestCelebration] = useState<{ nonce: number; position: Vec3 } | null>(null);
+  // Best score BEFORE the current run — the summary compares against it, so it only refreshes
+  // when a new run starts (writeQuestBestScore persists improvements immediately).
+  const [questBestScore, setQuestBestScore] = useState<number | null>(null);
+  const questStartMsRef = useRef(0);
+  const questTargetStartMsRef = useRef(0);
+  const questCelebrationNonceRef = useRef(0);
+  const questBestRecordedRef = useRef(false);
+
+  const questActive = Boolean(quest?.status === 'active' && questCountdown === null);
+  const activeQuestTarget = quest?.status === 'active' ? quest.targets[quest.currentIndex] ?? null : null;
+  const questTargetRef = useRef(activeQuestTarget);
+  questTargetRef.current = activeQuestTarget;
+  const questDetected = Boolean(
+    questActive &&
+      activeQuestTarget &&
+      questTargetImaged({
+        contactQuality: sectorContactQuality,
+        intersectedStructureIds,
+        stationKey: activeQuestTarget.stationKey,
+        stationSnapActive: Boolean(selectedPreset),
+      }),
+  );
+  const questBeacon = useMemo(
+    () => (questHintActive && activeQuestTarget ? { position: activeQuestTarget.position } : null),
+    [questHintActive, activeQuestTarget],
+  );
+
+  useEffect(() => {
+    if (caseData) {
+      setQuestBestScore(readQuestBestScore(caseData.case_id));
+    }
+  }, [caseData]);
+
+  // Pre-run countdown 3 → 2 → 1 → GO; the clocks arm when GO clears.
+  useEffect(() => {
+    if (questCountdown === null) {
+      return;
+    }
+
+    if (questCountdown === 0) {
+      const id = window.setTimeout(() => {
+        const now = performance.now();
+        questStartMsRef.current = now;
+        questTargetStartMsRef.current = now;
+        setQuestElapsedMs(0);
+        setQuestCountdown(null);
+      }, 650);
+      return () => window.clearTimeout(id);
+    }
+
+    const id = window.setTimeout(() => setQuestCountdown(questCountdown - 1), 850);
+    return () => window.clearTimeout(id);
+  }, [questCountdown]);
+
+  useEffect(() => {
+    if (!questActive) {
+      return;
+    }
+
+    const id = window.setInterval(() => setQuestElapsedMs(performance.now() - questStartMsRef.current), 250);
+    return () => window.clearInterval(id);
+  }, [questActive]);
+
+  // Capture hold: while the target stays imaged the ring fills; a full hold banks the target,
+  // fires the 3D burst at it, and advances the quest. Losing the image resets the ring.
+  const activeQuestTargetKey = activeQuestTarget?.stationKey ?? null;
+  useEffect(() => {
+    if (!questDetected || !activeQuestTargetKey) {
+      setQuestHoldProgress(0);
+      return;
+    }
+
+    const startedAt = performance.now();
+    const id = window.setInterval(() => {
+      const progress = Math.min((performance.now() - startedAt) / QUEST_HOLD_MS, 1);
+      setQuestHoldProgress(progress);
+
+      if (progress < 1) {
+        return;
+      }
+
+      window.clearInterval(id);
+      const captured = questTargetRef.current;
+      const capturedElapsedMs = performance.now() - questTargetStartMsRef.current;
+      questTargetStartMsRef.current = performance.now();
+      setQuestHoldProgress(0);
+      setQuestHintActive(false);
+      if (captured) {
+        questCelebrationNonceRef.current += 1;
+        setQuestCelebration({ nonce: questCelebrationNonceRef.current, position: captured.position });
+      }
+      setQuestElapsedMs(performance.now() - questStartMsRef.current);
+      setQuest((current) =>
+        current && current.status === 'active' ? completeQuestTarget(current, capturedElapsedMs) : current,
+      );
+    }, 80);
+
+    return () => window.clearInterval(id);
+  }, [questDetected, activeQuestTargetKey]);
+
+  // A finished run persists an improved best score once and bumps module progress.
+  useEffect(() => {
+    if (!caseData || quest?.status !== 'complete' || questBestRecordedRef.current) {
+      return;
+    }
+
+    questBestRecordedRef.current = true;
+    if (quest.score > 0 && (questBestScore === null || quest.score > questBestScore)) {
+      writeQuestBestScore(caseData.case_id, quest.score);
+    }
+    setModuleProgress('simulator', 75);
+  }, [caseData, quest, questBestScore, setModuleProgress]);
+
   if (error) {
     return (
       <main className="simulator-load-shell">
@@ -1344,9 +1823,249 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
     setLineIndex(preset.line_index);
     setSMm(preset.centerline_s_mm);
     setRollDeg(clampProbeRollDeg(caseData.render_defaults.roll_deg));
+    // Station presets are calibrated contact poses; the tip arrives there un-flexed.
+    setFlexionDeg(0);
     setActiveStructure(preset.station_key);
     setModuleProgress('simulator', 55);
   };
+
+  // Station Quest handlers. Starting releases any station snap (the quest is a free-drive
+  // exercise — snapping to the answer would be a teleport) but keeps the scope where it is.
+  const startStationQuest = () => {
+    const targets = buildQuestTargets(caseData.presets);
+
+    if (!targets.length) {
+      return;
+    }
+
+    setSelectedKey('');
+    setLineIndex(activePolyline.line_index);
+    setActiveStructure(null);
+    setQuestBestScore(readQuestBestScore(caseData.case_id));
+    questBestRecordedRef.current = false;
+    setQuest(beginQuest(targets));
+    setQuestCountdown(3);
+    setQuestHintActive(false);
+    setQuestHoldProgress(0);
+    setQuestElapsedMs(0);
+    setQuestCelebration(null);
+    setModuleProgress('simulator', 45);
+  };
+  const endStationQuest = () => {
+    setQuest(null);
+    setQuestCountdown(null);
+    setQuestHintActive(false);
+    setQuestHoldProgress(0);
+    setQuestCelebration(null);
+  };
+  const useStationQuestHint = () => {
+    setQuestHintActive(true);
+    setQuest((current) => (current ? markQuestHintUsed(current) : current));
+  };
+  const skipStationQuestTarget = () => {
+    const skippedElapsedMs = performance.now() - questTargetStartMsRef.current;
+    questTargetStartMsRef.current = performance.now();
+    setQuestHintActive(false);
+    setQuestHoldProgress(0);
+    setQuest((current) =>
+      current && current.status === 'active' ? skipQuestTarget(current, skippedElapsedMs) : current,
+    );
+  };
+
+  const steerBranch = (steerSign: 1 | -1) => {
+    if (!assets || !activePolyline || !pose) {
+      return;
+    }
+
+    const result = steerToAdjacentLine(assets.centerlines.polylines, activePolyline, sMm, pose, steerSign);
+    if (result) {
+      setLineIndex(result.lineIndex);
+      setSMm(result.sMm);
+      setModuleProgress('simulator', 45);
+    }
+  };
+
+  // Drive-pad advance keys: a tap nudges once; holding glides — an animation-frame loop advances
+  // by speed·dt with a gentle ramp, so motion is continuous and frame-rate independent. Pointer
+  // events only, so a tap does not double-fire through click. (The ref and cleanup effect live
+  // with the other hooks, above the loading early-return.)
+  const stopAdvanceHold = () => {
+    if (advanceHoldRef.current !== null) {
+      window.cancelAnimationFrame(advanceHoldRef.current);
+      advanceHoldRef.current = null;
+    }
+  };
+  const startAdvanceHold = (direction: 1 | -1) => {
+    stopAdvanceHold();
+    setSMm((current) => clamp(current + direction * ADVANCE_TAP_STEP_MM, 0, maxAdvanceMm));
+    setModuleProgress('simulator', 45);
+    let lastMs = performance.now();
+    let speedMmPerS = ADVANCE_START_SPEED_MM_PER_S;
+    const glide = (nowMs: number) => {
+      // Clamp dt so a throttled/hidden tab never teleports the scope on the next frame.
+      const dt = Math.min(Math.max(nowMs - lastMs, 0) / 1000, 0.05);
+      lastMs = nowMs;
+      speedMmPerS = Math.min(speedMmPerS + ADVANCE_RAMP_MM_PER_S2 * dt, ADVANCE_MAX_SPEED_MM_PER_S);
+      setSMm((current) => clamp(current + direction * speedMmPerS * dt, 0, maxAdvanceMm));
+      advanceHoldRef.current = window.requestAnimationFrame(glide);
+    };
+    advanceHoldRef.current = window.requestAnimationFrame(glide);
+  };
+  const advanceHoldProps = (direction: 1 | -1) => ({
+    onPointerDown: () => startAdvanceHold(direction),
+    onPointerUp: stopAdvanceHold,
+    onPointerLeave: stopAdvanceHold,
+    onPointerCancel: stopAdvanceHold,
+  });
+
+  // Drive-pad dragging: presses on the pad's own controls never start a drag; everywhere else
+  // grabs the pad. Position is workspace-relative and clamped inside it.
+  const onDrivePadPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    // The stacked (narrow) layout keeps the pad sticky in flow — no dragging there. Checked live
+    // rather than via state so a missed media-change event can never strand the feature.
+    if (
+      !window.matchMedia('(min-width: 1081px)').matches ||
+      (event.target as HTMLElement).closest('button, input, label')
+    ) {
+      return;
+    }
+
+    const pad = drivePadRef.current;
+
+    if (!pad || !workspaceRef.current) {
+      return;
+    }
+
+    const padRect = pad.getBoundingClientRect();
+    drivePadDragRef.current = {
+      pointerId: event.pointerId,
+      offsetX: event.clientX - padRect.left,
+      offsetY: event.clientY - padRect.top,
+    };
+    try {
+      pad.setPointerCapture(event.pointerId);
+    } catch {
+      // Capture keeps fast drags attached to the pad but is not required for the drag to work.
+    }
+    pad.classList.add('simulator-drive-pad--dragging');
+  };
+  const onDrivePadPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = drivePadDragRef.current;
+    const pad = drivePadRef.current;
+    const workspace = workspaceRef.current;
+
+    if (!drag || drag.pointerId !== event.pointerId || !pad || !workspace) {
+      return;
+    }
+
+    const workspaceRect = workspace.getBoundingClientRect();
+    const padRect = pad.getBoundingClientRect();
+    const x = clamp(
+      event.clientX - workspaceRect.left - drag.offsetX,
+      DRIVE_PAD_EDGE_MARGIN_PX,
+      Math.max(DRIVE_PAD_EDGE_MARGIN_PX, workspaceRect.width - padRect.width - DRIVE_PAD_EDGE_MARGIN_PX),
+    );
+    const y = clamp(
+      event.clientY - workspaceRect.top - drag.offsetY,
+      DRIVE_PAD_EDGE_MARGIN_PX,
+      Math.max(DRIVE_PAD_EDGE_MARGIN_PX, workspaceRect.height - padRect.height - DRIVE_PAD_EDGE_MARGIN_PX),
+    );
+    pad.style.left = `${x}px`;
+    pad.style.top = `${y}px`;
+    pad.style.bottom = 'auto';
+    pad.style.right = 'auto';
+    drag.lastX = x;
+    drag.lastY = y;
+  };
+  const onDrivePadPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = drivePadDragRef.current;
+
+    if (!drag || drag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    drivePadDragRef.current = null;
+    const pad = drivePadRef.current;
+    pad?.classList.remove('simulator-drive-pad--dragging');
+    if (typeof drag.lastX === 'number' && typeof drag.lastY === 'number') {
+      setDrivePadPosition({ x: drag.lastX, y: drag.lastY });
+    }
+  };
+
+  // Latest-ref handlers for the physical scope tracker: reassigned every render so the
+  // rAF poll loop (useScopeTrackerInput) always sees fresh state and helpers.
+  scopeHandlersRef.current = {
+    onFrame: (frame, deltas) => {
+      const markProgress = () => {
+        if (!scopeProgressMarkedRef.current) {
+          scopeProgressMarkedRef.current = true;
+          setModuleProgress('simulator', 45);
+        }
+      };
+
+      if (Math.abs(deltas.dDepthMm) > 0.01) {
+        setSMm((current) => {
+          const next = clamp(current + deltas.dDepthMm, 0, maxAdvanceMm);
+          return Math.abs(next - current) < 0.02 ? current : next;
+        });
+        markProgress();
+      }
+
+      const dRollDeg = (deltas.dRollRad * 180) / Math.PI;
+      if (Math.abs(dRollDeg) > 0.02) {
+        setRollDeg((current) => {
+          const next = clampProbeRollDeg(current + dRollDeg);
+          return Math.abs(next - current) < 0.02 ? current : next;
+        });
+        markProgress();
+      }
+
+      const targetFlexionDeg =
+        frame.flexion >= 0
+          ? frame.flexion * HARDWARE_FLEX_UP_MAX_DEG
+          : frame.flexion * HARDWARE_FLEX_DOWN_MAX_DEG;
+      setFlexionDeg((current) => (Math.abs(targetFlexionDeg - current) < 0.25 ? current : targetFlexionDeg));
+
+      if (frame.pressed.a) {
+        setBronchBalloonInflated((value) => !value);
+      }
+      if (frame.pressed.b) {
+        setBronchSeeThrough((value) => !value);
+      }
+      if (!selectedPreset) {
+        if (frame.pressed.c) {
+          steerBranch(-1);
+        }
+        if (frame.pressed.d) {
+          steerBranch(1);
+        }
+      }
+    },
+    onDisconnect: () => {
+      scopeProgressMarkedRef.current = false;
+    },
+  };
+
+  // Layout switches: Enlarge promotes a pane into the focus layout's large slot; "All views"
+  // returns to the tri-view grid where every rendition is full-frame.
+  const focusPane = (pane: SimulatorPrimaryPane) => {
+    setPrimaryPane(pane);
+    setPaneLayout('focus');
+  };
+  const showAllPanes = () => setPaneLayout('grid');
+  const paneEnlargeHandler = (pane: SimulatorPrimaryPane) =>
+    showVirtualBronchoscopyPane && (paneLayout === 'grid' || primaryPane !== pane)
+      ? () => focusPane(pane)
+      : null;
+  const paneShowAllHandler = (pane: SimulatorPrimaryPane) =>
+    showVirtualBronchoscopyPane && paneLayout === 'focus' && primaryPane === pane ? showAllPanes : null;
+  const anatomyEnlarge = paneEnlargeHandler('anatomy');
+  const anatomyShowAll = paneShowAllHandler('anatomy');
+  const bronchEnlarge = paneEnlargeHandler('bronch');
+  const bronchShowAll = paneShowAllHandler('bronch');
+  // Side panes of the focus layout render with trimmed chrome so the image keeps the slot.
+  const paneCompact = (pane: SimulatorPrimaryPane) =>
+    showVirtualBronchoscopyPane && paneLayout === 'focus' && primaryPane !== pane;
 
   const updateLayer = (key: keyof SimulatorLayerState) => {
     setLayers((current) => ({ ...current, [key]: !current[key] }));
@@ -1391,6 +2110,11 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
           <h2>{selectedPreset ? `${t('Station')} ${formatSimulatorStation(selectedPreset.station)}` : t('Free airway drive')}</h2>
         </div>
         <div className="simulator-status-strip">
+          {!quest ? (
+            <button className="simulator-button simulator-quest-launch" onClick={startStationQuest} type="button">
+              <span aria-hidden="true">🎯</span> {t('Station quest')}
+            </button>
+          ) : null}
           <span>{selectedPreset?.approach ?? t('No station selected')}</span>
           <span>{Math.round(sMm)} mm</span>
           <span>{t(simulatorSectorSourceLabel(sectorSource))}</span>
@@ -1401,13 +2125,15 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
         <label>
           <span>{t('Station snap')}</span>
           <select
+            disabled={quest?.status === 'active'}
+            title={quest?.status === 'active' ? t('Station snap is disabled during a quest') : undefined}
             value={selectedPreset?.preset_key ?? ''}
             onChange={(event) => {
               if (!event.target.value) {
+                // Release the station snap but keep the scope where it is, so free drive
+                // continues from the current position on the current branch.
                 setSelectedKey('');
-                setLineIndex(caseData.navigation.primary_line_index ?? navigationPreset.line_index);
-                setSMm(0);
-                setRollDeg(clampProbeRollDeg(caseData.render_defaults.roll_deg));
+                setLineIndex(activePolyline.line_index);
                 setActiveStructure(null);
                 setModuleProgress('simulator', 45);
                 return;
@@ -1419,7 +2145,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
               }
             }}
           >
-            {publicTrainingMode ? <option value="">{t('Free drive - no station snap')}</option> : null}
+            <option value="">{t('Free drive - no station snap')}</option>
             {caseData.presets.map((preset) => (
               <option key={preset.preset_key} value={preset.preset_key}>
                 {preset.label}
@@ -1427,10 +2153,63 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
             ))}
           </select>
         </label>
+        {!selectedPreset ? (
+          <label>
+            <span>{t('Branch')}</span>
+            <select
+              value={String(activePolyline.line_index)}
+              onChange={(event) => {
+                setLineIndex(Number(event.target.value));
+                setModuleProgress('simulator', 45);
+              }}
+            >
+              {assets.centerlines.polylines
+                .filter(
+                  (polyline) =>
+                    polyline.total_length_mm >= FREE_DRIVE_MIN_BRANCH_LENGTH_MM ||
+                    polyline.line_index === activePolyline.line_index,
+                )
+                .map((polyline) => (
+                  <option key={polyline.line_index} value={polyline.line_index}>
+                    {branchLabels.get(polyline.line_index) ?? `${t('Branch')} ${polyline.line_index}`}
+                  </option>
+                ))}
+            </select>
+          </label>
+        ) : null}
+        <label className="simulator-hardware-control">
+          <span>{t('Hardware scope')}</span>
+          <span className="simulator-hardware-control__row">
+            <input
+              checked={hardwareScopeEnabled}
+              onChange={(event) => setHardwareScopeEnabled(event.target.checked)}
+              type="checkbox"
+            />
+            <span
+              className={`simulator-hardware-chip ${
+                scopeTracker.connected ? 'simulator-hardware-chip--connected' : ''
+              } ${scopeTracker.lowQuality ? 'simulator-hardware-chip--warning' : ''}`}
+              title={
+                scopeTracker.lowQuality
+                  ? t('Low optical tracking quality - replace the wiper ring or wipe the scope cord')
+                  : (scopeTracker.deviceId ??
+                    t('Physical scope tracker drives advance, roll, and flexion when connected'))
+              }
+            >
+              {hardwareScopeEnabled
+                ? scopeTracker.connected
+                  ? scopeTracker.lowQuality
+                    ? t('Check tracking')
+                    : t('Scope connected')
+                  : t('No scope')
+                : t('Off')}
+            </span>
+          </span>
+        </label>
         <label className="simulator-wide-control">
           <span>{t('Advance / retract')}</span>
           <input
-            max={activePolyline.total_length_mm}
+            max={maxAdvanceMm}
             min={0}
             onChange={(event) => {
               setSMm(Number(event.target.value));
@@ -1438,7 +2217,7 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
             }}
             step={0.5}
             type="range"
-            value={Math.min(Math.max(sMm, 0), activePolyline.total_length_mm)}
+            value={Math.min(Math.max(sMm, 0), maxAdvanceMm)}
           />
         </label>
         <label>
@@ -1473,14 +2252,32 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
         </div>
       </section>
 
-      <div className={`simulator-workspace${showVirtualBronchoscopyPane ? ' simulator-workspace--virtual' : ''}`}>
-        <section className="simulator-scene-pane" aria-label={t('External anatomy view')}>
+      <div
+        className={`simulator-workspace${showVirtualBronchoscopyPane ? ' simulator-workspace--virtual' : ''}`}
+        data-layout={paneLayout}
+        data-primary={primaryPane}
+        ref={workspaceRef}
+      >
+        <section
+          className={`simulator-scene-pane${paneCompact('anatomy') ? ' simulator-pane--compact' : ''}`}
+          aria-label={t('External anatomy view')}
+        >
           <div className="simulator-pane-header">
             <div>
               <span className="eyebrow">{t('External anatomy')}</span>
               <h2>{t('Scope, airway, vessels, lymph nodes, and fan')}</h2>
             </div>
             <div className="simulator-scene-actions">
+              {anatomyEnlarge ? (
+                <button className="simulator-sector-style-toggle" onClick={anatomyEnlarge} type="button">
+                  {t('Enlarge')}
+                </button>
+              ) : null}
+              {anatomyShowAll ? (
+                <button className="simulator-sector-style-toggle" onClick={anatomyShowAll} type="button">
+                  {t('All views')}
+                </button>
+              ) : null}
               <details className="simulator-structure-dropdown">
                 <summary>
                   <span>{t('3D structures')}</span>
@@ -1540,39 +2337,175 @@ export function SimulatorPage({ showVirtualBronchoscopy = false }: { showVirtual
             assets={assets}
             cameraPose={cameraPose}
             caseData={caseData}
+            celebration={questCelebration}
             hiddenStructureIds={hiddenSceneStructureSet}
             intersectedStructureIds={intersectedStructureIds}
             layers={layers}
             lockView={lockSceneView}
             pose={pose}
+            questBeacon={questBeacon}
             selectedPreset={selectedPreset}
             teachingView={teachingView}
           />
         </section>
 
         {showVirtualBronchoscopyPane ? (
-          <section className="simulator-scene-pane" aria-label={t('Virtual bronchoscopy view')}>
+          <section
+            className={`simulator-scene-pane simulator-bronch-pane${paneCompact('bronch') ? ' simulator-pane--compact' : ''}`}
+            aria-label={t('Virtual bronchoscopy view')}
+          >
             <div className="simulator-pane-header">
               <div>
                 <span className="eyebrow">{t('Virtual bronchoscopy')}</span>
                 <h2>{t('Endoluminal view from the scope tip')}</h2>
               </div>
               <div className="simulator-status-strip">
+                {bronchEnlarge ? (
+                  <button className="simulator-sector-style-toggle" onClick={bronchEnlarge} type="button">
+                    {t('Enlarge')}
+                  </button>
+                ) : null}
+                {bronchShowAll ? (
+                  <button className="simulator-sector-style-toggle" onClick={bronchShowAll} type="button">
+                    {t('All views')}
+                  </button>
+                ) : null}
+                <button
+                  aria-pressed={bronchBalloonInflated}
+                  className="simulator-sector-style-toggle"
+                  onClick={() => setBronchBalloonInflated((value) => !value)}
+                  type="button"
+                >
+                  {t('Balloon')}
+                </button>
+                <button
+                  aria-pressed={bronchSeeThrough}
+                  className="simulator-sector-style-toggle"
+                  onClick={() => setBronchSeeThrough((value) => !value)}
+                  type="button"
+                >
+                  {t('See-through')}
+                </button>
                 <span>{Math.round(sMm)} mm</span>
               </div>
             </div>
-            <BronchoscopyView pose={pose} assets={assets} />
+            <BronchoscopyView
+              assets={assets}
+              balloonInflated={bronchBalloonInflated}
+              camera={caseData.endoscope_camera}
+              caseData={caseData}
+              focusStationKey={selectedPreset?.station_key ?? null}
+              pose={pose}
+              seeThroughWall={bronchSeeThrough}
+              structures={bronchOverlayStructures}
+            />
           </section>
         ) : null}
 
         <SectorView
           activeStructure={activeStructure}
           caseData={caseData}
+          compact={paneCompact('sector')}
+          contactQuality={sectorContactQuality}
           items={sectorItems}
+          onEnlarge={paneEnlargeHandler('sector')}
+          onShowAll={paneShowAllHandler('sector')}
           selectedPreset={selectedPreset}
           setActiveStructure={setActiveStructure}
           source={sectorSource}
         />
+        <div
+          className="simulator-drive-pad"
+          role="group"
+          aria-label={t('Drive controls')}
+          onPointerCancel={onDrivePadPointerEnd}
+          onPointerDown={onDrivePadPointerDown}
+          onPointerMove={onDrivePadPointerMove}
+          onPointerUp={onDrivePadPointerEnd}
+          ref={drivePadRef}
+          style={
+            drivePadPosition
+              ? { left: drivePadPosition.x, top: drivePadPosition.y, bottom: 'auto', right: 'auto' }
+              : undefined
+          }
+          title={t('Drag to move the drive pad')}
+        >
+          <span className="simulator-drive-pad__readout">
+            <span aria-hidden="true" className="simulator-drive-pad__grip">
+              ⠿
+            </span>
+            {Math.round(sMm)} mm · {t('flex')} {Math.round(flexionDeg)}°
+          </span>
+          <div className="simulator-drive-pad__grid">
+            <button
+              className="simulator-drive-pad__key"
+              disabled={Boolean(selectedPreset)}
+              onClick={() => steerBranch(-1)}
+              title={selectedPreset ? t('Steering needs free drive') : t('Steer left at the next branch')}
+              type="button"
+            >
+              ◀
+            </button>
+            <div className="simulator-drive-pad__advance">
+              <button
+                className="simulator-drive-pad__key"
+                title={t('Advance')}
+                type="button"
+                {...advanceHoldProps(1)}
+              >
+                ▲
+              </button>
+              <button
+                className="simulator-drive-pad__key"
+                title={t('Retract')}
+                type="button"
+                {...advanceHoldProps(-1)}
+              >
+                ▼
+              </button>
+            </div>
+            <button
+              className="simulator-drive-pad__key"
+              disabled={Boolean(selectedPreset)}
+              onClick={() => steerBranch(1)}
+              title={selectedPreset ? t('Steering needs free drive') : t('Steer right at the next branch')}
+              type="button"
+            >
+              ▶
+            </button>
+          </div>
+          <label className="simulator-drive-pad__flex">
+            <span>{t('Flex')}</span>
+            <input
+              max={90}
+              min={-30}
+              onChange={(event) => {
+                setFlexionDeg(Number(event.target.value));
+                setModuleProgress('simulator', 45);
+              }}
+              step={1}
+              type="range"
+              value={flexionDeg}
+            />
+          </label>
+        </div>
+        {quest ? (
+          <QuestHud
+            bestScore={questBestScore}
+            branchHint={activeQuestTarget ? branchLabels.get(activeQuestTarget.lineIndex) ?? null : null}
+            countdown={questCountdown}
+            detected={questDetected}
+            elapsedMs={questElapsedMs}
+            hintActive={questHintActive}
+            holdProgress={questHoldProgress}
+            onDone={endStationQuest}
+            onHint={useStationQuestHint}
+            onQuit={endStationQuest}
+            onRestart={startStationQuest}
+            onSkip={skipStationQuestTarget}
+            state={quest}
+          />
+        ) : null}
       </div>
     </div>
   );

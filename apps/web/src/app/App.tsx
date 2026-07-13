@@ -519,7 +519,14 @@ export function App() {
           <Route element={<LecturesPage />} path="/lectures" />
           <Route element={<Navigate replace to={localizePath('/lectures')} />} path="/quiz" />
           <Route element={<NotFoundPage />} path="/cases/case-001" />
-          <Route element={<SimulatorPage showVirtualBronchoscopy={appAdminSessionActive} />} path="/simulator" />
+          <Route
+            element={
+              <SimulatorPage
+                showVirtualBronchoscopy={appAdminSessionActive || publicTrainingMode}
+              />
+            }
+            path="/simulator"
+          />
           <Route element={<NotFoundPage />} path="*" />
         </Routes>
       </Suspense>

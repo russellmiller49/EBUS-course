@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import json
 import math
+from pathlib import Path
+from typing import Any, Mapping
 
 import numpy as np
 
@@ -39,6 +42,22 @@ class CPEBUSDeviceModel:
     displayed_range_mm: float
     source_oblique_size_mm: float
     reference_fov_mm: float
+    # Web-facing optical-camera calibration; shipped in the same device profile so the app and
+    # these tools cannot drift apart. `obliquity_axis` carries the calibratable scan-side sign.
+    obliquity_axis: str = "depth_axis"
+    fov_deg: float = 85.0
+    near_mm: float = 0.4
+    far_mm: float = 4000.0
+    eye_offset_mm: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    # Lens-realism switches for the optical pane; carried through the profile so the web manifest
+    # and these tools stay on one record. All default off; contact_min_distance_mm=0 disables the
+    # camera proximity clamp.
+    circular_aperture: bool = False
+    lens_distortion: bool = False
+    scope_tip_occlusion: bool = False
+    contact_cap: bool = False
+    headlight_falloff: bool = False
+    contact_min_distance_mm: float = 0.0
 
 
 @dataclass(slots=True)
@@ -96,20 +115,185 @@ class DevicePose:
     contact_refinement: ContactRefinement
 
 
-def get_cp_ebus_device_model(name: str) -> CPEBUSDeviceModel:
+# Shared device-calibration records: one JSON file per model id, read both here and by
+# scripts/cases/build-simplified-simulator-assets.mjs when it emits the web manifest, so the
+# Python tools and the web app consume the same numbers (single source of truth).
+DEVICE_PROFILE_DIR = Path(__file__).resolve().parent / "device_profiles"
+
+SUPPORTED_OBLIQUITY_AXES = frozenset(
+    {"depth_axis", "negative_depth_axis", "lateral_axis", "negative_lateral_axis"}
+)
+
+_PROFILE_FLOAT_FIELDS = frozenset(
+    {
+        "video_axis_offset_deg",
+        "probe_origin_offset_mm",
+        "sector_angle_deg",
+        "displayed_range_mm",
+        "source_oblique_size_mm",
+        "reference_fov_mm",
+        "fov_deg",
+        "near_mm",
+        "far_mm",
+        "contact_min_distance_mm",
+    }
+)
+_PROFILE_STRING_FIELDS = frozenset({"name", "shaft_label", "obliquity_axis"})
+_PROFILE_BOOL_FIELDS = frozenset(
+    {
+        "circular_aperture",
+        "lens_distortion",
+        "scope_tip_occlusion",
+        "contact_cap",
+        "headlight_falloff",
+    }
+)
+
+# Calibrated fallback used when the profile file is unavailable (e.g. a partial checkout).
+_DEFAULT_PROFILE_RECORD: dict[str, Any] = {
+    "name": "bf_uc180f",
+    "shaft_label": "Olympus BF-UC180F-like",
+    "video_axis_offset_deg": 30.0,
+    "probe_origin_offset_mm": 6.0,
+    "sector_angle_deg": 60.0,
+    "displayed_range_mm": 40.0,
+    "source_oblique_size_mm": 51.79,
+    "reference_fov_mm": 100.0,
+    "obliquity_axis": "depth_axis",
+    "fov_deg": 85.0,
+    "near_mm": 0.4,
+    "far_mm": 4000.0,
+    "eye_offset_mm": (0.0, 0.0, 0.0),
+    "circular_aperture": True,
+    "lens_distortion": True,
+    "scope_tip_occlusion": False,
+    "contact_cap": True,
+    "headlight_falloff": True,
+    "contact_min_distance_mm": 1.5,
+}
+
+
+def _normalize_profile_record(raw: Mapping[str, Any]) -> dict[str, Any]:
+    """Map a profile/override mapping onto CPEBUSDeviceModel fields, ignoring unknown keys.
+
+    Accepts the web-manifest spelling `optical_axis_offset_deg` alongside the native
+    `video_axis_offset_deg`, and `model` alongside `name`.
+    """
+    record: dict[str, Any] = {}
+    for key, value in raw.items():
+        if key in {"optical_axis_offset_deg", "video_axis_offset_deg"}:
+            record["video_axis_offset_deg"] = float(value)
+        elif key == "model":
+            record["name"] = str(value)
+        elif key == "eye_offset_mm":
+            if isinstance(value, Mapping):
+                record["eye_offset_mm"] = (
+                    float(value.get("shaft", 0.0)),
+                    float(value.get("depth", 0.0)),
+                    float(value.get("lateral", 0.0)),
+                )
+            else:
+                record["eye_offset_mm"] = tuple(float(component) for component in value)
+        elif key in _PROFILE_FLOAT_FIELDS:
+            record[key] = float(value)
+        elif key in _PROFILE_STRING_FIELDS:
+            record[key] = str(value)
+        elif key in _PROFILE_BOOL_FIELDS:
+            record[key] = bool(value)
+    return record
+
+
+def _load_device_profile(name: str, profile_path: str | Path | None) -> dict[str, Any]:
+    path = Path(profile_path) if profile_path is not None else DEVICE_PROFILE_DIR / f"{name}.json"
+    if profile_path is None and not path.is_file():
+        return {}
+    with open(path, encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def get_cp_ebus_device_model(
+    name: str,
+    *,
+    profile_path: str | Path | None = None,
+    overrides: Mapping[str, Any] | None = None,
+) -> CPEBUSDeviceModel:
+    """Resolve the device-calibration record for a model id.
+
+    The numbers come from the shared profile JSON in ``DEVICE_PROFILE_DIR`` (the same record the
+    web-manifest export reads); ``profile_path`` points at an alternate record and ``overrides``
+    adjusts individual fields on top. Missing fields fall back to the calibrated defaults.
+    """
     normalized = name.strip().lower()
     if normalized != "bf_uc180f":
         raise ValueError(f"Unsupported CP-EBUS device model {name!r}. Expected 'bf_uc180f'.")
-    return CPEBUSDeviceModel(
-        name="bf_uc180f",
-        shaft_label="Olympus BF-UC180F-like",
-        video_axis_offset_deg=20.0,
-        probe_origin_offset_mm=6.0,
-        sector_angle_deg=60.0,
-        displayed_range_mm=40.0,
-        source_oblique_size_mm=51.79,
-        reference_fov_mm=100.0,
+
+    record = dict(_DEFAULT_PROFILE_RECORD)
+    record.update(_normalize_profile_record(_load_device_profile(normalized, profile_path)))
+    if overrides:
+        record.update(_normalize_profile_record(overrides))
+
+    if record["obliquity_axis"] not in SUPPORTED_OBLIQUITY_AXES:
+        raise ValueError(
+            f"Unsupported obliquity_axis {record['obliquity_axis']!r}. "
+            f"Expected one of {sorted(SUPPORTED_OBLIQUITY_AXES)}."
+        )
+    return CPEBUSDeviceModel(**record)
+
+
+def resolve_video_axis(
+    model: CPEBUSDeviceModel,
+    shaft_axis: np.ndarray,
+    probe_axis: np.ndarray,
+    lateral_axis: np.ndarray,
+) -> np.ndarray:
+    """Forward-oblique optical axis: the shaft axis rotated by the calibrated offset toward the
+    profile's obliquity axis. Matches the web app's convention
+    (``forward = shaft*cos(θ) + obliquity*sin(θ)``), so both sides derive the view direction from
+    the same record rather than maintaining independent calculations.
+    """
+    toward_by_axis = {
+        "depth_axis": np.asarray(probe_axis, dtype=np.float64),
+        "negative_depth_axis": -np.asarray(probe_axis, dtype=np.float64),
+        "lateral_axis": np.asarray(lateral_axis, dtype=np.float64),
+        "negative_lateral_axis": -np.asarray(lateral_axis, dtype=np.float64),
+    }
+    return _rotation_toward(
+        np.asarray(shaft_axis, dtype=np.float64),
+        toward_by_axis[model.obliquity_axis],
+        model.video_axis_offset_deg,
     )
+
+
+def endoscope_camera_payload(model: CPEBUSDeviceModel) -> dict[str, Any]:
+    """The `endoscope_camera` web-manifest block for this device profile."""
+    return {
+        "model": model.name,
+        "optical_axis_offset_deg": float(model.video_axis_offset_deg),
+        "obliquity_axis": model.obliquity_axis,
+        "fov_deg": float(model.fov_deg),
+        "near_mm": float(model.near_mm),
+        "far_mm": float(model.far_mm),
+        "eye_offset_mm": {
+            "shaft": float(model.eye_offset_mm[0]),
+            "depth": float(model.eye_offset_mm[1]),
+            "lateral": float(model.eye_offset_mm[2]),
+        },
+        "circular_aperture": bool(model.circular_aperture),
+        "lens_distortion": bool(model.lens_distortion),
+        "scope_tip_occlusion": bool(model.scope_tip_occlusion),
+        "contact_cap": bool(model.contact_cap),
+        "headlight_falloff": bool(model.headlight_falloff),
+        "contact_min_distance_mm": float(model.contact_min_distance_mm),
+    }
+
+
+def ultrasound_probe_payload(model: CPEBUSDeviceModel) -> dict[str, Any]:
+    """The `ultrasound_probe` web-manifest block for this device profile."""
+    return {
+        "sector_angle_deg": float(model.sector_angle_deg),
+        "displayed_range_mm": float(model.displayed_range_mm),
+        "optical_axis_offset_deg": float(model.video_axis_offset_deg),
+    }
 
 
 def _normalize(vector: np.ndarray) -> np.ndarray | None:
@@ -687,8 +871,9 @@ def build_device_pose(
     contact_seed_world: np.ndarray | None = None,
     shaft_axis_override: np.ndarray | None = None,
     depth_axis_override: np.ndarray | None = None,
+    device_model: CPEBUSDeviceModel | None = None,
 ) -> DevicePose:
-    model = get_cp_ebus_device_model(device_name)
+    model = device_model if device_model is not None else get_cp_ebus_device_model(device_name)
 
     original_contact = np.asarray(pose.contact_world, dtype=np.float64)
     seed_contact = original_contact if contact_seed_world is None else np.asarray(contact_seed_world, dtype=np.float64)
@@ -819,7 +1004,7 @@ def build_device_pose(
     if axis_override_warning is not None:
         refinement_warnings.append(axis_override_warning)
 
-    video_axis = _rotation_toward(shaft_axis, probe_axis, model.video_axis_offset_deg)
+    video_axis = resolve_video_axis(model, shaft_axis, probe_axis, lateral_axis)
     tip_start_world = mesh_contact - (shaft_axis * model.probe_origin_offset_mm)
 
     final_branch_projection = _candidate_branch_projection(

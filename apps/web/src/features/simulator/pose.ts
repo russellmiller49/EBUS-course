@@ -1,12 +1,160 @@
 import * as THREE from 'three';
 
-import type { SimulatorCenterlinePolyline, SimulatorPreset, Vec3 } from './types';
+import type {
+  SimulatorCenterlinePolyline,
+  SimulatorEndoscopeCamera,
+  SimulatorObliquityAxis,
+  SimulatorPreset,
+  Vec3,
+} from './types';
 
 export interface SimulatorProbePose {
   position: THREE.Vector3;
   tangent: THREE.Vector3;
   depthAxis: THREE.Vector3;
   lateralAxis: THREE.Vector3;
+  /**
+   * Centerline point at the pose's path parameter, before the wall-contact radial offset is
+   * applied to `position`. Guaranteed to lie inside the channel, so views can use it as a safe
+   * anchor when clamping a camera eye back inside the lumen. Optional so hand-built poses keep
+   * working.
+   */
+  centerlinePosition?: THREE.Vector3;
+  /**
+   * True when the pose sits at the active preset's station snap point (same centerline, within
+   * 1mm of the preset's path parameter) — the moment the tip is pressed on the station contact.
+   * Views use it to switch tip state (e.g. inflate the distal contact cap). Optional so
+   * hand-built poses keep working.
+   */
+  atStationSnap?: boolean;
+}
+
+/**
+ * Orthonormal scope pose frame with device-facing axis names: `shaftAxis` is the advance direction
+ * (`tangent`), `depthAxis` points toward the scan side, `lateralAxis` is the in-image lateral.
+ */
+export interface SimulatorScopeFrame {
+  position: THREE.Vector3;
+  shaftAxis: THREE.Vector3;
+  depthAxis: THREE.Vector3;
+  lateralAxis: THREE.Vector3;
+}
+
+export function resolveScopeFrame(pose: SimulatorProbePose): SimulatorScopeFrame {
+  return {
+    position: pose.position.clone(),
+    shaftAxis: pose.tangent.clone().normalize(),
+    depthAxis: pose.depthAxis.clone().normalize(),
+    lateralAxis: pose.lateralAxis.clone().normalize(),
+  };
+}
+
+/**
+ * Default device profile for the endoscopic optical camera (`bf_uc180f`). The manifest's
+ * `endoscope_camera` record is the source of truth; this is only the fallback for manifests that
+ * predate the calibration record, and matches the Phase-1 constants.
+ */
+export const DEFAULT_ENDOSCOPE_CAMERA: SimulatorEndoscopeCamera = {
+  model: 'bf_uc180f',
+  optical_axis_offset_deg: 30,
+  obliquity_axis: 'depth_axis',
+  fov_deg: 85,
+  near_mm: 0.4,
+  far_mm: 4000,
+  eye_offset_mm: { shaft: 0, depth: 0, lateral: 0 },
+};
+
+/**
+ * Merge a manifest `endoscope_camera` record over the default device profile. Manifests without
+ * the record (or hand-edited ones missing fields) resolve to the Phase-1 defaults.
+ */
+export function resolveEndoscopeCameraCalibration(
+  record?: Partial<SimulatorEndoscopeCamera> | null,
+): SimulatorEndoscopeCamera {
+  return {
+    ...DEFAULT_ENDOSCOPE_CAMERA,
+    ...(record ?? {}),
+    eye_offset_mm: {
+      ...DEFAULT_ENDOSCOPE_CAMERA.eye_offset_mm,
+      ...(record?.eye_offset_mm ?? {}),
+    },
+  };
+}
+
+/** Unit vector for a named obliquity axis in the given scope frame. */
+export function obliquityAxisDirection(
+  frame: SimulatorScopeFrame,
+  axis: SimulatorObliquityAxis,
+): THREE.Vector3 {
+  switch (axis) {
+    case 'negative_depth_axis':
+      return frame.depthAxis.clone().multiplyScalar(-1);
+    case 'lateral_axis':
+      return frame.lateralAxis.clone();
+    case 'negative_lateral_axis':
+      return frame.lateralAxis.clone().multiplyScalar(-1);
+    case 'depth_axis':
+    default:
+      return frame.depthAxis.clone();
+  }
+}
+
+/**
+ * Optical view direction for a device-calibration record: the shaft axis rotated
+ * `optical_axis_offset_deg` toward the calibrated obliquity axis. The axis choice (including its
+ * sign) is calibratable — the scan side may need flipping after visual review against reference
+ * video, so it is read from the record rather than hard-coded.
+ */
+export function resolveCalibratedOpticalAxis(
+  frame: SimulatorScopeFrame,
+  camera: SimulatorEndoscopeCamera,
+): THREE.Vector3 {
+  const theta = THREE.MathUtils.degToRad(camera.optical_axis_offset_deg);
+
+  return frame.shaftAxis
+    .clone()
+    .multiplyScalar(Math.cos(theta))
+    .add(obliquityAxisDirection(frame, camera.obliquity_axis).multiplyScalar(Math.sin(theta)))
+    .normalize();
+}
+
+/**
+ * Screen-up direction for the optical pane. On a forward-oblique tip the image is oriented with
+ * "up" toward the calibrated obliquity (scan) side — the lens tilts that way, so the distal
+ * transducer hardware ahead of it intrudes from the image bottom. Computed as the obliquity axis
+ * projected perpendicular to the optical axis; falls back to the depth axis if the projection
+ * degenerates (offset approaching 90 degrees).
+ */
+export function resolveOpticalImageUp(
+  frame: SimulatorScopeFrame,
+  camera: SimulatorEndoscopeCamera,
+): THREE.Vector3 {
+  const forward = resolveCalibratedOpticalAxis(frame, camera);
+  const up = obliquityAxisDirection(frame, camera.obliquity_axis);
+  up.addScaledVector(forward, -up.dot(forward));
+
+  if (up.lengthSq() < 1e-8) {
+    return frame.depthAxis.clone();
+  }
+
+  return up.normalize();
+}
+
+/**
+ * Forward-oblique optical axis: the shaft axis rotated `offsetDeg` toward the scan side. Kept as a
+ * convenience over `resolveCalibratedOpticalAxis` for callers that only vary the offset and the
+ * depth-axis sign.
+ */
+export function resolveForwardObliqueOpticalAxis(
+  frame: SimulatorScopeFrame,
+  offsetDeg = 30,
+  sign = 1,
+): THREE.Vector3 {
+  return resolveCalibratedOpticalAxis(frame, {
+    ...DEFAULT_ENDOSCOPE_CAMERA,
+    optical_axis_offset_deg: offsetDeg,
+    obliquity_axis: sign >= 0 ? 'depth_axis' : 'negative_depth_axis',
+  });
 }
 
 export function toVector(point: Vec3): THREE.Vector3 {
@@ -99,11 +247,16 @@ function normalizedVectorOrNull(point: Vec3 | null | undefined): THREE.Vector3 |
   return vector.lengthSq() > 1e-8 ? vector.normalize() : null;
 }
 
+// How far the distal tip translates toward the scan side at full 90-degree flexion — the chord of
+// the scope's short bending section pressing the transducer onto the channel wall.
+export const FLEXION_TIP_SHIFT_MM = 12;
+
 export function computeSimulatorPose(
   polyline: SimulatorCenterlinePolyline,
   sMm: number,
   rollDeg: number,
   preset: SimulatorPreset,
+  flexionDeg = 0,
 ): SimulatorProbePose {
   const centerlinePosition = pointAtS(polyline, sMm);
   let position = centerlinePosition.clone();
@@ -147,7 +300,21 @@ export function computeSimulatorPose(
   const lateralAxis = new THREE.Vector3().crossVectors(tangent, depthAxis).normalize();
   depthAxis = new THREE.Vector3().crossVectors(lateralAxis, tangent).normalize();
 
-  return { position, tangent, depthAxis, lateralAxis };
+  // Tip flexion: the bending section rotates the distal frame about the lateral axis toward the
+  // scan side and translates the tip toward the wall it is being pressed against. Applied after
+  // roll, like the physical control order (rotate the shaft, then flex the lever).
+  if (flexionDeg) {
+    const flexRad = THREE.MathUtils.degToRad(clamp(flexionDeg, -90, 120));
+    const cos = Math.cos(flexRad);
+    const sin = Math.sin(flexRad);
+    const preFlexTangent = tangent.clone();
+    const preFlexDepthAxis = depthAxis.clone();
+    tangent = preFlexTangent.clone().multiplyScalar(cos).addScaledVector(preFlexDepthAxis, sin).normalize();
+    depthAxis = preFlexDepthAxis.clone().multiplyScalar(cos).addScaledVector(preFlexTangent, -sin).normalize();
+    position = position.clone().addScaledVector(preFlexDepthAxis, sin * FLEXION_TIP_SHIFT_MM);
+  }
+
+  return { position, tangent, depthAxis, lateralAxis, centerlinePosition, atStationSnap };
 }
 
 export function cephalicImageAxis(pose: SimulatorProbePose): THREE.Vector3 {

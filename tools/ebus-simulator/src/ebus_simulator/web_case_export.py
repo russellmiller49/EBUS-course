@@ -9,6 +9,11 @@ from typing import Iterable
 
 import numpy as np
 
+from ebus_simulator.device import (
+    endoscope_camera_payload,
+    get_cp_ebus_device_model,
+    ultrasound_probe_payload,
+)
 from ebus_simulator.io.nifti import load_nifti
 from ebus_simulator.models import PolyData, VolumeData
 from ebus_simulator.rendering import build_render_context
@@ -445,6 +450,9 @@ def export_web_case(
     render_defaults = context.manifest.render_defaults
     clean_model_assets = _clean_model_assets(clean_model_dir, output_root)
     scope_model_asset = _scope_model_asset(scope_model_path, output_root)
+    # Device-calibration blocks come from the shared profile record so this export and the web
+    # asset build cannot drift apart.
+    device_model = get_cp_ebus_device_model("bf_uc180f")
     manifest_payload = {
         "schema_version": SCHEMA_VERSION,
         "case_id": context.manifest.case_id,
@@ -480,6 +488,8 @@ def export_web_case(
             **ANATOMY_COLORS,
             **{asset["key"]: asset["color"] for asset in vessel_assets},
         },
+        "endoscope_camera": endoscope_camera_payload(device_model),
+        "ultrasound_probe": ultrasound_probe_payload(device_model),
         "notes": {
             "intent": "local anatomy-correlation teaching app",
             "mask_assets": "translucent point-cloud fallbacks for v1 browser performance",

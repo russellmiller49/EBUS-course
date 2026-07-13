@@ -442,6 +442,15 @@ const shellText: Record<Exclude<AppLocale, 'en'>, Record<string, string>> = {
     'Simulator controls': 'Controles del simulador',
     'Station snap': 'Acoplar a estación',
     'Free drive - no station snap': 'Navegación libre, sin acoplar a estación',
+    'Hardware scope': 'Broncoscopio físico',
+    'Scope connected': 'Broncoscopio conectado',
+    'No scope': 'Sin broncoscopio',
+    'Check tracking': 'Revisar seguimiento',
+    Off: 'Apagado',
+    'Low optical tracking quality - replace the wiper ring or wipe the scope cord':
+      'Baja calidad de seguimiento óptico: reemplace el anillo limpiador o limpie el cordón del broncoscopio',
+    'Physical scope tracker drives advance, roll, and flexion when connected':
+      'El rastreador físico controla el avance, la rotación y la flexión cuando está conectado',
     'Advance / retract': 'Avanzar / retraer',
     Roll: 'Rotación',
     deg: 'grados',
@@ -905,6 +914,15 @@ const shellText: Record<Exclude<AppLocale, 'en'>, Record<string, string>> = {
     'Simulator controls': '模拟器控制',
     'Station snap': '站点吸附',
     'Free drive - no station snap': '自由导航 - 不吸附站点',
+    'Hardware scope': '实体内镜',
+    'Scope connected': '内镜已连接',
+    'No scope': '未检测到内镜',
+    'Check tracking': '检查追踪',
+    Off: '关闭',
+    'Low optical tracking quality - replace the wiper ring or wipe the scope cord':
+      '光学追踪质量低——请更换擦拭环或擦拭镜身',
+    'Physical scope tracker drives advance, roll, and flexion when connected':
+      '连接后，实体内镜追踪器控制进退、旋转和弯曲',
     'Advance / retract': '前进 / 后退',
     Roll: '旋转',
     deg: '度',

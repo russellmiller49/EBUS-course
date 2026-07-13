@@ -1,11 +1,26 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 import { useCourseShellText } from '@/i18n/courseShell';
 
 import { clamp } from './pose';
+import {
+  persistSectorStyle,
+  readBrowserSectorStyle,
+  SECTOR_STYLE_OPTIONS,
+  sectorRenderPath,
+  type SectorRenderPath,
+  type SectorStyle,
+} from './sectorStyle';
 import { formatSimulatorStation } from './stationIds';
 import type { SimulatorCaseManifest, SimulatorPreset, SimulatorSectorItem, SimulatorSectorRasterMask, Vec2 } from './types';
+import { useSimulatorPhysicsSnapshot } from './useSimulatorCase';
+
+const SECTOR_STYLE_LABELS: Record<SectorStyle, string> = {
+  classic: 'Classic',
+  realistic: 'Realistic',
+  physics: 'Physics',
+};
 
 const OPEN_CONTOUR_CLOSEABLE_CHORD_RATIO = 0.7;
 
@@ -83,8 +98,45 @@ function hslToRgb(h: number, s: number, l: number) {
   };
 }
 
+function smoothstep(edge0: number, edge1: number, x: number) {
+  const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
+}
+
+function tintForKind(kind: 'node' | 'vessel', alphaRatio: number, baseColor: string) {
+  const base = hexToRgb(baseColor);
+
+  if (kind === 'vessel') {
+    const lowR = 10;
+    const lowG = 13;
+    const lowB = 16;
+    const rimWeight = 4 * alphaRatio * (1 - alphaRatio);
+    const tintMix = 0.28 + rimWeight * 0.36;
+    return {
+      r: Math.round(lerp(lowR, base.r, tintMix)),
+      g: Math.round(lerp(lowG, base.g, tintMix)),
+      b: Math.round(lerp(lowB, base.b, tintMix)),
+      opacity: 0.84,
+    };
+  }
+
+  const hsl = rgbToHsl(base.r, base.g, base.b);
+  const high = hslToRgb(hsl.h, 0.28, 0.42);
+  const lowMixT = 0.12;
+  const lowR = lerp(0x1a, base.r, lowMixT);
+  const lowG = lerp(0x1f, base.g, lowMixT);
+  const lowB = lerp(0x1d, base.b, lowMixT);
+  const t = smoothstep(0.15, 0.85, alphaRatio);
+  return {
+    r: Math.round(lerp(lowR, high.r, t)),
+    g: Math.round(lerp(lowG, high.g, t)),
+    b: Math.round(lerp(lowB, high.b, t)),
+    opacity: 0.62,
+  };
 }
 
 function adjustHsl(color: string, saturation: number, lightness: number) {
@@ -182,6 +234,77 @@ function drawSectorTexture(ctx: CanvasRenderingContext2D, width: number, height:
   ctx.fillRect(0, 0, width, (25 * height) / 100);
   ctx.globalCompositeOperation = 'source-over';
 
+  ctx.restore();
+}
+
+// Classic per-item render: tint each raster mask with the structure color and
+// composite it independently. Kept as the 'classic' sector style.
+function drawRasterMask(
+  ctx: CanvasRenderingContext2D,
+  item: SimulatorSectorItem,
+  rasterMask: SimulatorSectorRasterMask,
+  width: number,
+  height: number,
+) {
+  const maskCanvas = document.createElement('canvas');
+  maskCanvas.width = rasterMask.width;
+  maskCanvas.height = rasterMask.height;
+  const maskCtx = maskCanvas.getContext('2d');
+
+  if (!maskCtx) {
+    return;
+  }
+
+  const kind: 'node' | 'vessel' = item.kind === 'vessel' ? 'vessel' : 'node';
+  const image = maskCtx.createImageData(rasterMask.width, rasterMask.height);
+  for (let index = 0; index < rasterMask.alpha.length && index < rasterMask.width * rasterMask.height; index += 1) {
+    const alpha = clamp(Number(rasterMask.alpha[index]) || 0, 0, 255);
+    const offset = index * 4;
+    const tint = tintForKind(kind, alpha / 255, item.color);
+    image.data[offset] = tint.r;
+    image.data[offset + 1] = tint.g;
+    image.data[offset + 2] = tint.b;
+    image.data[offset + 3] = Math.round(alpha * tint.opacity);
+  }
+  maskCtx.putImageData(image, 0, 0);
+
+  const top = (8 * height) / 100;
+  const fanHeight = (82 * height) / 100;
+  const rowHeight = Math.max(1, fanHeight / Math.max(rasterMask.height - 1, 1) + 1.25);
+  const warpedCanvas = document.createElement('canvas');
+  warpedCanvas.width = Math.ceil(width);
+  warpedCanvas.height = Math.ceil(height);
+  const warpedCtx = warpedCanvas.getContext('2d');
+
+  if (!warpedCtx) {
+    return;
+  }
+
+  warpedCtx.save();
+  drawFanClip(warpedCtx, width, height);
+  warpedCtx.clip();
+  warpedCtx.imageSmoothingEnabled = true;
+  warpedCtx.imageSmoothingQuality = 'high';
+  for (let row = 0; row < rasterMask.height; row += 1) {
+    const depthRatio = rasterMask.height <= 1 ? 0 : row / (rasterMask.height - 1);
+    const y = top + depthRatio * fanHeight - rowHeight / 2;
+    const halfWidth = (depthRatio * 39 * width) / 100;
+    const rowWidth = halfWidth * 2;
+
+    if (rowWidth < 0.5) {
+      continue;
+    }
+
+    warpedCtx.drawImage(maskCanvas, 0, row, rasterMask.width, 1, width / 2 - halfWidth, y, rowWidth, rowHeight);
+  }
+  warpedCtx.restore();
+
+  ctx.save();
+  drawFanClip(ctx, width, height);
+  ctx.clip();
+  ctx.filter = item.kind === 'vessel' ? 'blur(2.2px)' : 'blur(1.6px)';
+  ctx.drawImage(warpedCanvas, 0, 0, width, height);
+  ctx.filter = 'none';
   ctx.restore();
 }
 
@@ -1005,6 +1128,41 @@ export function contourIsCloseable(points: Vec2[], explicitClosed?: boolean): bo
   return isClosedContour(points);
 }
 
+/**
+ * Structures already painted into the canvas keep their SVG geometry transparent so the
+ * hover hotspots sit over the render without covering it. The physics snapshot image is a
+ * full sector render, so it behaves like the realistic canvas path.
+ */
+export function sectorItemRendersOnCanvas(renderPath: SectorRenderPath, hasRasterMask: boolean): boolean {
+  return (renderPath === 'realistic' || renderPath === 'physics') && hasRasterMask;
+}
+
+/**
+ * Destination rectangle (canvas px) for the physics snapshot PNG so its mm geometry lines
+ * up with the SVG label mapping: depth 0 sits at the fan apex (y = 8%), the snapshot's max
+ * depth spans 82% scaled by its depth relative to the manifest depth, and its lateral
+ * extent (±maxDepth·tan(halfAngle)) maps through the same ±39% lateral scale the labels use.
+ */
+export function physicsSnapshotPlacement(
+  viewSize: number,
+  snapshot: { max_depth_mm: number; sector_angle_deg: number },
+  renderDefaults: { max_depth_mm: number; sector_angle_deg: number },
+) {
+  const manifestDepth = Math.max(renderDefaults.max_depth_mm, 1e-6);
+  const manifestHalfTan = Math.max(Math.tan(THREE.MathUtils.degToRad(renderDefaults.sector_angle_deg / 2)), 1e-6);
+  const snapshotDepth = Math.max(snapshot.max_depth_mm, 0);
+  const snapshotHalfTan = Math.tan(THREE.MathUtils.degToRad(snapshot.sector_angle_deg / 2));
+  const height = (82 / 100) * (snapshotDepth / manifestDepth) * viewSize;
+  const halfWidth = (39 / 100) * ((snapshotDepth * snapshotHalfTan) / (manifestDepth * manifestHalfTan)) * viewSize;
+
+  return {
+    x: viewSize / 2 - halfWidth,
+    y: (8 / 100) * viewSize,
+    width: halfWidth * 2,
+    height,
+  };
+}
+
 export function hasUsableSectorContourGeometry(item: SimulatorSectorItem): boolean {
   const contours = item.contoursMm ?? [];
 
@@ -1018,14 +1176,27 @@ export function hasUsableSectorContourGeometry(item: SimulatorSectorItem): boole
 export function SectorView({
   activeStructure,
   caseData,
+  compact = false,
+  contactQuality = 1,
   items,
+  onEnlarge = null,
+  onShowAll = null,
   selectedPreset,
   setActiveStructure,
   source,
 }: {
   activeStructure: string | null;
   caseData: SimulatorCaseManifest;
+  /** Side-slot rendering: the sector image gets the whole pane — the structure list and the
+   * render-style switch are hidden until the pane is enlarged or the tri-view is restored. */
+  compact?: boolean;
+  /** Acoustic coupling of the transducer face in [0, 1]; below 1 the image is veiled. */
+  contactQuality?: number;
   items: SimulatorSectorItem[];
+  /** Promote this pane to the focus layout's large slot; hidden when already there. */
+  onEnlarge?: (() => void) | null;
+  /** Return from the focus layout to the tri-view grid; shown only on the focused pane. */
+  onShowAll?: (() => void) | null;
   selectedPreset: SimulatorPreset | null;
   setActiveStructure: (value: string | null) => void;
   source: string;
@@ -1041,6 +1212,51 @@ export function SectorView({
 
     return new URLSearchParams(window.location.search).get('sectorDebug') === '1';
   }, []);
+  const resolvedInitialSectorStyle = useMemo(
+    () => readBrowserSectorStyle(caseData.render_defaults.sector_realism),
+    [caseData.render_defaults.sector_realism],
+  );
+  const [sectorStyle, setSectorStyle] = useState<SectorStyle>(resolvedInitialSectorStyle);
+
+  useEffect(() => {
+    setSectorStyle(resolvedInitialSectorStyle);
+  }, [resolvedInitialSectorStyle]);
+
+  // Station-anchored physics snapshot for the selected preset; only fetched while
+  // the physics style is active so the other styles stay network-free.
+  const { snapshot: physicsSnapshot, imageUrl: physicsImageUrl } = useSimulatorPhysicsSnapshot(
+    caseData,
+    sectorStyle === 'physics' ? selectedPreset?.preset_key ?? null : null,
+  );
+  const [physicsImage, setPhysicsImage] = useState<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    if (!physicsImageUrl) {
+      setPhysicsImage(null);
+      return;
+    }
+
+    let cancelled = false;
+    const image = new Image();
+    image.onload = () => {
+      if (!cancelled) {
+        setPhysicsImage(image);
+      }
+    };
+    image.onerror = () => {
+      if (!cancelled) {
+        setPhysicsImage(null);
+      }
+    };
+    image.src = physicsImageUrl;
+
+    return () => {
+      cancelled = true;
+    };
+  }, [physicsImageUrl]);
+
+  // 'physics' falls back to the realistic path until the snapshot PNG is loaded.
+  const renderPath = sectorRenderPath(sectorStyle, Boolean(physicsSnapshot && physicsImage));
   const visibleItems = items.filter((item) => item.visible || item.kind === 'airway' || item.kind === 'contact');
 
   function itemPosition(item: SimulatorSectorItem) {
@@ -1206,6 +1422,39 @@ export function SectorView({
       ctx.translate(viewOffsetX, viewOffsetY);
       drawSectorTexture(ctx, viewSize, viewSize);
 
+      if (renderPath === 'physics' && physicsSnapshot && physicsImage) {
+        const placement = physicsSnapshotPlacement(viewSize, physicsSnapshot.metadata, caseData.render_defaults);
+        ctx.save();
+        drawFanClip(ctx, viewSize, viewSize);
+        ctx.clip();
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(physicsImage, placement.x, placement.y, placement.width, placement.height);
+        ctx.restore();
+
+        // The educational hover tints composite over the snapshot exactly as they
+        // do over the realistic render; only the background source changes.
+        const physicsVessels = renderItems.filter((item) => item.kind === 'vessel' && item.rasterMask?.alpha?.length);
+        const physicsNodes = renderItems.filter((item) => item.kind === 'node' && item.rasterMask?.alpha?.length);
+        const physicsMasks = new Map<string, HTMLCanvasElement>();
+        for (const item of [...physicsVessels, ...physicsNodes]) {
+          physicsMasks.set(item.id, buildSolidItemMask(item, viewSize, viewSize, maxDepth, halfTan, 4, 18));
+        }
+        drawEducationalTint(ctx, physicsVessels, physicsNodes, physicsMasks, viewSize, viewSize, activeStructure);
+        ctx.restore();
+        return;
+      }
+
+      if (renderPath === 'classic') {
+        for (const item of renderItems) {
+          if ((item.kind === 'node' || item.kind === 'vessel') && item.rasterMask?.alpha?.length) {
+            drawRasterMask(ctx, item, item.rasterMask, viewSize, viewSize);
+          }
+        }
+        ctx.restore();
+        return;
+      }
+
       const vessels = renderItems.filter((item) => item.kind === 'vessel' && item.rasterMask?.alpha?.length);
       const nodes = renderItems.filter((item) => item.kind === 'node' && item.rasterMask?.alpha?.length);
 
@@ -1290,10 +1539,14 @@ export function SectorView({
     const observer = new ResizeObserver(draw);
     observer.observe(parent);
     return () => observer.disconnect();
-  }, [activeStructure, halfTan, renderItems, maxDepth]);
+  }, [activeStructure, caseData.render_defaults, halfTan, renderItems, maxDepth, physicsImage, physicsSnapshot, renderPath]);
 
   return (
-    <section className="simulator-sector-pane" aria-label={t('Labeled EBUS sector')} data-sector-source={source}>
+    <section
+      className={`simulator-sector-pane${compact ? ' simulator-sector-pane--compact' : ''}`}
+      aria-label={t('Labeled EBUS sector')}
+      data-sector-source={source}
+    >
       <div className="simulator-pane-header">
         <div>
           <span className="eyebrow">{t('EBUS sector')}</span>
@@ -1304,8 +1557,36 @@ export function SectorView({
           </h2>
         </div>
         <div className="simulator-sector-header-actions">
+          {onEnlarge ? (
+            <button className="simulator-sector-style-toggle" onClick={onEnlarge} type="button">
+              {t('Enlarge')}
+            </button>
+          ) : null}
+          {onShowAll ? (
+            <button className="simulator-sector-style-toggle" onClick={onShowAll} type="button">
+              {t('All views')}
+            </button>
+          ) : null}
           <span className="simulator-chip">{selectedPreset?.approach ?? t('Free drive')}</span>
-          <span className="simulator-chip">{t('Realistic')}</span>
+          <div className="simulator-sector-style-switch" role="group" aria-label={t('Sector render style')}>
+            {SECTOR_STYLE_OPTIONS.map((style) => (
+              <button
+                key={style}
+                type="button"
+                className="simulator-sector-style-toggle"
+                aria-pressed={sectorStyle === style}
+                onClick={() => {
+                  setSectorStyle(style);
+                  persistSectorStyle(style);
+                }}
+              >
+                {t(SECTOR_STYLE_LABELS[style])}
+              </button>
+            ))}
+          </div>
+          {sectorStyle === 'physics' && renderPath !== 'physics' ? (
+            <span className="simulator-chip simulator-sector-style-badge">{t('No snapshot yet — realistic shown')}</span>
+          ) : null}
         </div>
       </div>
       <div className="simulator-sector-viewport">
@@ -1376,7 +1657,7 @@ export function SectorView({
               const rimColor = adjustHsl(item.color, clamp(baseHsl.s * 0.9, 0, 1), clamp(baseHsl.l * 0.55, 0.12, 0.5));
               const activeRim = adjustHsl(item.color, baseHsl.s, 0.88);
               const strokeColor = active ? activeRim : rimColor;
-              const canvasRendered = Boolean(item.rasterMask?.alpha?.length);
+              const canvasRendered = sectorItemRendersOnCanvas(renderPath, Boolean(item.rasterMask?.alpha?.length));
               const inactiveFill = canvasRendered ? 'transparent' : item.color;
               const inactiveFillOpacity = canvasRendered ? 0 : active ? 0.98 : 0.92;
               const inactiveStrokeOpacity = canvasRendered ? 0 : active ? 0.95 : 0.7;
@@ -1518,6 +1799,25 @@ export function SectorView({
             {t('cephalic')}
           </text>
         </svg>
+        <div
+          aria-hidden="true"
+          className="simulator-sector-contact-veil"
+          style={{ opacity: Math.min(1, Math.max(0, 1 - contactQuality)) * 0.97 }}
+        >
+          <svg className="simulator-sector-contact-noise" role="presentation">
+            <filter id="simulatorSectorContactNoise">
+              <feTurbulence baseFrequency="0.9" numOctaves="2" seed="7" type="fractalNoise" />
+              <feColorMatrix
+                type="matrix"
+                values="0 0 0 0 0.45  0 0 0 0 0.47  0 0 0 0 0.5  0 0 0 0.35 0"
+              />
+            </filter>
+            <rect width="100%" height="100%" filter="url(#simulatorSectorContactNoise)" />
+          </svg>
+          {contactQuality < 0.35 ? (
+            <span>{t('No transducer contact — flex toward the wall')}</span>
+          ) : null}
+        </div>
         {activeItem && activeCalloutAnchor ? (
           <div
             className={`simulator-sector-callout simulator-sector-callout--${activeCalloutSide}`}

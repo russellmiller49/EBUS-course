@@ -17,8 +17,6 @@ SOURCE_ROOT = TOOL_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
-os.environ["REPO_ROOT"] = str(TOOL_ROOT)
-
 from ebus_simulator.centerline import CenterlinePolyline
 from ebus_simulator.rendering import build_render_context
 from ebus_simulator.web_case_export import export_web_case
@@ -181,6 +179,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    # The bundled configs resolve ${REPO_ROOT} relative to the tool root, not the
+    # git root discovered by manifest loading. Set it here (not at import time) so
+    # importing this script never leaks the override into other processes' env.
+    os.environ["REPO_ROOT"] = str(TOOL_ROOT)
     args = parse_args()
     preset_keys = None if args.preset_key is None else {str(value) for value in args.preset_key}
     export_course_case(

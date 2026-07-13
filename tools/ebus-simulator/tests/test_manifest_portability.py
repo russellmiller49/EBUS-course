@@ -41,7 +41,8 @@ def test_manifest_root_supports_repo_relative_path(tmp_path):
     assert manifest.root == dataset_root.resolve()
 
 
-def test_manifest_root_supports_repo_root_token(tmp_path):
+def test_manifest_root_supports_repo_root_token(tmp_path, monkeypatch):
+    monkeypatch.delenv("REPO_ROOT", raising=False)
     manifest_path, dataset_root = _write_manifest(tmp_path, root_value="${REPO_ROOT}/dataset")
     manifest = load_case_manifest(manifest_path)
     assert manifest.root == dataset_root.resolve()
@@ -56,7 +57,8 @@ def test_manifest_root_supports_data_root_token(tmp_path, monkeypatch):
     assert manifest.root == external_root.resolve()
 
 
-def test_manifest_root_missing_raises_clear_error(tmp_path):
+def test_manifest_root_missing_raises_clear_error(tmp_path, monkeypatch):
+    monkeypatch.delenv("REPO_ROOT", raising=False)
     manifest_path, _ = _write_manifest(tmp_path, root_value="${REPO_ROOT}/missing_dataset")
     with pytest.raises(FileNotFoundError, match="Original root value"):
         load_case_manifest(manifest_path)

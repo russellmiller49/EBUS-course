@@ -755,6 +755,36 @@ manifest.render_defaults = {
   ...manifest.render_defaults,
   sector_realism: 'realistic',
 };
+// Device-calibration record (single source of truth for the optical pane and the Python signal
+// tools). The numbers are read from the shared profile JSON that ebus_simulator/device.py also
+// loads, so the two consumers cannot drift apart. The web app falls back to the same defaults
+// when this block is absent, so older manifests keep loading; obliquity_axis carries the
+// calibratable scan-side sign.
+const deviceProfilePath = path.join(
+  repoRoot,
+  'tools/ebus-simulator/src/ebus_simulator/device_profiles/bf_uc180f.json',
+);
+const deviceProfile = JSON.parse(fs.readFileSync(deviceProfilePath, 'utf8'));
+manifest.endoscope_camera = {
+  model: deviceProfile.model,
+  optical_axis_offset_deg: deviceProfile.optical_axis_offset_deg,
+  obliquity_axis: deviceProfile.obliquity_axis,
+  fov_deg: deviceProfile.fov_deg,
+  near_mm: deviceProfile.near_mm,
+  far_mm: deviceProfile.far_mm,
+  eye_offset_mm: deviceProfile.eye_offset_mm,
+  circular_aperture: deviceProfile.circular_aperture ?? false,
+  lens_distortion: deviceProfile.lens_distortion ?? false,
+  scope_tip_occlusion: deviceProfile.scope_tip_occlusion ?? false,
+  contact_cap: deviceProfile.contact_cap ?? false,
+  headlight_falloff: deviceProfile.headlight_falloff ?? false,
+  contact_min_distance_mm: deviceProfile.contact_min_distance_mm ?? 0,
+};
+manifest.ultrasound_probe = {
+  sector_angle_deg: deviceProfile.sector_angle_deg,
+  displayed_range_mm: deviceProfile.displayed_range_mm,
+  optical_axis_offset_deg: deviceProfile.optical_axis_offset_deg,
+};
 manifest.assets = {
   ...manifest.assets,
   clean_models: [
@@ -775,8 +805,39 @@ manifest.assets = {
     includeGeneratedExtras: true,
   }),
 };
+function collectPhysicsSnapshotRefs(manifest) {
+  // Sidecar JSONs written by tools/ebus-simulator physics_snapshot_export.py
+  // (export-physics-snapshots). Only presets present in this manifest are
+  // referenced; the map stays empty until the snapshots are generated.
+  const snapshotDir = path.join(caseRoot, 'physics_snapshots');
+  const refs = {};
+
+  if (!fs.existsSync(snapshotDir)) {
+    return refs;
+  }
+
+  const presetKeys = new Set((manifest.presets ?? []).map((preset) => preset.preset_key));
+  for (const fileName of fs.readdirSync(snapshotDir).sort()) {
+    if (!fileName.endsWith('.json')) {
+      continue;
+    }
+
+    const sidecar = JSON.parse(fs.readFileSync(path.join(snapshotDir, fileName), 'utf8'));
+    if (!presetKeys.has(sidecar.preset_key)) {
+      continue;
+    }
+
+    if (typeof sidecar.image === 'string' && fs.existsSync(path.join(caseRoot, sidecar.image))) {
+      refs[sidecar.preset_key] = `physics_snapshots/${fileName}`;
+    }
+  }
+
+  return refs;
+}
+
 applyStationSnapTargets(manifest, pointList, generatedStations, centerlines);
 manifest.sector_snapshots = {};
+manifest.physics_snapshots = collectPhysicsSnapshotRefs(manifest);
 manifest.notes = {
   ...(manifest.notes ?? {}),
   simplified_model_trial:
@@ -793,4 +854,5 @@ process.stdout.write([
   `Generated ${generatedStations.size} station point clouds`,
   `Loaded ${pointList.targets.size} station target markers`,
   `Loaded ${pointList.probeSnaps.length} probe snap markers`,
+  `Referenced ${Object.keys(manifest.physics_snapshots).length} physics snapshots`,
 ].join('\n') + '\n');

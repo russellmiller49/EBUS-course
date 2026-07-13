@@ -40,6 +40,7 @@ launch-app = "ebus_simulator.app:main"
 build-reference-library = "ebus_simulator.reference_cli:main"
 summarize-reference-annotations = "ebus_simulator.annotation_cli:main"
 export-web-case = "ebus_simulator.web_case_export:main"
+export-physics-snapshots = "ebus_simulator.physics_snapshot_export:main"
 launch-web-app = "ebus_simulator.web_app:main"
 
 [tool.setuptools]
